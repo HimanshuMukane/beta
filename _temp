@@ -1,0 +1,254 @@
+package utils
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+
+	"github.com/joho/godotenv"
+)
+
+type Config struct {
+	AppEnv     string
+	ServerPort string
+
+	DBHost     string
+	DBPort     string
+	DBUser     string
+	DBPassword string
+	DBName     string
+
+	SessionCookieName string
+	SessionTTLHours   int
+	SessionSecure     bool
+	SessionSameSite   string
+}
+
+var AppConfig Config
+
+// LoadConfig loads environment configuration, validates it, and updates
+// AppConfig only after all settings have passed validation.
+//
+// Call this explicitly at application startup before using AppConfig.
+func LoadConfig() error {
+	if err := loadDotEnv(); err != nil {
+		return err
+	}
+
+	cfg, err := parseConfig(os.Getenv)
+	if err != nil {
+		return err
+	}
+
+	AppConfig = cfg
+	return nil
+}
+
+// loadDotEnv loads an optional .env file without overriding variables
+// already present in the process environment.
+//
+// An explicit ENV_FILE path takes precedence over automatic discovery.
+func loadDotEnv() error {
+	if explicitPath := strings.TrimSpace(os.Getenv("ENV_FILE")); explicitPath != "" {
+		if err := godotenv.Load(explicitPath); err != nil {
+			return fmt.Errorf("load ENV_FILE: %w", err)
+		}
+		return nil
+	}
+
+	candidates := []string{".env"}
+
+	// Also locate the application root when the process is started from
+	// another working directory.
+	_, sourceFile, _, ok := runtime.Caller(0)
+	if ok {
+		projectRoot := filepath.Clean(filepath.Join(filepath.Dir(sourceFile), ".."))
+		candidates = append(candidates, filepath.Join(projectRoot, ".env"))
+	}
+
+	seen := make(map[string]bool)
+
+	for _, candidate := range candidates {
+		absolutePath, err := filepath.Abs(candidate)
+		if err != nil {
+			return fmt.Errorf("resolve .env path: %w", err)
+		}
+
+		if seen[absolutePath] {
+			continue
+		}
+		seen[absolutePath] = true
+
+		_, err = os.Stat(absolutePath)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("inspect environment file: %w", err)
+		}
+
+		if err := godotenv.Load(absolutePath); err != nil {
+			return fmt.Errorf("load environment file: %w", err)
+		}
+
+		// Stop after loading the first existing file.
+		return nil
+	}
+
+	// No .env file is okay: the process environment may provide everything.
+	return nil
+}
+
+func parseConfig(getenv func(string) string) (Config, error) {
+	var cfg Config
+	var err error
+
+	cfg.AppEnv = strings.ToLower(strings.TrimSpace(getenv("APP_ENV")))
+	if cfg.AppEnv == "" {
+		cfg.AppEnv = "development"
+	}
+
+	switch cfg.AppEnv {
+	case "development", "test", "production":
+	default:
+		return cfg, fmt.Errorf(
+			"APP_ENV must be development, test, or production",
+		)
+	}
+
+	cfg.ServerPort = strings.TrimSpace(getenv("SERVER_PORT"))
+	if cfg.ServerPort == "" {
+		cfg.ServerPort = "8080"
+	}
+	if err := validatePort("SERVER_PORT", cfg.ServerPort); err != nil {
+		return cfg, err
+	}
+
+	cfg.DBHost = strings.TrimSpace(getenv("DB_HOST"))
+	cfg.DBPort = strings.TrimSpace(getenv("DB_PORT"))
+	cfg.DBUser = strings.TrimSpace(getenv("DB_USER"))
+	cfg.DBPassword = getenv("DB_PASSWORD")
+	cfg.DBName = strings.TrimSpace(getenv("DB_NAME"))
+
+	if cfg.DBPort == "" {
+		cfg.DBPort = "3306"
+	}
+
+	required := []struct {
+		name  string
+		value string
+	}{
+		{"DB_HOST", cfg.DBHost},
+		{"DB_USER", cfg.DBUser},
+		{"DB_PASSWORD", cfg.DBPassword},
+		{"DB_NAME", cfg.DBName},
+	}
+
+	for _, setting := range required {
+		if strings.TrimSpace(setting.value) == "" {
+			return cfg, fmt.Errorf("%s is required", setting.name)
+		}
+	}
+
+	if strings.ContainsAny(cfg.DBHost, " \t\r\n") {
+		return cfg, fmt.Errorf("DB_HOST must not contain whitespace")
+	}
+
+	if strings.ContainsAny(cfg.DBName, "\x00\r\n") {
+		return cfg, fmt.Errorf("DB_NAME contains invalid characters")
+	}
+
+	if err := validatePort("DB_PORT", cfg.DBPort); err != nil {
+		return cfg, err
+	}
+
+	cfg.SessionCookieName = strings.TrimSpace(getenv("SESSION_COOKIE_NAME"))
+	if cfg.SessionCookieName == "" {
+		cfg.SessionCookieName = "photography_session"
+	}
+	if !isValidCookieName(cfg.SessionCookieName) {
+		return cfg, fmt.Errorf("SESSION_COOKIE_NAME is not a valid cookie name")
+	}
+
+	cfg.SessionTTLHours = 24
+	if value := strings.TrimSpace(getenv("SESSION_TTL_HOURS")); value != "" {
+		cfg.SessionTTLHours, err = strconv.Atoi(value)
+		if err != nil || cfg.SessionTTLHours < 1 || cfg.SessionTTLHours > 720 {
+			return cfg, fmt.Errorf(
+				"SESSION_TTL_HOURS must be an integer between 1 and 720",
+			)
+		}
+	}
+
+	cfg.SessionSecure = true
+	if value := strings.TrimSpace(getenv("SESSION_COOKIE_SECURE")); value != "" {
+		cfg.SessionSecure, err = strconv.ParseBool(value)
+		if err != nil {
+			return cfg, fmt.Errorf(
+				"SESSION_COOKIE_SECURE must be true or false",
+			)
+		}
+	}
+
+	if cfg.AppEnv == "production" && !cfg.SessionSecure {
+		return cfg, fmt.Errorf(
+			"SESSION_COOKIE_SECURE must be true in production",
+		)
+	}
+
+	cfg.SessionSameSite = strings.ToLower(
+		strings.TrimSpace(getenv("SESSION_COOKIE_SAMESITE")),
+	)
+	if cfg.SessionSameSite == "" {
+		cfg.SessionSameSite = "lax"
+	}
+
+	switch cfg.SessionSameSite {
+	case "strict", "lax", "none":
+	default:
+		return cfg, fmt.Errorf(
+			"SESSION_COOKIE_SAMESITE must be strict, lax, or none",
+		)
+	}
+
+	if cfg.SessionSameSite == "none" && !cfg.SessionSecure {
+		return cfg, fmt.Errorf(
+			"SameSite=None requires SESSION_COOKIE_SECURE=true",
+		)
+	}
+
+	return cfg, nil
+}
+
+func validatePort(name, value string) error {
+	port, err := strconv.Atoi(value)
+	if err != nil || port < 1 || port > 65535 {
+		return fmt.Errorf("%s must be a port number between 1 and 65535", name)
+	}
+	return nil
+}
+
+func isValidCookieName(name string) bool {
+	if name == "" {
+		return false
+	}
+
+	// Cookie names must be HTTP token characters. This deliberately rejects
+	// whitespace, separators, quotes, and control characters.
+	for _, r := range name {
+		if r < 0x21 || r > 0x7e {
+			return false
+		}
+
+		switch r {
+		case '(', ')', '<', '>', '@', ',', ';', ':', '\\', '"',
+			'/', '[', ']', '?', '=', '{', '}':
+			return false
+		}
+	}
+
+	return true
+}
