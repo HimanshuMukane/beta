@@ -1,15 +1,16 @@
 package routes
 
 import (
-	"github.com/go-chi/chi/v5"
+	"net/http"
+
 	"github.com/jmoiron/sqlx"
 )
 
-func SetupRouter(db *sqlx.DB) *chi.Mux {
-	r := chi.NewRouter()
+func SetupRouter(db *sqlx.DB) http.Handler {
+	mux := http.NewServeMux()
 
-	RegisterFrontendRoutes(r)
-	RegisterBackendRoutes(r, db)
+	RegisterFrontendRoutes(mux)
+	RegisterBackendRoutes(mux, db)
 
-	return r
+	return mux
 }
