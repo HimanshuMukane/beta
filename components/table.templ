@@ -1,0 +1,40 @@
+package components
+
+templ TableWrapper() {
+	<div class="table-card">
+		<div class="table-scroll">
+			<table class="compact-table">
+				{ children... }
+			</table>
+		</div>
+	</div>
+}
+
+templ TableFilterBar() {
+	<div class="table-toolbar">
+		<div class="table-toolbar-group">
+			{ children... }
+		</div>
+	</div>
+}
+
+templ TableSearch(placeholder string, id string) {
+	<input type="text" id={ id } class="table-search" placeholder={ placeholder }/>
+}
+
+templ TableSelect(id string, options []string) {
+	<select id={ id } class="table-filter-select">
+		for _, opt := range options {
+			<option value={ opt }>{ opt }</option>
+		}
+	</select>
+}
+
+templ TableFooter(totalText string) {
+	<div class="table-footer">
+		<span>{ totalText }</span>
+		<div style="display: flex; gap: 4px;">
+			{ children... }
+		</div>
+	</div>
+}

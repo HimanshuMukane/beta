@@ -1,0 +1,13 @@
+package components
+
+templ Button(label string, variant string) {
+	<button class={ "c-btn " + variant }>
+		{ label }
+	</button>
+}
+
+templ ButtonSm(label string, variant string) {
+	<button class={ "c-btn c-btn-sm " + variant }>
+		{ label }
+	</button>
+}

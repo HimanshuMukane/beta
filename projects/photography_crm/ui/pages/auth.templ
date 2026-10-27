@@ -1,0 +1,90 @@
+package pages
+
+import (
+	"components"
+	"chi-mysql-server/ui/layouts"
+)
+
+templ SignIn() {
+	@layouts.AuthLayout("Sign In - Aperture CRM") {
+		<div class="auth-header">
+			<h1 class="auth-title">Welcome back</h1>
+			<p class="auth-subtitle">Sign in to your photography studio account</p>
+		</div>
+
+		<form class="auth-form" method="POST" action="/signin">
+			<div class="form-group">
+				<label class="form-label" for="email">Email</label>
+				<input class="form-input" id="email" name="email" type="email" placeholder="photographer@studio.com" required/>
+			</div>
+
+			<div class="form-group">
+				<div style="display: flex; justify-content: space-between; align-items: center;">
+					<label class="form-label" for="password">Password</label>
+					<a href="/forgot-password" class="auth-link" style="font-size: 11px;">Forgot password?</a>
+				</div>
+				<input class="form-input" id="password" name="password" type="password" placeholder="••••••••" required/>
+			</div>
+
+			@components.Button("Sign In", "c-btn-primary")
+		</form>
+
+		<div class="auth-footer">
+			Don't have an account? <a href="/signup" class="auth-link">Create an account</a>
+		</div>
+	}
+}
+
+templ SignUp() {
+	@layouts.AuthLayout("Sign Up - Aperture CRM") {
+		<div class="auth-header">
+			<h1 class="auth-title">Create an account</h1>
+			<p class="auth-subtitle">Set up your studio and start managing clients</p>
+		</div>
+
+		<form class="auth-form" method="POST" action="/signup">
+			<div class="form-group">
+				<label class="form-label" for="name">Studio / Full Name</label>
+				<input class="form-input" id="name" name="name" type="text" placeholder="Aperture Light Studios" required/>
+			</div>
+
+			<div class="form-group">
+				<label class="form-label" for="email">Email</label>
+				<input class="form-input" id="email" name="email" type="email" placeholder="photographer@studio.com" required/>
+			</div>
+
+			<div class="form-group">
+				<label class="form-label" for="password">Password</label>
+				<input class="form-input" id="password" name="password" type="password" placeholder="Create a password" required/>
+			</div>
+
+			@components.Button("Create Account", "c-btn-primary")
+		</form>
+
+		<div class="auth-footer">
+			Already have an account? <a href="/signin" class="auth-link">Sign in</a>
+		</div>
+	}
+}
+
+templ ForgotPassword() {
+	@layouts.AuthLayout("Forgot Password - Aperture CRM") {
+		<div class="auth-header">
+			<h1 class="auth-title">Reset password</h1>
+			<p class="auth-subtitle">Enter your email and we'll send a recovery link</p>
+		</div>
+
+		<form class="auth-form" method="POST" action="/forgot-password">
+			<div class="form-group">
+				<label class="form-label" for="email">Email</label>
+				<input class="form-input" id="email" name="email" type="email" placeholder="photographer@studio.com" required/>
+			</div>
+
+			@components.Button("Send Reset Link", "c-btn-primary")
+		</form>
+
+		<div class="auth-footer">
+			Remember your password? <a href="/signin" class="auth-link">Back to sign in</a>
+		</div>
+	}
+}

@@ -1,0 +1,82 @@
+:root {
+  /* Pitch-black background with subtle deep purple/zinc surface colors from reference */
+  --bg-app: #08080a;
+  --bg-surface: #101014;
+  --bg-surface-subtle: #15151b;
+  --bg-surface-hover: #1c1c24;
+  --bg-sidebar: #050507;
+  --bg-sidebar-active: #1a172c; /* Purple tinted active item */
+  --bg-topbar: #08080a;
+
+  --border-color: #1e1e26;
+  --border-subtle: #17171f;
+  --border-row: #141419;
+  --border-focus: #7c5dfa;
+
+  --text-main: #f3f4f8;
+  --text-muted: #8b8ea0;
+  --text-dim: #545768;
+
+  --accent-primary: #7c5dfa;
+  --accent-primary-glow: rgba(124, 93, 250, 0.25);
+  --accent-hover: #6c47f5;
+  --accent-active-text: #a892ff;
+
+  /* Pill & Status Colors */
+  --status-todo-bg: #22222b;
+  --status-todo-text: #a8acbc;
+  --status-inprogress-bg: #0984e3;
+  --status-inprogress-text: #ffffff;
+  --status-done-bg: #00b894;
+  --status-done-text: #ffffff;
+
+  /* Tooltip Specifics */
+  --tooltip-bg: #121216;
+  --tooltip-border: #262632;
+  --tooltip-text: #f3f4f8;
+  --tooltip-kbd-bg: #1e1e26;
+  --tooltip-kbd-text: #8e91a2;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-full: 9999px;
+
+  --sidebar-expanded-width: 230px;
+  --sidebar-collapsed-width: 60px;
+  --topbar-height: 44px;
+}
+
+[data-theme="light"] {
+  --bg-app: #f6f7fb;
+  --bg-surface: #ffffff;
+  --bg-surface-subtle: #eeeff4;
+  --bg-surface-hover: #e5e7f0;
+  --bg-sidebar: #fbfbfe;
+  --bg-sidebar-active: #ede8ff;
+  --bg-topbar: #ffffff;
+
+  --border-color: #e2e4ed;
+  --border-subtle: #e9ebf2;
+  --border-row: #eceef5;
+  --border-focus: #7c5dfa;
+
+  --text-main: #14161f;
+  --text-muted: #5d6173;
+  --text-dim: #9499ab;
+
+  --accent-active-text: #6038eb;
+
+  --status-todo-bg: #e6e8ee;
+  --status-todo-text: #4a4f5c;
+  --status-inprogress-bg: #0984e3;
+  --status-inprogress-text: #ffffff;
+  --status-done-bg: #00b894;
+  --status-done-text: #ffffff;
+
+  --tooltip-bg: #1a1a22;
+  --tooltip-border: #2d2d38;
+  --tooltip-text: #ffffff;
+  --tooltip-kbd-bg: #292936;
+  --tooltip-kbd-text: #a8acbc;
+}

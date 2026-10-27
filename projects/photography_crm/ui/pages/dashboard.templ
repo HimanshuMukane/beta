@@ -1,0 +1,126 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+)
+
+type TaskRow struct {
+	Index      int
+	Name       string
+	Assignees  []Assignee
+	Status     string
+	StatusType string // "todo" | "inprogress" | "done"
+	DueDate    string
+	Priority   string
+}
+
+type Assignee struct {
+	Initials string
+	BgColor  string
+	Name     string
+}
+
+type FavItem struct {
+	Name     string
+	Gradient string
+}
+
+templ Dashboard(title string, rows []TaskRow) {
+	@layouts.DashboardLayout(title) {
+		<!-- Views Tabs -->
+		<div class="view-tabs-bar">
+			<div class="view-tab">
+				<span>☰</span> List
+			</div>
+			<div class="view-tab">
+				<span>▥</span> Board
+			</div>
+			<div class="view-tab active">
+				<span style="color: #7c5dfa;">⊞</span> Table
+			</div>
+			<div class="view-tab">
+				<span>+</span> View
+			</div>
+		</div>
+
+		<!-- Table Controls Meta Bar -->
+		<div class="table-meta-bar">
+			<div class="meta-bar-left">
+				<button class="header-icon-btn" title="Group by">🗂️</button>
+				<button class="header-icon-btn" title="Filter">🔍</button>
+			</div>
+			<div class="meta-bar-right">
+				<button class="header-icon-btn" title="Filter">⚡</button>
+				<button class="header-icon-btn" title="Checklist">✓</button>
+				<button class="header-icon-btn" title="Group">👥</button>
+				<button class="header-icon-btn" title="Search">🔎</button>
+				<button class="header-icon-btn" title="Settings">⚙️</button>
+				<button class="btn-add-task">
+					<span>+ Task</span>
+					<span style="font-size: 9px; margin-left: 2px;">▼</span>
+				</button>
+			</div>
+		</div>
+
+		<!-- Table Viewport Container -->
+		<div class="table-workspace-container">
+			<table class="clickup-table">
+				<thead>
+					<tr>
+						<th style="width: 28px; text-align: center;"><input type="checkbox"/></th>
+						<th style="min-width: 240px;">Name</th>
+						<th style="min-width: 180px;">Assignee</th>
+						<th style="min-width: 140px;">Status</th>
+						<th style="min-width: 130px;">Due date</th>
+						<th style="min-width: 120px;">Priority</th>
+						<th style="width: 30px; text-align: center;">+</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, row := range rows {
+						<tr>
+							<td style="text-align: center;"><input type="checkbox"/></td>
+							<td>
+								<span style="color: var(--text-dim); margin-right: 8px; font-size: 11px;">{ templ.EscapeString(string(rune('0' + row.Index))) }</span>
+								<span style="color: var(--text-dim); margin-right: 6px;">⚪</span>
+								<span>{ row.Name }</span>
+							</td>
+							<td>
+								<div class="avatar-stack">
+									for _, a := range row.Assignees {
+										<span class="user-badge-mini" style={ "background-color: " + a.BgColor + ";" }>{ a.Initials }</span>
+									}
+								</div>
+								<span style="font-size: 12px; color: var(--text-main);">
+									if len(row.Assignees) > 0 {
+										{ row.Assignees[0].Name }
+										if len(row.Assignees) > 1 {
+											, { row.Assignees[1].Name }
+										}
+									}
+								</span>
+							</td>
+							<td>
+								if row.StatusType == "inprogress" {
+									<span class="cu-status-pill cu-status-inprogress">
+										<span class="status-dot-ring filled"></span>
+										{ row.Status }
+									</span>
+								} else {
+									<span class="cu-status-pill cu-status-todo">
+										<span class="status-dot-ring"></span>
+										{ row.Status }
+									</span>
+								}
+							</td>
+							<td>{ row.DueDate }</td>
+							<td>{ row.Priority }</td>
+							<td></td>
+						</tr>
+					}
+				</tbody>
+			</table>
+			<div class="table-add-row">+</div>
+		</div>
+	}
+}

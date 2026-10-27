@@ -1,0 +1,14 @@
+package components
+
+templ Card(title string) {
+	<div class="c-card">
+		if title != "" {
+			<div class="c-card-header">
+				<h3 class="c-card-title">{ title }</h3>
+			</div>
+		}
+		<div class="c-card-body">
+			{ children... }
+		</div>
+	</div>
+}

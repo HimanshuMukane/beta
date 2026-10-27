@@ -1,0 +1,129 @@
+/* =========================================================
+   Auth Layout & Forms (ClickUp / Kentucky Aesthetic)
+   ========================================================= */
+
+.auth-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-app);
+}
+
+.auth-image-panel {
+  flex: 1.2;
+  background: radial-gradient(circle at 20% 30%, rgba(124, 93, 250, 0.09) 0%, transparent 60%),
+              radial-gradient(circle at 80% 80%, rgba(9, 132, 227, 0.08) 0%, transparent 60%),
+              var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-form-panel {
+  flex: 0.9;
+  min-width: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background-color: var(--bg-app);
+}
+
+.auth-form-box {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.auth-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+}
+
+.auth-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.18s ease-in-out, box-shadow 0.18s ease-in-out;
+}
+
+.form-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.25);
+}
+
+.form-input::placeholder {
+  color: var(--text-dim);
+}
+
+.auth-footer {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.auth-link {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.18s ease-in-out;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+/* Responsive: Hide Left Image Panel on Mobile */
+@media (max-width: 768px) {
+  .auth-image-panel {
+    display: none;
+  }
+
+  .auth-form-panel {
+    flex: 1;
+    padding: 24px 16px;
+  }
+}
