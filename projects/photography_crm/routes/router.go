@@ -3,14 +3,14 @@ package routes
 import (
 	"net/http"
 
-	"github.com/jmoiron/sqlx"
+	"chi-mysql-server/utils"
 )
 
-func SetupRouter(db *sqlx.DB) http.Handler {
+func SetupRouter(pool *utils.DBPool, cfg utils.Config) http.Handler {
 	mux := http.NewServeMux()
 
 	RegisterFrontendRoutes(mux)
-	RegisterBackendRoutes(mux, db)
+	RegisterBackendRoutes(mux, pool)
 
-	return mux
+	return Chain(mux, DatabaseRoutingMiddleware(pool, cfg))
 }

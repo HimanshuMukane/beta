@@ -3,13 +3,12 @@ package routes
 import (
 	"net/http"
 
-	"github.com/jmoiron/sqlx"
-
 	"chi-mysql-server/utils"
 )
 
-func RegisterBackendRoutes(mux *http.ServeMux, db *sqlx.DB) {
+func RegisterBackendRoutes(mux *http.ServeMux, pool *utils.DBPool) {
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
+		db := utils.DBFromContext(r.Context(), pool.Primary)
 		if db == nil {
 			utils.WriteJSON(w, http.StatusOK, map[string]string{
 				"status": "ok",
@@ -21,9 +20,16 @@ func RegisterBackendRoutes(mux *http.ServeMux, db *sqlx.DB) {
 			http.Error(w, "Database unavailable", http.StatusServiceUnavailable)
 			return
 		}
+
+		dbName := "primary"
+		if db == pool.Test {
+			dbName = "test"
+		}
+
 		utils.WriteJSON(w, http.StatusOK, map[string]string{
 			"status": "ok",
 			"db":     "connected",
+			"target": dbName,
 		})
 	})
 }

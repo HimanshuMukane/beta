@@ -9,13 +9,17 @@ import (
 )
 
 func main() {
-	db, err := utils.InitDB()
+	if err := utils.LoadConfig(); err != nil {
+		panic(err)
+	}
+
+	pool, err := utils.InitDBPool()
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+	defer pool.Close()
 
-	router := routes.SetupRouter(db)
+	router := routes.SetupRouter(pool, utils.AppConfig)
 	serverPort := utils.AppConfig.ServerPort
 
 	fmt.Println("http://localhost:" + serverPort)
