@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"chi-mysql-server/models"
 
@@ -27,7 +26,7 @@ func NewRoleRepository(db *sqlx.DB) *RoleRepository {
 	return &RoleRepository{db: db}
 }
 
-// CreateRole inserts a new role.
+// CreateRole inserts a new role and returns the stored record.
 func (r *RoleRepository) CreateRole(
 	ctx context.Context,
 	name string,
@@ -43,42 +42,32 @@ func (r *RoleRepository) CreateRole(
 		Name: name,
 	}
 
-	query := `
-		INSERT INTO roles (id, name)
-		VALUES (?, ?)
-	`
-
 	_, err := r.db.ExecContext(
 		ctx,
-		query,
+		`
+			INSERT INTO roles (id, name)
+			VALUES (?, ?)
+		`,
 		models.UUIDToString(role.ID),
 		role.Name,
 	)
 	if err != nil {
-		// SQLite unique constraint violations use extended error code 2067.
-		if strings.Contains(strings.ToLower(err.Error()), "unique constraint failed") {
+		if strings.Contains(
+			strings.ToLower(err.Error()),
+			"unique constraint failed",
+		) {
 			return nil, ErrRoleAlreadyExists
 		}
 
 		return nil, fmt.Errorf("create role: %w", err)
 	}
 
-	err = r.db.GetContext(
-		ctx,
-		role,
-		`
-			SELECT created_at, updated_at
-			FROM roles
-			WHERE id = ?
-			LIMIT 1
-		`,
-		models.UUIDToString(role.ID),
-	)
+	createdRole, err := r.GetRoleByID(ctx, role.ID)
 	if err != nil {
-		return nil, fmt.Errorf("load created role: %w", err)
+		return nil, fmt.Errorf("retrieve created role: %w", err)
 	}
 
-	return role, nil
+	return createdRole, nil
 }
 
 // GetRoleByName retrieves an active role by name.
@@ -92,11 +81,11 @@ func (r *RoleRepository) GetRoleByName(
 	}
 
 	var row struct {
-		ID        string       `db:"id"`
-		Name      string       `db:"name"`
-		CreatedAt time.Time    `db:"created_at"`
-		UpdatedAt time.Time    `db:"updated_at"`
-		DeletedAt sql.NullTime `db:"deleted_at"`
+		ID        string         `db:"id"`
+		Name      string         `db:"name"`
+		CreatedAt string         `db:"created_at"`
+		UpdatedAt string         `db:"updated_at"`
+		DeletedAt sql.NullString `db:"deleted_at"`
 	}
 
 	err := r.db.GetContext(
@@ -118,24 +107,13 @@ func (r *RoleRepository) GetRoleByName(
 		return nil, fmt.Errorf("get role by name: %w", err)
 	}
 
-	id, err := models.UUIDFromString(row.ID)
-	if err != nil {
-		return nil, fmt.Errorf("decode role ID: %w", err)
-	}
-
-	role := &models.Role{
-		ID:        id,
-		Name:      row.Name,
-		CreatedAt: row.CreatedAt,
-		UpdatedAt: row.UpdatedAt,
-	}
-
-	if row.DeletedAt.Valid {
-		deletedAt := row.DeletedAt.Time
-		role.DeletedAt = &deletedAt
-	}
-
-	return role, nil
+	return mapRoleRow(
+		row.ID,
+		row.Name,
+		row.CreatedAt,
+		row.UpdatedAt,
+		row.DeletedAt,
+	)
 }
 
 // GetRoleByID retrieves an active role by UUID.
@@ -148,11 +126,11 @@ func (r *RoleRepository) GetRoleByID(
 	}
 
 	var row struct {
-		ID        string       `db:"id"`
-		Name      string       `db:"name"`
-		CreatedAt time.Time    `db:"created_at"`
-		UpdatedAt time.Time    `db:"updated_at"`
-		DeletedAt sql.NullTime `db:"deleted_at"`
+		ID        string         `db:"id"`
+		Name      string         `db:"name"`
+		CreatedAt string         `db:"created_at"`
+		UpdatedAt string         `db:"updated_at"`
+		DeletedAt sql.NullString `db:"deleted_at"`
 	}
 
 	err := r.db.GetContext(
@@ -174,20 +152,50 @@ func (r *RoleRepository) GetRoleByID(
 		return nil, fmt.Errorf("get role by ID: %w", err)
 	}
 
-	roleID, err := models.UUIDFromString(row.ID)
+	return mapRoleRow(
+		row.ID,
+		row.Name,
+		row.CreatedAt,
+		row.UpdatedAt,
+		row.DeletedAt,
+	)
+}
+
+func mapRoleRow(
+	idValue string,
+	name string,
+	createdAtValue string,
+	updatedAtValue string,
+	deletedAtValue sql.NullString,
+) (*models.Role, error) {
+	id, err := models.UUIDFromString(idValue)
 	if err != nil {
 		return nil, fmt.Errorf("decode role ID: %w", err)
 	}
 
-	role := &models.Role{
-		ID:        roleID,
-		Name:      row.Name,
-		CreatedAt: row.CreatedAt,
-		UpdatedAt: row.UpdatedAt,
+	createdAt, err := parseSQLiteTime(createdAtValue)
+	if err != nil {
+		return nil, fmt.Errorf("parse role creation time: %w", err)
 	}
 
-	if row.DeletedAt.Valid {
-		deletedAt := row.DeletedAt.Time
+	updatedAt, err := parseSQLiteTime(updatedAtValue)
+	if err != nil {
+		return nil, fmt.Errorf("parse role update time: %w", err)
+	}
+
+	role := &models.Role{
+		ID:        id,
+		Name:      name,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+	}
+
+	if deletedAtValue.Valid && deletedAtValue.String != "" {
+		deletedAt, err := parseSQLiteTime(deletedAtValue.String)
+		if err != nil {
+			return nil, fmt.Errorf("parse role deletion time: %w", err)
+		}
+
 		role.DeletedAt = &deletedAt
 	}
 

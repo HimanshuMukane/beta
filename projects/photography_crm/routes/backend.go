@@ -3,19 +3,25 @@ package routes
 import (
 	"net/http"
 
+	"chi-mysql-server/handlers"
 	"chi-mysql-server/utils"
 )
 
-func RegisterBackendRoutes(mux *http.ServeMux, pool *utils.DBPool) {
+func RegisterBackendRoutes(
+	mux *http.ServeMux,
+	pool *utils.DBPool,
+	cfg utils.Config,
+) {
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		db := utils.DBFromContext(r.Context(), pool.Primary)
 		if db == nil {
-			utils.WriteJSON(w, http.StatusOK, map[string]string{
-				"status": "ok",
+			utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"status": "unavailable",
 				"db":     "disconnected",
 			})
 			return
 		}
+
 		if err := db.PingContext(r.Context()); err != nil {
 			http.Error(w, "Database unavailable", http.StatusServiceUnavailable)
 			return
@@ -32,4 +38,6 @@ func RegisterBackendRoutes(mux *http.ServeMux, pool *utils.DBPool) {
 			"target": dbName,
 		})
 	})
+
+	mux.HandleFunc("POST /api/auth/login", handlers.LoginAPIHandler(cfg))
 }

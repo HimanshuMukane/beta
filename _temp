@@ -1,0 +1,241 @@
+Since your Photography CRM is still in development, **I recommend continuing with SQLite and focusing on completing a secure, end-to-end authentication flow before building more CRM features.**
+
+You don't need to optimize for hundreds of clients yet. We should build a solid foundation, verify it works, and then move on to the actual photography studio workflows.
+
+# Photography CRM — Development Roadmap
+
+## Where we are now
+
+Based on the work we've completed:
+
+| Component | Status |
+|---|---|
+| Go project structure | ✅ Established |
+| SQLite connection pool | ✅ Implemented |
+| WAL mode and foreign keys | ✅ Configured |
+| User and role schemas | ✅ Implemented |
+| User and role repositories | ✅ Implemented and tested |
+| Argon2id password hashing | ✅ Implemented and tested |
+| Signed session tokens | ✅ Implemented and tested |
+| Authentication service | ✅ Implemented and tested |
+| Environment configuration | ✅ Simplified and validated |
+| Login API | 🟡 Initial implementation |
+| Authenticated-route middleware | ⬜ Not implemented |
+| Logout API | ⬜ Not implemented |
+| Sign-in form integration | ⬜ Not implemented |
+| User registration | ⬜ Not implemented |
+
+The login endpoint currently creates a signed session cookie, but we haven't yet verified the complete browser login flow or protected routes.
+
+---
+
+# Goal 1 — Complete authentication
+
+**This should be our immediate goal.**
+
+We should finish the following features in order.
+
+### 1. Test the login API
+
+Verify:
+
+- Valid credentials return success.
+- Invalid credentials return `401 Unauthorized`.
+- Malformed JSON returns `400 Bad Request`.
+- The session cookie has the expected security attributes.
+- Password hashes and session tokens are never included in the JSON response.
+- Database errors don't expose internal details.
+
+We'll use a temporary SQLite database for automated tests.
+
+### 2. Implement session authentication middleware
+
+Create middleware that:
+
+1. Reads the session cookie.
+2. Verifies its signature and expiration.
+3. Extracts the user ID.
+4. Rejects missing or invalid sessions.
+5. Adds the authenticated user's identity to the request context.
+
+We'll follow your existing middleware convention:
+
+```go
+package routes
+
+import "net/http"
+
+type Middleware func(http.Handler) http.Handler
+
+func Chain(h http.Handler, middlewares ...Middleware) http.Handler {
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		h = middlewares[i](h)
+	}
+	return h
+}
+```
+
+We'll also ensure that protected requests cannot access the database merely by supplying a user ID in a header or request body.
+
+### 3. Implement logout
+
+Add:
+
+```http
+POST /api/auth/logout
+```
+
+It will expire the session cookie using the same cookie name and path used during login.
+
+Because your sessions are stateless, logout won't immediately invalidate a previously copied token. The token remains usable until expiration unless we introduce a server-side revocation mechanism. For the current development stage, we can document that limitation and keep the architecture simple.
+
+### 4. Connect the sign-in page
+
+Your existing Templ form submits to:
+
+```html
+<form method="POST" action="/signin">
+```
+
+We'll connect it to the login API without unnecessarily redesigning your UI.
+
+Since you use HTMLX for client-side interactions, we can decide whether to use an HTMLX request or a small JavaScript handler after reviewing the existing frontend setup.
+
+**Goal 1 is complete when you can sign in through the browser, access a protected page, and log out successfully.**
+
+---
+
+# Goal 2 — Build the user and role management foundation
+
+Once authentication works, we'll build the administrative foundation.
+
+Recommended features:
+
+- Create and list users.
+- Assign roles.
+- Update user details.
+- Deactivate users.
+- Enforce role-based permissions.
+- Prevent duplicate email addresses.
+
+Your current schema already supports users and roles, so we can build on it.
+
+For example:
+
+| Role | Example permissions |
+|---|---|
+| Admin | Manage users, settings, clients, and bookings |
+| Photographer | Manage assigned clients, shoots, and galleries |
+| Assistant | Access assigned shoots and relevant client information |
+
+These permissions are proposed examples; we can adjust them to match how you expect photography studios to operate.
+
+---
+
+# Goal 3 — Build the core photography CRM
+
+This is where the application starts delivering its main business value.
+
+I'd implement the features in this order:
+
+
+
+### 1. Client management
+
+Create a client module with:
+
+- Client profiles.
+- Contact information.
+- Notes and communication history.
+- Client search and filtering.
+- Soft deletion and restoration where appropriate.
+
+Suggested table:
+
+`clients`
+
+### 2. Booking and shoot management
+
+Allow the studio to:
+
+- Schedule photography sessions.
+- Assign photographers.
+- Record shoot locations.
+- Track booking status.
+- Manage rescheduling and cancellations.
+
+Suggested table:
+
+`bookings`
+
+We should design the schema around your actual booking workflow rather than trying to anticipate every possible feature.
+
+### 3. Photography galleries and delivery
+
+Support:
+
+- Galleries associated with shoots.
+- Photo metadata.
+- Delivery status.
+- Client access to galleries.
+- Download permissions.
+
+For actual image files, I recommend **filesystem or object storage rather than storing large image blobs directly in SQLite**. SQLite can store the associated metadata and storage keys.
+
+---
+
+# Goal 4 — Make the application reliable
+
+Before onboarding paying clients, we'll strengthen the operational foundation.
+
+| Area | Planned work |
+|---|---|
+| Database | Schema migration strategy and backup/restore testing |
+| Security | CSRF protection, secure cookies, authorization checks |
+| Testing | Repository, service, handler, and middleware tests |
+| Logging | Structured logs without credentials or session tokens |
+| Deployment | Environment-specific configuration and graceful shutdown |
+| Reliability | Error handling, database recovery, and monitoring |
+
+We don't need to build a complicated distributed system. A single Go application with SQLite is a sensible starting point for experimentation and early development.
+
+---
+
+# What about SQLite scaling?
+
+I recommend **keeping SQLite for now**.
+
+You already have:
+
+- A database abstraction through SQLx.
+- Repository boundaries.
+- Separate primary and test database files.
+- WAL mode.
+- Parameterized queries.
+- Useful indexes.
+
+That is sufficient to continue developing the CRM.
+
+The main limitation to remember is that SQLite serializes writes. If the application later requires sustained concurrent writes from multiple application servers, we can reassess the database choice using actual workload measurements.
+
+We shouldn't introduce PostgreSQL, Redis, or other infrastructure simply because the application might need them in the future.
+
+---
+
+## Our next immediate task
+
+Let's finish **Goal 1: Authentication**.
+
+I suggest this exact sequence:
+
+1. Add automated HTTP tests for `POST /api/auth/login`.
+2. Fix any issues those tests reveal.
+3. Implement session authentication middleware.
+4. Protect a test route.
+5. Implement logout.
+6. Connect the Templ sign-in page.
+7. Test the complete flow.
+
+We'll continue one step at a time, running `go build ./...` and `go test ./...` after each meaningful change.
+
+**My recommendation: start with Step 1—automated login API tests—before adding more authentication code.** That gives us confidence in the endpoint you already implemented and prevents us from building further features on unverified behavior.
