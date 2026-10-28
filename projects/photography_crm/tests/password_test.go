@@ -1,15 +1,17 @@
-package security
+package tests
 
 import (
 	"errors"
 	"strings"
 	"testing"
+
+	"chi-mysql-server/security"
 )
 
 func TestHashPasswordAndVerify(t *testing.T) {
 	password := "Example-Password-123"
 
-	hash, err := HashPassword(password)
+	hash, err := security.HashPassword(password)
 	if err != nil {
 		t.Fatalf("HashPassword returned an error: %v", err)
 	}
@@ -18,7 +20,7 @@ func TestHashPasswordAndVerify(t *testing.T) {
 		t.Fatalf("unexpected hash format: %q", hash)
 	}
 
-	matches, err := VerifyPassword(password, hash)
+	matches, err := security.VerifyPassword(password, hash)
 	if err != nil {
 		t.Fatalf("VerifyPassword returned an error: %v", err)
 	}
@@ -27,7 +29,7 @@ func TestHashPasswordAndVerify(t *testing.T) {
 		t.Fatal("correct password was rejected")
 	}
 
-	matches, err = VerifyPassword("Wrong-Password-123", hash)
+	matches, err = security.VerifyPassword("Wrong-Password-123", hash)
 	if err != nil {
 		t.Fatalf("VerifyPassword returned an error: %v", err)
 	}
@@ -40,12 +42,12 @@ func TestHashPasswordAndVerify(t *testing.T) {
 func TestHashPasswordUsesRandomSalt(t *testing.T) {
 	password := "Example-Password-123"
 
-	hash1, err := HashPassword(password)
+	hash1, err := security.HashPassword(password)
 	if err != nil {
 		t.Fatalf("first HashPassword call failed: %v", err)
 	}
 
-	hash2, err := HashPassword(password)
+	hash2, err := security.HashPassword(password)
 	if err != nil {
 		t.Fatalf("second HashPassword call failed: %v", err)
 	}
@@ -56,8 +58,8 @@ func TestHashPasswordUsesRandomSalt(t *testing.T) {
 }
 
 func TestHashPasswordRejectsEmptyPassword(t *testing.T) {
-	_, err := HashPassword("")
-	if !errors.Is(err, ErrEmptyPassword) {
+	_, err := security.HashPassword("")
+	if !errors.Is(err, security.ErrEmptyPassword) {
 		t.Fatalf("expected ErrEmptyPassword, got %v", err)
 	}
 }

@@ -1,8 +1,10 @@
-package security
+package tests
 
 import (
 	"testing"
 	"time"
+
+	"chi-mysql-server/security"
 
 	"github.com/google/uuid"
 )
@@ -11,12 +13,12 @@ func TestSessionTokenRoundTrip(t *testing.T) {
 	secret := []byte("0123456789abcdef0123456789abcdef")
 	userID := uuid.New()
 
-	token, err := CreateSessionToken(userID, secret, time.Hour)
+	token, err := security.CreateSessionToken(userID, secret, time.Hour)
 	if err != nil {
 		t.Fatalf("CreateSessionToken failed: %v", err)
 	}
 
-	session, err := VerifySessionToken(token, secret)
+	session, err := security.VerifySessionToken(token, secret)
 	if err != nil {
 		t.Fatalf("VerifySessionToken failed: %v", err)
 	}
@@ -33,14 +35,14 @@ func TestSessionTokenRoundTrip(t *testing.T) {
 func TestSessionTokenRejectsTampering(t *testing.T) {
 	secret := []byte("0123456789abcdef0123456789abcdef")
 
-	token, err := CreateSessionToken(uuid.New(), secret, time.Hour)
+	token, err := security.CreateSessionToken(uuid.New(), secret, time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	token += "tampered"
 
-	if _, err := VerifySessionToken(token, secret); err == nil {
+	if _, err := security.VerifySessionToken(token, secret); err == nil {
 		t.Fatal("expected tampered token to be rejected")
 	}
 }
@@ -49,12 +51,12 @@ func TestSessionTokenRejectsWrongSecret(t *testing.T) {
 	secret := []byte("0123456789abcdef0123456789abcdef")
 	wrongSecret := []byte("abcdef0123456789abcdef0123456789")
 
-	token, err := CreateSessionToken(uuid.New(), secret, time.Hour)
+	token, err := security.CreateSessionToken(uuid.New(), secret, time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := VerifySessionToken(token, wrongSecret); err == nil {
+	if _, err := security.VerifySessionToken(token, wrongSecret); err == nil {
 		t.Fatal("expected token signed with another secret to be rejected")
 	}
 }
@@ -62,7 +64,7 @@ func TestSessionTokenRejectsWrongSecret(t *testing.T) {
 func TestSessionTokenRejectsMalformedToken(t *testing.T) {
 	secret := []byte("0123456789abcdef0123456789abcdef")
 
-	if _, err := VerifySessionToken("not-a-valid-token", secret); err == nil {
+	if _, err := security.VerifySessionToken("not-a-valid-token", secret); err == nil {
 		t.Fatal("expected malformed token to be rejected")
 	}
 }
@@ -70,15 +72,15 @@ func TestSessionTokenRejectsMalformedToken(t *testing.T) {
 func TestCreateSessionTokenRejectsInvalidInput(t *testing.T) {
 	secret := []byte("0123456789abcdef0123456789abcdef")
 
-	if _, err := CreateSessionToken(uuid.Nil, secret, time.Hour); err == nil {
+	if _, err := security.CreateSessionToken(uuid.Nil, secret, time.Hour); err == nil {
 		t.Fatal("expected nil UUID to be rejected")
 	}
 
-	if _, err := CreateSessionToken(uuid.New(), secret, 0); err == nil {
+	if _, err := security.CreateSessionToken(uuid.New(), secret, 0); err == nil {
 		t.Fatal("expected non-positive TTL to be rejected")
 	}
 
-	if _, err := CreateSessionToken(uuid.New(), []byte("short"), time.Hour); err == nil {
+	if _, err := security.CreateSessionToken(uuid.New(), []byte("short"), time.Hour); err == nil {
 		t.Fatal("expected short secret to be rejected")
 	}
 }

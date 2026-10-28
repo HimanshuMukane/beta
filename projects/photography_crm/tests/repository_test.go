@@ -1,4 +1,4 @@
-package repositories
+package tests
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"chi-mysql-server/models"
+	"chi-mysql-server/repositories"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -56,7 +57,7 @@ func setupTestDB(t *testing.T) *sqlx.DB {
 func TestRoleRepositoryCreateAndRetrieve(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := NewRoleRepository(db)
+	repo := repositories.NewRoleRepository(db)
 
 	role, err := repo.CreateRole(ctx, "admin")
 	if err != nil {
@@ -101,33 +102,33 @@ func TestRoleRepositoryCreateAndRetrieve(t *testing.T) {
 func TestRoleRepositoryDuplicateName(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := NewRoleRepository(db)
+	repo := repositories.NewRoleRepository(db)
 
 	if _, err := repo.CreateRole(ctx, "admin"); err != nil {
 		t.Fatalf("create first role: %v", err)
 	}
 
 	_, err := repo.CreateRole(ctx, "admin")
-	if err != ErrRoleAlreadyExists {
-		t.Errorf("second CreateRole() error = %v, want %v", err, ErrRoleAlreadyExists)
+	if err != repositories.ErrRoleAlreadyExists {
+		t.Errorf("second CreateRole() error = %v, want %v", err, repositories.ErrRoleAlreadyExists)
 	}
 }
 
 func TestRoleRepositoryInvalidAndMissingRecords(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := NewRoleRepository(db)
+	repo := repositories.NewRoleRepository(db)
 
 	if _, err := repo.CreateRole(ctx, "   "); err == nil {
 		t.Error("CreateRole() should reject an empty role name")
 	}
 
-	if _, err := repo.GetRoleByName(ctx, "missing"); err != ErrRoleNotFound {
-		t.Errorf("GetRoleByName() error = %v, want %v", err, ErrRoleNotFound)
+	if _, err := repo.GetRoleByName(ctx, "missing"); err != repositories.ErrRoleNotFound {
+		t.Errorf("GetRoleByName() error = %v, want %v", err, repositories.ErrRoleNotFound)
 	}
 
-	if _, err := repo.GetRoleByID(ctx, uuid.New()); err != ErrRoleNotFound {
-		t.Errorf("GetRoleByID() error = %v, want %v", err, ErrRoleNotFound)
+	if _, err := repo.GetRoleByID(ctx, uuid.New()); err != repositories.ErrRoleNotFound {
+		t.Errorf("GetRoleByID() error = %v, want %v", err, repositories.ErrRoleNotFound)
 	}
 }
 
@@ -135,8 +136,8 @@ func TestUserRepositoryCreateAndRetrieve(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
 
-	roleRepo := NewRoleRepository(db)
-	userRepo := NewUserRepository(db)
+	roleRepo := repositories.NewRoleRepository(db)
+	userRepo := repositories.NewUserRepository(db)
 
 	role, err := roleRepo.CreateRole(ctx, "admin")
 	if err != nil {
@@ -198,8 +199,8 @@ func TestUserRepositoryDuplicateEmail(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
 
-	roleRepo := NewRoleRepository(db)
-	userRepo := NewUserRepository(db)
+	roleRepo := repositories.NewRoleRepository(db)
+	userRepo := repositories.NewUserRepository(db)
 
 	role, err := roleRepo.CreateRole(ctx, "admin")
 	if err != nil {
@@ -227,15 +228,15 @@ func TestUserRepositoryDuplicateEmail(t *testing.T) {
 	}
 
 	err = userRepo.CreateUser(ctx, second)
-	if err != ErrEmailAlreadyExists {
-		t.Errorf("second CreateUser() error = %v, want %v", err, ErrEmailAlreadyExists)
+	if err != repositories.ErrEmailAlreadyExists {
+		t.Errorf("second CreateUser() error = %v, want %v", err, repositories.ErrEmailAlreadyExists)
 	}
 }
 
 func TestUserRepositoryRejectsMissingRole(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := NewUserRepository(db)
+	repo := repositories.NewUserRepository(db)
 
 	user := &models.User{
 		FirstName:    "Test",
@@ -253,7 +254,7 @@ func TestUserRepositoryRejectsMissingRole(t *testing.T) {
 func TestUserRepositoryRejectsInvalidInput(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := NewUserRepository(db)
+	repo := repositories.NewUserRepository(db)
 
 	tests := []struct {
 		name string

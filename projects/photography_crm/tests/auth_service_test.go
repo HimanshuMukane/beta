@@ -1,4 +1,4 @@
-package services
+package tests
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"chi-mysql-server/models"
 	"chi-mysql-server/repositories"
 	"chi-mysql-server/security"
+	"chi-mysql-server/services"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -67,7 +68,7 @@ func readAuthTestSchema(path string) (string, error) {
 	return string(data), nil
 }
 
-func setupAuthService(t *testing.T) (*AuthService, *repositories.UserRepository, *models.User) {
+func setupAuthService(t *testing.T) (*services.AuthService, *repositories.UserRepository, *models.User) {
 	t.Helper()
 
 	ctx := context.Background()
@@ -98,7 +99,7 @@ func setupAuthService(t *testing.T) (*AuthService, *repositories.UserRepository,
 		t.Fatalf("create user: %v", err)
 	}
 
-	service, err := NewAuthService(
+	service, err := services.NewAuthService(
 		userRepo,
 		"test-only-session-secret-0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 		24*time.Hour,
@@ -161,8 +162,8 @@ func TestAuthServiceRejectsIncorrectPassword(t *testing.T) {
 		"WrongPassword123!",
 	)
 
-	if !errors.Is(err, ErrInvalidCredentials) {
-		t.Errorf("Login() error = %v, want %v", err, ErrInvalidCredentials)
+	if !errors.Is(err, services.ErrInvalidCredentials) {
+		t.Errorf("Login() error = %v, want %v", err, services.ErrInvalidCredentials)
 	}
 }
 
@@ -175,8 +176,8 @@ func TestAuthServiceRejectsUnknownEmail(t *testing.T) {
 		"SomePassword123!",
 	)
 
-	if !errors.Is(err, ErrInvalidCredentials) {
-		t.Errorf("Login() error = %v, want %v", err, ErrInvalidCredentials)
+	if !errors.Is(err, services.ErrInvalidCredentials) {
+		t.Errorf("Login() error = %v, want %v", err, services.ErrInvalidCredentials)
 	}
 }
 
@@ -201,8 +202,8 @@ func TestAuthServiceRejectsEmptyCredentials(t *testing.T) {
 				tt.password,
 			)
 
-			if !errors.Is(err, ErrInvalidCredentials) {
-				t.Errorf("Login() error = %v, want %v", err, ErrInvalidCredentials)
+			if !errors.Is(err, services.ErrInvalidCredentials) {
+				t.Errorf("Login() error = %v, want %v", err, services.ErrInvalidCredentials)
 			}
 		})
 	}
@@ -248,9 +249,9 @@ func TestAuthServiceRejectsInvalidConfiguration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewAuthService(tt.repo, tt.secret, tt.ttl)
-			if !errors.Is(err, ErrInvalidAuthConfig) {
-				t.Errorf("NewAuthService() error = %v, want %v", err, ErrInvalidAuthConfig)
+			_, err := services.NewAuthService(tt.repo, tt.secret, tt.ttl)
+			if !errors.Is(err, services.ErrInvalidAuthConfig) {
+				t.Errorf("services.NewAuthService() error = %v, want %v", err, services.ErrInvalidAuthConfig)
 			}
 		})
 	}
