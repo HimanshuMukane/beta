@@ -36,13 +36,13 @@ func AuthLayout(title string) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/layouts/auth_layout.templ`, Line: 9, Col: 17}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/auth_layout.templ`, Line: 9, Col: 17}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"/static/css/globals.css\"><link rel=\"stylesheet\" href=\"/static/css/style.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body><div class=\"auth-container\"><!-- Left side image panel (blank for now, hidden on mobile/responsive) --><div class=\"auth-image-panel\"><!-- Blank placeholder for future photography artwork/banner --></div><!-- Right side form panel --><div class=\"auth-form-panel\"><div class=\"auth-form-box\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"/static/css/globals.css\"><link rel=\"stylesheet\" href=\"/static/css/style.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"><script src=\"/static/js/auth.js\"></script></head><body><div class=\"auth-container\"><!-- Left side image panel (blank for now, hidden on mobile/responsive) --><div class=\"auth-image-panel\"><!-- Blank placeholder for future photography artwork/banner --></div><!-- Right side form panel --><div class=\"auth-form-panel\"><div class=\"auth-form-box\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

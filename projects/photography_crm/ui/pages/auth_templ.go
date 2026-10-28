@@ -46,7 +46,7 @@ func SignIn() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"auth-header\"><h1 class=\"auth-title\">Welcome back</h1><p class=\"auth-subtitle\">Sign in to your photography studio account</p></div><form class=\"auth-form\" method=\"POST\" action=\"/signin\"><div class=\"form-group\"><label class=\"form-label\" for=\"email\">Email</label> <input class=\"form-input\" id=\"email\" name=\"email\" type=\"email\" placeholder=\"photographer@studio.com\" required></div><div class=\"form-group\"><div style=\"display: flex; justify-content: space-between; align-items: center;\"><label class=\"form-label\" for=\"password\">Password</label> <a href=\"/forgot-password\" class=\"auth-link\" style=\"font-size: 11px;\">Forgot password?</a></div><input class=\"form-input\" id=\"password\" name=\"password\" type=\"password\" placeholder=\"••••••••\" required></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"auth-header\"><h1 class=\"auth-title\">Welcome back</h1><p class=\"auth-subtitle\">Sign in to your photography studio account</p></div><form class=\"auth-form\" id=\"signin-form\" method=\"POST\" action=\"/signin\"><div id=\"auth-error\" style=\"display: none; color: #ff6b6b; font-size: 13px; margin-bottom: 12px; padding: 8px 12px; background: rgba(255, 107, 107, 0.1); border-radius: 6px; border: 1px solid rgba(255, 107, 107, 0.2);\"></div><div class=\"form-group\"><label class=\"form-label\" for=\"email\">Email</label> <input class=\"form-input\" id=\"email\" name=\"email\" type=\"email\" placeholder=\"photographer@studio.com\" required></div><div class=\"form-group\"><div style=\"display: flex; justify-content: space-between; align-items: center;\"><label class=\"form-label\" for=\"password\">Password</label> <a href=\"/forgot-password\" class=\"auth-link\" style=\"font-size: 11px;\">Forgot password?</a></div><input class=\"form-input\" id=\"password\" name=\"password\" type=\"password\" placeholder=\"••••••••\" required></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -54,7 +54,7 @@ func SignIn() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</form><div class=\"auth-footer\">Don't have an account? <a href=\"/signup\" class=\"auth-link\">Create an account</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</form><script>\n\t\t\tdocument.getElementById('signin-form').addEventListener('submit', async function(e) {\n\t\t\t\te.preventDefault();\n\t\t\t\tconst errorDiv = document.getElementById('auth-error');\n\t\t\t\terrorDiv.style.display = 'none';\n\t\t\t\tconst email = document.getElementById('email').value.trim();\n\t\t\t\tconst password = document.getElementById('password').value;\n\n\t\t\t\ttry {\n\t\t\t\t\tawait window.CRMAuth.login(email, password);\n\t\t\t\t\twindow.location.href = '/';\n\t\t\t\t} catch (err) {\n\t\t\t\t\terrorDiv.textContent = err.message || 'Login failed';\n\t\t\t\t\terrorDiv.style.display = 'block';\n\t\t\t\t}\n\t\t\t});\n\t\t</script> <div class=\"auth-footer\">Don't have an account? <a href=\"/signup\" class=\"auth-link\">Create an account</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

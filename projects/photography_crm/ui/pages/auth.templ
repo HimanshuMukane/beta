@@ -12,7 +12,8 @@ templ SignIn() {
 			<p class="auth-subtitle">Sign in to your photography studio account</p>
 		</div>
 
-		<form class="auth-form" method="POST" action="/signin">
+		<form class="auth-form" id="signin-form" method="POST" action="/signin">
+			<div id="auth-error" style="display: none; color: #ff6b6b; font-size: 13px; margin-bottom: 12px; padding: 8px 12px; background: rgba(255, 107, 107, 0.1); border-radius: 6px; border: 1px solid rgba(255, 107, 107, 0.2);"></div>
 			<div class="form-group">
 				<label class="form-label" for="email">Email</label>
 				<input class="form-input" id="email" name="email" type="email" placeholder="photographer@studio.com" required/>
@@ -28,6 +29,24 @@ templ SignIn() {
 
 			@components.Button("Sign In", "c-btn-primary")
 		</form>
+
+		<script>
+			document.getElementById('signin-form').addEventListener('submit', async function(e) {
+				e.preventDefault();
+				const errorDiv = document.getElementById('auth-error');
+				errorDiv.style.display = 'none';
+				const email = document.getElementById('email').value.trim();
+				const password = document.getElementById('password').value;
+
+				try {
+					await window.CRMAuth.login(email, password);
+					window.location.href = '/';
+				} catch (err) {
+					errorDiv.textContent = err.message || 'Login failed';
+					errorDiv.style.display = 'block';
+				}
+			});
+		</script>
 
 		<div class="auth-footer">
 			Don't have an account? <a href="/signup" class="auth-link">Create an account</a>

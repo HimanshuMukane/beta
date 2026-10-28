@@ -6,10 +6,9 @@ import (
 	"net/http"
 )
 
-//go:embed css/*
+//go:embed css/* js/*
 var staticFS embed.FS
 
-// FS returns an http.FileSystem for serving static assets embedded in the binary.
 func FS() http.FileSystem {
 	sub, err := fs.Sub(staticFS, ".")
 	if err != nil {
