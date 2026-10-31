@@ -1,0 +1,21 @@
+info:
+  name: Dev_Roles
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5500/api/dev/roles
+  body:
+    type: json
+    data: |-
+      {
+        "name" : "admin"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

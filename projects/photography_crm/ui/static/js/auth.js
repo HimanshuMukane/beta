@@ -45,6 +45,33 @@
       return data;
     },
 
+    async signup(firstName, lastName, email, password) {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          password: password,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create account');
+      }
+
+      if (data.user) {
+        this.setUser(data.user);
+      }
+
+      return data;
+    },
+
     async logout() {
       try {
         await fetch('/api/auth/logout', { method: 'POST' });

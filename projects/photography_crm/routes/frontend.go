@@ -5,12 +5,16 @@ import (
 
 	"chi-mysql-server/handlers"
 	"chi-mysql-server/ui/static"
+	"chi-mysql-server/utils"
 )
 
-func RegisterFrontendRoutes(mux *http.ServeMux) {
+func RegisterFrontendRoutes(mux *http.ServeMux, cfg utils.Config) {
 	fileServer(mux, "/static/", static.FS())
 
-	mux.HandleFunc("GET /{$}", handlers.HomeHandler)
+	mux.Handle("GET /{$}", Chain(
+		http.HandlerFunc(handlers.HomeHandler),
+		RequireAuthPage(cfg),
+	))
 	mux.HandleFunc("GET /signin", handlers.SignInHandler)
 	mux.HandleFunc("GET /signup", handlers.SignUpHandler)
 	mux.HandleFunc("GET /forgot-password", handlers.ForgotPasswordHandler)

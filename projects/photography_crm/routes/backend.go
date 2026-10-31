@@ -40,4 +40,15 @@ func RegisterBackendRoutes(
 	})
 
 	mux.HandleFunc("POST /api/auth/login", handlers.LoginAPIHandler(cfg))
+	mux.HandleFunc("POST /api/auth/signup", handlers.SignupAPIHandler(cfg))
+	mux.HandleFunc("POST /api/auth/logout", handlers.LogoutAPIHandler(cfg))
+
+	mux.Handle("GET /api/auth/me", Chain(
+		handlers.MeAPIHandler(),
+		RequireAuth(cfg),
+	))
+
+	// Development only routes
+	mux.HandleFunc("POST /api/dev/roles", handlers.DevCreateRoleHandler(cfg))
+	mux.HandleFunc("POST /api/dev/users", handlers.DevCreateUserHandler(cfg))
 }

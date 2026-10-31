@@ -9,7 +9,7 @@ import (
 func SetupRouter(pool *utils.DBPool, cfg utils.Config) http.Handler {
 	mux := http.NewServeMux()
 
-	RegisterFrontendRoutes(mux)
+	RegisterFrontendRoutes(mux, cfg)
 	RegisterBackendRoutes(mux, pool, cfg)
 
 	return Chain(mux, DatabaseRoutingMiddleware(pool, cfg))
