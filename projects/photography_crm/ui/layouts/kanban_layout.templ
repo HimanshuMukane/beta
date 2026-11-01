@@ -1,0 +1,74 @@
+package layouts
+
+import (
+	"components"
+)
+
+type KanbanColumn struct {
+	ID           string
+	Title        string
+	Badge        string
+	Color        string
+	HeaderAction templ.Component
+}
+
+templ KanbanLayout(group string, postUrl string) {
+	<div
+		class="crm-kanban-board"
+		if group != "" {
+			data-kanban-group={ group }
+		} else {
+			data-kanban-group="kanban"
+		}
+		if postUrl != "" {
+			data-kanban-url={ postUrl }
+		}
+	>
+		{ children... }
+	</div>
+}
+
+templ KanbanColumnWrapper(col KanbanColumn) {
+	<div class="crm-kanban-column" id={ "kanban-col-" + col.ID }>
+		<div class="crm-kanban-column-header">
+			<div class="crm-kanban-column-title-group">
+				if col.Color != "" {
+					<span class="crm-kanban-column-dot" style={ "background-color: " + col.Color }></span>
+				}
+				<h3 class="crm-kanban-column-title">{ col.Title }</h3>
+				if col.Badge != "" {
+					<span class="crm-kanban-column-count">{ col.Badge }</span>
+				}
+			</div>
+			if col.HeaderAction != nil {
+				<div class="crm-kanban-column-actions">
+					@col.HeaderAction
+				</div>
+			} else {
+				<div class="crm-kanban-column-actions" style="color: var(--text-dim); display: flex; align-items: center; gap: 4px;">
+					@components.IconMoreHorizontal()
+					@components.IconPlus()
+				</div>
+			}
+		</div>
+		<div class="crm-kanban-column-body" id={ "kanban-items-" + col.ID } data-col-id={ col.ID }>
+			{ children... }
+		</div>
+		<div class="crm-kanban-column-footer">
+			<button class="crm-kanban-add-card-btn">
+				@components.IconPlus()
+				<span>Add Task</span>
+			</button>
+		</div>
+	</div>
+}
+
+templ KanbanCard(id string) {
+	<div
+		class="crm-kanban-card"
+		id={ id }
+		data-id={ id }
+	>
+		{ children... }
+	</div>
+}

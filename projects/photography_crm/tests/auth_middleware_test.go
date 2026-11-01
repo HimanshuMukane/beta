@@ -82,7 +82,6 @@ func TestAuthMiddleware_ExpiredToken(t *testing.T) {
 func TestAuthMiddleware_SuccessAndMeEndpoint(t *testing.T) {
 	handler := setupLoginAPITest(t)
 
-	// 1. Perform login
 	loginReq := httptest.NewRequest(
 		http.MethodPost,
 		"/api/auth/login",
@@ -108,7 +107,6 @@ func TestAuthMiddleware_SuccessAndMeEndpoint(t *testing.T) {
 		t.Fatal("expected photography_session cookie from login")
 	}
 
-	// 2. Access /api/auth/me with session cookie
 	meReq := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
 	meReq.AddCookie(sessionCookie)
 	meRec := httptest.NewRecorder()
@@ -177,7 +175,6 @@ func TestRequireRole(t *testing.T) {
 		middleware.RequireRole("admin"),
 	)
 
-	// User without role
 	t.Run("no user context", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/admin", nil)
 		rec := httptest.NewRecorder()
@@ -187,7 +184,6 @@ func TestRequireRole(t *testing.T) {
 		}
 	})
 
-	// User with wrong role
 	t.Run("wrong role", func(t *testing.T) {
 		user := &models.User{
 			ID:       uuid.New(),
@@ -202,7 +198,6 @@ func TestRequireRole(t *testing.T) {
 		}
 	})
 
-	// User with right role
 	t.Run("matching role", func(t *testing.T) {
 		user := &models.User{
 			ID:       uuid.New(),

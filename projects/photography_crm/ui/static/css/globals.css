@@ -1,82 +1,131 @@
 :root {
-  /* Pitch-black background with subtle deep purple/zinc surface colors from reference */
-  --bg-app: #08080a;
-  --bg-surface: #101014;
-  --bg-surface-subtle: #15151b;
-  --bg-surface-hover: #1c1c24;
-  --bg-sidebar: #050507;
-  --bg-sidebar-active: #1a172c; /* Purple tinted active item */
-  --bg-topbar: #08080a;
 
-  --border-color: #1e1e26;
-  --border-subtle: #17171f;
-  --border-row: #141419;
-  --border-focus: #7c5dfa;
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --transition-fast: all 140ms cubic-bezier(0.16, 1, 0.3, 1);
 
-  --text-main: #f3f4f8;
-  --text-muted: #8b8ea0;
-  --text-dim: #545768;
+  --glass-backdrop-filter: blur(24px) saturate(1.4);
+  --glass-webkit-backdrop-filter: blur(24px) saturate(1.4);
 
-  --accent-primary: #7c5dfa;
-  --accent-primary-glow: rgba(124, 93, 250, 0.25);
-  --accent-hover: #6c47f5;
-  --accent-active-text: #a892ff;
+  --bg-app: #09090b;
+  --bg-surface: #121215;
+  --bg-surface-subtle: #17181c;
+  --bg-surface-hover: #1f2026;
+  --bg-sidebar: rgba(10, 10, 13, 0.82);
+  --bg-sidebar-active: #20222a;
+  --bg-topbar: rgba(10, 10, 13, 0.82);
 
-  /* Pill & Status Colors */
-  --status-todo-bg: #22222b;
-  --status-todo-text: #a8acbc;
-  --status-inprogress-bg: #0984e3;
-  --status-inprogress-text: #ffffff;
-  --status-done-bg: #00b894;
-  --status-done-text: #ffffff;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-row: rgba(255, 255, 255, 0.04);
+  --border-focus: #3b82f6;
 
-  /* Tooltip Specifics */
-  --tooltip-bg: #121216;
-  --tooltip-border: #262632;
-  --tooltip-text: #f3f4f8;
-  --tooltip-kbd-bg: #1e1e26;
-  --tooltip-kbd-text: #8e91a2;
+  --text-main: #f4f4f6;
+  --text-muted: #a1a1aa;
+  --text-dim: #636674;
+
+  --accent-primary: #ffffff;
+  --accent-primary-text: #09090b;
+  --accent-primary-glow: rgba(255, 255, 255, 0.12);
+  --accent-hover: #e4e4e7;
+  --accent-active-text: #ffffff;
+  --shadow-btn: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -2px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -6px rgba(255, 255, 255, 0.18);
+  --shadow-btn-subtle: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -2px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -6px rgba(0, 0, 0, 0.3);
+  --shadow-badge: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 12px -3px rgba(255, 255, 255, 0.08);
+
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-bevel: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+
+  --status-todo-bg: rgba(255, 255, 255, 0.06);
+  --status-todo-text: #a1a1aa;
+  --status-inprogress-bg: rgba(59, 130, 246, 0.14);
+  --status-inprogress-text: #60a5fa;
+  --status-testing-bg: rgba(168, 85, 247, 0.14);
+  --status-testing-text: #c084fc;
+  --status-bugs-bg: rgba(239, 68, 68, 0.14);
+  --status-bugs-text: #f87171;
+  --status-final-bg: rgba(245, 158, 11, 0.14);
+  --status-final-text: #fbbf24;
+  --status-done-bg: rgba(16, 185, 129, 0.14);
+  --status-done-text: #34d399;
+
+  --badge-feature-bg: rgba(2, 132, 199, 0.15);
+  --badge-feature-text: #38bdf8;
+
+  --tooltip-bg: #18191c;
+  --tooltip-border: rgba(255, 255, 255, 0.1);
+  --tooltip-text: #f4f4f6;
+  --tooltip-kbd-bg: #222327;
+  --tooltip-kbd-text: #a1a1aa;
 
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-full: 9999px;
 
   --sidebar-expanded-width: 230px;
   --sidebar-collapsed-width: 60px;
   --topbar-height: 44px;
+
+  --scrollbar-track: rgba(255, 255, 255, 0.02);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
 }
 
 [data-theme="light"] {
-  --bg-app: #f6f7fb;
+
+  --bg-app: #f8f9fc;
   --bg-surface: #ffffff;
-  --bg-surface-subtle: #eeeff4;
-  --bg-surface-hover: #e5e7f0;
-  --bg-sidebar: #fbfbfe;
-  --bg-sidebar-active: #ede8ff;
-  --bg-topbar: #ffffff;
+  --bg-surface-subtle: #f0f2f7;
+  --bg-surface-hover: #e7eaf2;
+  --bg-sidebar: rgba(255, 255, 255, 0.88);
+  --bg-sidebar-active: #e4e7ee;
+  --bg-topbar: rgba(255, 255, 255, 0.88);
 
-  --border-color: #e2e4ed;
-  --border-subtle: #e9ebf2;
-  --border-row: #eceef5;
-  --border-focus: #7c5dfa;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --border-row: rgba(0, 0, 0, 0.04);
+  --border-focus: #3b82f6;
 
-  --text-main: #14161f;
-  --text-muted: #5d6173;
-  --text-dim: #9499ab;
+  --text-main: #09090b;
+  --text-muted: #71717a;
+  --text-dim: #a1a1aa;
 
-  --accent-active-text: #6038eb;
+  --accent-primary: #18181b;
+  --accent-primary-text: #ffffff;
+  --accent-primary-glow: rgba(0, 0, 0, 0.1);
+  --accent-hover: #27272a;
+  --accent-active-text: #18181b;
+  --shadow-btn: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.38), 0 8px 24px -6px rgba(24, 24, 27, 0.35);
+  --shadow-btn-subtle: inset 0 1px 0 rgba(255, 255, 255, 0.8), inset 0 -2px 0 rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.12), 0 8px 24px -6px rgba(0, 0, 0, 0.1);
+  --shadow-badge: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.08), 0 4px 10px -3px rgba(0, 0, 0, 0.05);
 
-  --status-todo-bg: #e6e8ee;
-  --status-todo-text: #4a4f5c;
-  --status-inprogress-bg: #0984e3;
-  --status-inprogress-text: #ffffff;
-  --status-done-bg: #00b894;
-  --status-done-text: #ffffff;
+  --shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.03);
+  --shadow-bevel: inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
 
-  --tooltip-bg: #1a1a22;
-  --tooltip-border: #2d2d38;
+  --status-todo-bg: rgba(0, 0, 0, 0.05);
+  --status-todo-text: #52525b;
+  --status-inprogress-bg: rgba(59, 130, 246, 0.12);
+  --status-inprogress-text: #2563eb;
+  --status-testing-bg: rgba(168, 85, 247, 0.12);
+  --status-testing-text: #9333ea;
+  --status-bugs-bg: rgba(239, 68, 68, 0.12);
+  --status-bugs-text: #dc2626;
+  --status-final-bg: rgba(245, 158, 11, 0.12);
+  --status-final-text: #d97706;
+  --status-done-bg: rgba(16, 185, 129, 0.12);
+  --status-done-text: #059669;
+
+  --badge-feature-bg: rgba(2, 132, 199, 0.12);
+  --badge-feature-text: #0284c7;
+
+  --tooltip-bg: #1c1d27;
+  --tooltip-border: #2e303e;
   --tooltip-text: #ffffff;
-  --tooltip-kbd-bg: #292936;
+  --tooltip-kbd-bg: #2d2f40;
   --tooltip-kbd-text: #a8acbc;
+
+  --scrollbar-track: rgba(0, 0, 0, 0.03);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.18);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.32);
 }

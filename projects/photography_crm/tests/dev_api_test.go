@@ -65,7 +65,6 @@ func setupDevAPITest(t *testing.T, appEnv string) (http.Handler, *utils.DBPool) 
 func TestDevCreateRoleAndUserSuccess(t *testing.T) {
 	handler, _ := setupDevAPITest(t, "development")
 
-	// 1. Create Role
 	rolePayload := map[string]string{"name": "photographer"}
 	body, _ := json.Marshal(rolePayload)
 	req := httptest.NewRequest(http.MethodPost, "/api/dev/roles", bytes.NewReader(body))
@@ -92,7 +91,6 @@ func TestDevCreateRoleAndUserSuccess(t *testing.T) {
 		t.Fatalf("unexpected role response data: %+v", roleResp)
 	}
 
-	// 2. Create User using role_name
 	userPayload := map[string]string{
 		"first_name": "John",
 		"last_name":  "Doe",
@@ -131,7 +129,6 @@ func TestDevCreateRoleAndUserSuccess(t *testing.T) {
 		t.Fatalf("expected role_id %s, got %s", roleResp.Role.ID, userResp.User.RoleID)
 	}
 
-	// 3. Create User using role_id
 	userPayload2 := map[string]string{
 		"first_name": "Jane",
 		"last_name":  "Smith",
@@ -149,7 +146,6 @@ func TestDevCreateRoleAndUserSuccess(t *testing.T) {
 		t.Fatalf("expected status 201, got %d: %s", w.Code, w.Body.String())
 	}
 
-	// 4. Duplicate role creation should return 409
 	req = httptest.NewRequest(http.MethodPost, "/api/dev/roles", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w = httptest.NewRecorder()
@@ -162,7 +158,6 @@ func TestDevCreateRoleAndUserSuccess(t *testing.T) {
 		t.Fatalf("expected status 409 for duplicate role, got %d: %s", w.Code, w.Body.String())
 	}
 
-	// 5. Duplicate email creation should return 409
 	req = httptest.NewRequest(http.MethodPost, "/api/dev/users", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w = httptest.NewRecorder()

@@ -1,0 +1,124 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	"components"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ WorkflowSettings() {
+	@layouts.DashboardLayout("Visual Workflows & Pipelines - Settings", "settings", []layouts.BreadcrumbItem{
+		{Label: "Settings", URL: "/settings"},
+		{Label: "Workflow"},
+	}) {
+		@crmComponents.PageHeader("Visual Workflow & Pipeline Stages", "Configure stage ordering, color tags, and automated transitions across leads, projects, and orders.")
+
+		@layouts.SettingsLayout("workflow") {
+			<div style="margin-bottom: 24px;">
+				<h2 style="font-size: 16px; font-weight: 600;">Lead Pipeline Stages (Ordered)</h2>
+				<p style="font-size: 12px; color: var(--text-muted);">Inquiry stages visible on the main Leads Kanban and pipeline filters.</p>
+			</div>
+
+			<div style="display: flex; gap: 10px; align-items: center; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px;">
+				<div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; min-width: 130px;">
+					<div style="font-size: 10px; color: var(--text-dim);">STAGE 1</div>
+					<div style="font-weight: 600; font-size: 13px; margin-top: 2px;">New Inquiry</div>
+					<span class="status-pill pill-blue" style="font-size: 9px; margin-top: 6px;">#0984e3</span>
+				</div>
+				<span style="color: var(--text-dim); display: flex; align-items: center;">
+					@components.IconArrowRight()
+				</span>
+
+				<div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; min-width: 130px;">
+					<div style="font-size: 10px; color: var(--text-dim);">STAGE 2</div>
+					<div style="font-weight: 600; font-size: 13px; margin-top: 2px;">Contacted</div>
+					<span class="status-pill pill-yellow" style="font-size: 9px; margin-top: 6px;">#fdcb6e</span>
+				</div>
+				<span style="color: var(--text-dim); display: flex; align-items: center;">
+					@components.IconArrowRight()
+				</span>
+
+				<div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; min-width: 130px;">
+					<div style="font-size: 10px; color: var(--text-dim);">STAGE 3</div>
+					<div style="font-weight: 600; font-size: 13px; margin-top: 2px;">Qualified</div>
+					<span class="status-pill pill-purple" style="font-size: 9px; margin-top: 6px;">#7c5dfa</span>
+				</div>
+				<span style="color: var(--text-dim); display: flex; align-items: center;">
+					@components.IconArrowRight()
+				</span>
+
+				<div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; min-width: 130px;">
+					<div style="font-size: 10px; color: var(--text-dim);">STAGE 4</div>
+					<div style="font-weight: 600; font-size: 13px; margin-top: 2px;">Negotiation</div>
+					<span class="status-pill pill-yellow" style="font-size: 9px; margin-top: 6px;">#e17055</span>
+				</div>
+				<span style="color: var(--text-dim); display: flex; align-items: center;">
+					@components.IconArrowRight()
+				</span>
+
+				<div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; min-width: 130px;">
+					<div style="font-size: 10px; color: var(--text-dim);">STAGE 5</div>
+					<div style="font-weight: 600; font-size: 13px; margin-top: 2px;">Ready to Book</div>
+					<span class="status-pill pill-green" style="font-size: 9px; margin-top: 6px;">#00b894</span>
+				</div>
+			</div>
+
+			<div style="margin-bottom: 20px;">
+				<h2 style="font-size: 16px; font-weight: 600;">Project Production Workflow</h2>
+				<p style="font-size: 12px; color: var(--text-muted);">Stages for shoot fulfillment and asset delivery.</p>
+			</div>
+
+			<div class="crm-table-container">
+				<table class="crm-table">
+					<thead>
+						<tr>
+							<th>Order</th>
+							<th>Stage Name</th>
+							<th>Stage Color</th>
+							<th>Associated Milestone</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>1</td>
+							<td style="font-weight: 600;">Pre-Production & Moodboard</td>
+							<td><span class="status-pill pill-blue">Blue</span></td>
+							<td>Shot list signed off by client</td>
+							<td>@crmComponents.StatusPill("Active", "green")</td>
+						</tr>
+						<tr>
+							<td>2</td>
+							<td style="font-weight: 600;">Shoot Day Execution</td>
+							<td><span class="status-pill pill-purple">Purple</span></td>
+							<td>On-location capture complete</td>
+							<td>@crmComponents.StatusPill("Active", "green")</td>
+						</tr>
+						<tr>
+							<td>3</td>
+							<td style="font-weight: 600;">Film C-41 / E-6 Lab Development</td>
+							<td><span class="status-pill pill-yellow">Yellow</span></td>
+							<td>Negative scans uploaded to server</td>
+							<td>@crmComponents.StatusPill("Active", "green")</td>
+						</tr>
+						<tr>
+							<td>4</td>
+							<td style="font-weight: 600;">Retouching & Color Grading</td>
+							<td><span class="status-pill pill-blue">Cyan</span></td>
+							<td>Hero selection retouched</td>
+							<td>@crmComponents.StatusPill("Active", "green")</td>
+						</tr>
+						<tr>
+							<td>5</td>
+							<td style="font-weight: 600;">Delivered & Archived</td>
+							<td><span class="status-pill pill-green">Green</span></td>
+							<td>High-Res gallery delivered</td>
+							<td>@crmComponents.StatusPill("Active", "green")</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}
+

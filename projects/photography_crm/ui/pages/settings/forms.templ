@@ -1,0 +1,59 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ FormsSettings() {
+	@layouts.DashboardLayout("Inquiry Form Builder - Settings", "settings", []layouts.BreadcrumbItem{
+		{Label: "Settings", URL: "/settings"},
+		{Label: "Forms"},
+	}) {
+		@crmComponents.PageHeader("Website Inquiry Forms", "Build and embed custom inquiry forms for website and Instagram link-in-bio.")
+
+		@layouts.SettingsLayout("forms") {
+			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+				<div>
+					<h2 style="font-size: 16px; font-weight: 600;">Active Inquiry Forms</h2>
+					<p style="font-size: 12px; color: var(--text-muted);">Inquiries automatically create leads in the CRM pipeline.</p>
+				</div>
+				<button class="c-btn c-btn-primary">+ Create New Form</button>
+			</div>
+
+			<div class="crm-table-container">
+				<table class="crm-table">
+					<thead>
+						<tr>
+							<th>Form Name</th>
+							<th>Fields Configured</th>
+							<th>Target Pipeline Stage</th>
+							<th>Submissions</th>
+							<th>Status</th>
+							<th style="text-align: right;">Embed Code</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td style="font-weight: 600;">Main Wedding Booking Form</td>
+							<td>Name, Email, Phone, Event Date, Venue, Budget, Guest Count</td>
+							<td><span class="status-pill pill-blue">New Lead</span></td>
+							<td style="font-weight: 600;">38</td>
+							<td>@crmComponents.StatusPill("Live", "green")</td>
+							<td style="text-align: right;"><button class="crm-page-btn">&lt;/&gt; Embed</button></td>
+						</tr>
+						<tr>
+							<td style="font-weight: 600;">Editorial & Commercial Shoot Inquiry</td>
+							<td>Company, Contact, Date, Art Direction, License Type</td>
+							<td><span class="status-pill pill-blue">New Lead</span></td>
+							<td style="font-weight: 600;">14</td>
+							<td>@crmComponents.StatusPill("Live", "green")</td>
+							<td style="text-align: right;"><button class="crm-page-btn">&lt;/&gt; Embed</button></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}
+

@@ -1,0 +1,371 @@
+package calendar
+
+import (
+	"chi-mysql-server/ui/layouts"
+	"components"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+type CalendarFilterOption struct {
+	ID      string
+	Label   string
+	Color   string
+	Count   int
+	Checked bool
+}
+
+type UpcomingMeetingItem struct {
+	Title    string
+	Time     string
+	MeetType string
+	Client   string
+	IsBusy   bool
+}
+
+templ CalendarLayout(initialView string, filters []CalendarFilterOption, upcoming []UpcomingMeetingItem) {
+	@layouts.DashboardLayout("Calendar & Schedule - Aperture CRM", "calendar", []layouts.BreadcrumbItem{
+		{Label: "Calendar"},
+	}) {
+		<link rel="stylesheet" href="/static/css/pages/calendar.css"/>
+		<script src="/static/js/fullcalendar.min.js"></script>
+
+		@crmComponents.PageHeader("Studio Calendar & Booking", "Manage studio sessions, Google Meet appointments, client calls, and busy availability blocks.") {
+			<div style="display: flex; gap: 8px;">
+				<button class="c-btn c-btn-secondary" onclick="openBookingModal('busy')">
+					<span>🚫 Mark Busy Time</span>
+				</button>
+				<button class="c-btn c-btn-primary" onclick="openBookingModal('meet')">
+					<span>+ Book Meeting / Event</span>
+				</button>
+			</div>
+		}
+
+		<div class="calendar-page-layout">
+
+			<div class="calendar-header-bar">
+				<div class="calendar-header-left">
+					<button class="crm-page-btn" id="fc-prev-btn" title="Previous">‹</button>
+					<span class="calendar-nav-title" id="fc-title-label">Loading...</span>
+					<button class="crm-page-btn" id="fc-next-btn" title="Next">›</button>
+					<button class="crm-page-btn" id="fc-today-btn">Today</button>
+				</div>
+
+				<div class="calendar-header-center">
+					<div class="calendar-legend-bar">
+						<span class="calendar-legend-item">
+							<span class="calendar-legend-dot dot-meeting"></span> Google Meet / Calls
+						</span>
+						<span class="calendar-legend-item">
+							<span class="calendar-legend-dot dot-session"></span> Shoot Session
+						</span>
+						<span class="calendar-legend-item">
+							<span class="calendar-legend-dot dot-busy"></span> Busy / Unavailable
+						</span>
+					</div>
+				</div>
+
+				<div class="calendar-header-right">
+					<div class="crm-filter-tabs">
+						<button type="button" class="crm-filter-tab active" id="view-month-btn" onclick="changeCalendarView('dayGridMonth', this)">Month</button>
+						<button type="button" class="crm-filter-tab" id="view-week-btn" onclick="changeCalendarView('timeGridWeek', this)">Week</button>
+						<button type="button" class="crm-filter-tab" id="view-day-btn" onclick="changeCalendarView('timeGridDay', this)">Day</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="calendar-workspace">
+
+				<aside class="calendar-sidebar-panel">
+					<div class="calendar-sidebar-title">Calendars & Filters</div>
+					<div style="display: flex; flex-direction: column; gap: 4px;">
+						for _, f := range filters {
+							<label class="calendar-filter-item">
+								<div class="calendar-filter-label">
+									<input type="checkbox" class="calendar-filter-checkbox" checked?={ f.Checked } data-filter={ f.ID } onchange="filterCalendarEvents()"/>
+									<span style={ "width: 8px; height: 8px; border-radius: 50%; background: " + f.Color + ";" }></span>
+									<span>{ f.Label }</span>
+								</div>
+								if f.Count > 0 {
+									@components.Badge(components.BadgeProps{Variant: "secondary"}) {
+										{ string(rune('0' + f.Count)) }
+									}
+								}
+							</label>
+						}
+					</div>
+
+					<hr style="border: 0; border-top: 1px solid var(--border-color); margin: 6px 0;"/>
+
+					<div class="calendar-sidebar-title">Upcoming Schedule</div>
+					<div style="display: flex; flex-direction: column; gap: 6px;" id="upcoming-schedule-list">
+						for _, item := range upcoming {
+							<div class="calendar-upcoming-item" style={ templ.SafeCSSProperty("border-left-color: " + getUpcomingBorderColor(item.IsBusy)) }>
+								<div class="calendar-upcoming-title">{ item.Title }</div>
+								<div class="calendar-upcoming-time">🕒 { item.Time } • { item.Client }</div>
+							</div>
+						}
+					</div>
+				</aside>
+
+				<main class="calendar-view-container">
+					<div id="fullcalendar-target"></div>
+				</main>
+			</div>
+		</div>
+
+		<div class="calendar-modal-backdrop" id="booking-modal">
+			<div class="calendar-booking-dialog">
+				<div class="calendar-modal-header">
+					<h3 id="booking-modal-title">Book Meeting / Session</h3>
+					<button type="button" class="crm-page-btn" onclick="closeBookingModal()">✕</button>
+				</div>
+				<div class="calendar-modal-body">
+					<div class="calendar-form-row">
+						<label for="event-title">Title / Purpose</label>
+						<input type="text" id="event-title" class="calendar-form-input" placeholder="e.g. Discovery Call, Engagement Shoot..."/>
+					</div>
+					<div class="calendar-form-row">
+						<label for="event-type">Category</label>
+						<select id="event-type" class="calendar-form-select">
+							<option value="meet">📹 Google Meet / Consultation</option>
+							<option value="session">📷 Photography Session</option>
+							<option value="busy">🚫 Busy / Blocked Slot</option>
+						</select>
+					</div>
+					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+						<div class="calendar-form-row">
+							<label for="event-date">Date</label>
+							<input type="date" id="event-date" class="calendar-form-input"/>
+						</div>
+						<div class="calendar-form-row">
+							<label for="event-time">Start Time</label>
+							<input type="time" id="event-time" class="calendar-form-input" value="10:00"/>
+						</div>
+					</div>
+					<div class="calendar-form-row">
+						<label for="event-duration">Duration</label>
+						<select id="event-duration" class="calendar-form-select">
+							<option value="30">30 minutes</option>
+							<option value="45">45 minutes</option>
+							<option value="60" selected>1 hour</option>
+							<option value="120">2 hours</option>
+							<option value="240">Half day (4h)</option>
+						</select>
+					</div>
+					<div class="calendar-form-row">
+						<label for="event-meet-link">Google Meet Link (Auto-generated or custom)</label>
+						<input type="text" id="event-meet-link" class="calendar-form-input" placeholder="https://meet.google.com/xxx-xxxx-xxx"/>
+					</div>
+				</div>
+				<div class="calendar-modal-footer">
+					<button type="button" class="c-btn c-btn-secondary" onclick="closeBookingModal()">Cancel</button>
+					<button type="button" class="c-btn c-btn-primary" onclick="submitBookingEvent()">Save & Sync</button>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			let calendar = null;
+
+			const sampleEvents = [
+				{
+					id: "1",
+					title: "📹 Consultation - Emma Vance",
+					start: getOffsetDateTime(0, 10, 0),
+					end: getOffsetDateTime(0, 10, 45),
+					className: "fc-event-meet",
+					extendedProps: { category: "meet", meetUrl: "https://meet.google.com/abc-defg-hij" }
+				},
+				{
+					id: "2",
+					title: "📷 Thornton Wedding Shoot",
+					start: getOffsetDateTime(2, 14, 0),
+					end: getOffsetDateTime(2, 18, 0),
+					className: "fc-event-session",
+					extendedProps: { category: "session" }
+				},
+				{
+					id: "3",
+					title: "🚫 Busy / Out of Studio",
+					start: getOffsetDateTime(1, 13, 0),
+					end: getOffsetDateTime(1, 15, 30),
+					className: "fc-event-busy",
+					extendedProps: { category: "busy" }
+				},
+				{
+					id: "4",
+					title: "📹 Portfolio Review - Liam Rossi",
+					start: getOffsetDateTime(3, 11, 0),
+					end: getOffsetDateTime(3, 11, 30),
+					className: "fc-event-meet",
+					extendedProps: { category: "meet", meetUrl: "https://meet.google.com/xyz-uvwx-rst" }
+				},
+				{
+					id: "5",
+					title: "🚫 Studio Maintenance (Busy)",
+					start: getOffsetDateTime(4, 9, 0),
+					end: getOffsetDateTime(4, 12, 0),
+					className: "fc-event-busy",
+					extendedProps: { category: "busy" }
+				}
+			];
+
+			function getOffsetDateTime(dayOffset, hour, minute) {
+				const d = new Date();
+				d.setDate(d.getDate() + dayOffset);
+				d.setHours(hour, minute, 0, 0);
+				return d.toISOString();
+			}
+
+			function initCalendar() {
+				const calendarEl = document.getElementById("fullcalendar-target");
+				if (!calendarEl || typeof FullCalendar === "undefined") return;
+
+				const initial = "{ initialView }";
+				const viewMap = {
+					"week": "timeGridWeek",
+					"day": "timeGridDay",
+					"month": "dayGridMonth"
+				};
+				const defaultView = viewMap[initial] || "dayGridMonth";
+
+				calendar = new FullCalendar.Calendar(calendarEl, {
+					initialView: defaultView,
+					headerToolbar: false,
+					height: "auto",
+					expandRows: true,
+					slotMinTime: "08:00:00",
+					slotMaxTime: "20:00:00",
+					allDaySlot: false,
+					navLinks: true,
+					selectable: true,
+					selectMirror: true,
+					nowIndicator: true,
+					businessHours: {
+						daysOfWeek: [ 1, 2, 3, 4, 5 ],
+						startTime: "09:00",
+						endTime: "18:00",
+					},
+					events: sampleEvents,
+					select: function(info) {
+						openBookingModal("meet", info.startStr.split("T")[0]);
+					},
+					eventClick: function(info) {
+						if (info.event.extendedProps.meetUrl) {
+							window.open(info.event.extendedProps.meetUrl, "_blank");
+						} else {
+							alert(info.event.title + "\nStarts: " + info.event.start.toLocaleTimeString([], {hour: "2-digit", minute:"2-digit"}));
+						}
+					},
+					datesSet: function(info) {
+						const titleLabel = document.getElementById("fc-title-label");
+						if (titleLabel) {
+							titleLabel.textContent = info.view.title;
+						}
+					}
+				});
+
+				calendar.render();
+
+				document.getElementById("fc-prev-btn")?.addEventListener("click", () => calendar.prev());
+				document.getElementById("fc-next-btn")?.addEventListener("click", () => calendar.next());
+				document.getElementById("fc-today-btn")?.addEventListener("click", () => calendar.today());
+			}
+
+			function changeCalendarView(viewName, targetBtn) {
+				if (calendar) {
+					calendar.changeView(viewName);
+					document.querySelectorAll(".crm-filter-tabs .crm-filter-tab").forEach(tab => tab.classList.remove("active"));
+					if (targetBtn) targetBtn.classList.add("active");
+				}
+			}
+
+			function openBookingModal(type, dateStr) {
+				const modal = document.getElementById("booking-modal");
+				const typeSelect = document.getElementById("event-type");
+				const dateInput = document.getElementById("event-date");
+				const titleInput = document.getElementById("event-title");
+				const modalTitle = document.getElementById("booking-modal-title");
+
+				if (modal) modal.classList.add("is-open");
+				if (typeSelect && type) typeSelect.value = type;
+				if (dateInput) {
+					dateInput.value = dateStr || new Date().toISOString().split("T")[0];
+				}
+				if (modalTitle) {
+					modalTitle.textContent = type === "busy" ? "Mark Busy / Blocked Time" : "Book Meeting / Session";
+				}
+				if (titleInput) {
+					titleInput.value = type === "busy" ? "🚫 Blocked Slot" : "";
+					titleInput.focus();
+				}
+			}
+
+			function closeBookingModal() {
+				const modal = document.getElementById("booking-modal");
+				if (modal) modal.classList.remove("is-open");
+			}
+
+			function submitBookingEvent() {
+				const title = document.getElementById("event-title").value.trim();
+				const type = document.getElementById("event-type").value;
+				const date = document.getElementById("event-date").value;
+				const time = document.getElementById("event-time").value;
+				const duration = parseInt(document.getElementById("event-duration").value, 10);
+				const meetUrl = document.getElementById("event-meet-link").value.trim();
+
+				if (!title || !date || !time) {
+					alert("Please provide event title, date, and time.");
+					return;
+				}
+
+				const start = new Date(`${date}T${time}:00`);
+				const end = new Date(start.getTime() + duration * 60000);
+
+				let className = "fc-event-meet";
+				if (type === "busy") className = "fc-event-busy";
+				if (type === "session") className = "fc-event-session";
+
+				if (calendar) {
+					calendar.addEvent({
+						id: String(Date.now()),
+						title: title,
+						start: start.toISOString(),
+						end: end.toISOString(),
+						className: className,
+						extendedProps: { category: type, meetUrl: meetUrl }
+					});
+				}
+
+				closeBookingModal();
+			}
+
+			function filterCalendarEvents() {
+				const checkboxes = document.querySelectorAll(".calendar-filter-checkbox");
+				const enabledCategories = new Set();
+				checkboxes.forEach(cb => {
+					if (cb.checked) enabledCategories.add(cb.getAttribute("data-filter"));
+				});
+
+				if (!calendar) return;
+				calendar.getEvents().forEach(evt => {
+					const cat = evt.extendedProps?.category;
+					if (!cat || enabledCategories.has(cat)) {
+						evt.setProp("display", "auto");
+					} else {
+						evt.setProp("display", "none");
+					}
+				});
+			}
+
+			document.addEventListener("DOMContentLoaded", initCalendar);
+		</script>
+	}
+}
+
+func getUpcomingBorderColor(isBusy bool) string {
+	if isBusy {
+		return "#ff7675"
+	}
+	return "var(--accent-primary)"
+}

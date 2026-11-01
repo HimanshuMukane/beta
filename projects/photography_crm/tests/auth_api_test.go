@@ -274,7 +274,6 @@ func TestLoginAPI_UnsupportedMethod(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, req)
 
-	// The current router registers only POST for this path, so GET returns 404.
 	if recorder.Code != http.StatusNotFound {
 		t.Fatalf("expected 404 for an unregistered method, got %d", recorder.Code)
 	}

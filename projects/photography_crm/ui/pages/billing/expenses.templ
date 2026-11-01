@@ -1,0 +1,129 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ Expenses() {
+	@layouts.DashboardLayout("Expenses - Aperture CRM", "billing_expenses", []layouts.BreadcrumbItem{
+		{Label: "Billing", URL: "/billing"},
+		{Label: "Expenses"},
+	}) {
+		<div class="billing-page-container">
+			@BillingSubnav("expenses")
+
+			<div class="billing-action-bar">
+				<div class="billing-action-bar-left">
+					<button type="button" class="billing-icon-btn" onclick="toggleExpenseFilters()">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="4" y1="6" x2="20" y2="6"></line>
+							<line x1="7" y1="12" x2="17" y2="12"></line>
+							<line x1="10" y1="18" x2="14" y2="18"></line>
+						</svg>
+						<span>Filters</span>
+					</button>
+					<div id="expense-filter-input-wrap" style="display: none;">
+						<input type="text" placeholder="Filter expenses..." class="crm-search-input" onkeyup="filterExpensesTable(this.value)" style="height: 28px; font-size: 11px;"/>
+					</div>
+					<button type="button" class="c-btn c-btn-primary" style="font-size: 11px; padding: 4px 10px;">+ Record Expense</button>
+				</div>
+
+				@ColumnsDropdown()
+			</div>
+
+			<div class="crm-table-container">
+				<table class="crm-table" id="expenses-main-table">
+					<thead>
+						<tr>
+							<th class="col-id">ID</th>
+							<th class="col-date">Payment Date</th>
+							<th class="col-client">Client / Vendor</th>
+							<th class="col-type">Type</th>
+							<th class="col-amount">Payment Amount</th>
+							<th class="col-status">Payment Status</th>
+							<th class="col-download" style="text-align: center;">Download</th>
+							<th class="col-created">Created On</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="col-id" style="font-weight: 700; color: var(--text-main);">EXP-2026-081</td>
+							<td class="col-date" style="color: var(--text-muted);">Oct 26, 2026 11:30 AM</td>
+							<td class="col-client">
+								<div style="display: flex; align-items: center; gap: 8px;">
+									<span class="client-avatar-badge" style="background: #3b0764; color: #e9d5ff;">FL</span>
+									<span style="font-weight: 600; color: var(--text-main);">Film &amp; Lab Co.</span>
+								</div>
+							</td>
+							<td class="col-type" style="color: var(--text-muted);">Film Stock</td>
+							<td class="col-amount" style="font-weight: 600; color: var(--text-main);">₹18,500</td>
+							<td class="col-status">
+								<span class="status-pill" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">Paid</span>
+							</td>
+							<td class="col-download" style="text-align: center;">
+								<button class="crm-page-btn" style="font-size: 11px; padding: 2px 8px;">PDF</button>
+							</td>
+							<td class="col-created" style="color: var(--text-muted); font-size: 11px;">Oct 26, 2026</td>
+						</tr>
+						<tr>
+							<td class="col-id" style="font-weight: 700; color: var(--text-main);">EXP-2026-079</td>
+							<td class="col-date" style="color: var(--text-muted);">Oct 20, 2026 02:00 PM</td>
+							<td class="col-client">
+								<div style="display: flex; align-items: center; gap: 8px;">
+									<span class="client-avatar-badge" style="background: #1e3a5f; color: #93c5fd;">PR</span>
+									<span style="font-weight: 600; color: var(--text-main);">Profoto Rental Hub</span>
+								</div>
+							</td>
+							<td class="col-type" style="color: var(--text-muted);">Gear Rental</td>
+							<td class="col-amount" style="font-weight: 600; color: var(--text-main);">₹28,000</td>
+							<td class="col-status">
+								<span class="status-pill" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">Paid</span>
+							</td>
+							<td class="col-download" style="text-align: center;">
+								<button class="crm-page-btn" style="font-size: 11px; padding: 2px 8px;">PDF</button>
+							</td>
+							<td class="col-created" style="color: var(--text-muted); font-size: 11px;">Oct 20, 2026</td>
+						</tr>
+					</tbody>
+				</table>
+				@crmComponents.Pagination(1, 2, 19)
+			</div>
+		</div>
+
+		<script>
+			function toggleColumnsDropdown(e) {
+				e.stopPropagation();
+				const menu = document.getElementById('edit-columns-popover');
+				if (menu) menu.classList.toggle('is-open');
+			}
+
+			function toggleExpenseFilters() {
+				const wrap = document.getElementById('expense-filter-input-wrap');
+				if (wrap) {
+					wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+					if (wrap.style.display === 'block') wrap.querySelector('input')?.focus();
+				}
+			}
+
+			function filterExpensesTable(val) {
+				const term = val.toLowerCase();
+				const rows = document.querySelectorAll('#expenses-main-table tbody tr');
+				rows.forEach(row => {
+					row.style.display = row.innerText.toLowerCase().includes(term) ? '' : 'none';
+				});
+			}
+
+			function exportDataCSV() {
+				const rows = Array.from(document.querySelectorAll('#expenses-main-table tr'));
+				const csv = rows.map(r => Array.from(r.children).map(c => '"' + c.innerText.replace(/"/g, '""') + '"').join(',')).join('\\n');
+				const blob = new Blob([csv], { type: 'text/csv' });
+				const url = window.URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = 'expenses.csv';
+				a.click();
+			}
+		</script>
+	}
+}

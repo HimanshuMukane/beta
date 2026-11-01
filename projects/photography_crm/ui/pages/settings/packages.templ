@@ -1,0 +1,246 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	"components"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ PackagesSettings() {
+	@layouts.DashboardLayout("Packages - Settings", "settings_packages", []layouts.BreadcrumbItem{
+		{Label: "Settings", URL: "/settings"},
+		{Label: "Packages"},
+	}) {
+		@crmComponents.PageHeader("Packages & Bundles", "Pre-packaged collections of photography coverage, service groups, and deliverables.") {
+			<a href="/settings/packages/create" class="c-btn c-btn-primary">+ New Package</a>
+		}
+
+		<div class="packages-grid">
+
+			<div class="package-card">
+				<div class="package-card-header">
+					<div>
+						<h3 class="package-card-title">Sample Wedding Package</h3>
+						<p class="package-card-desc">Sample Wedding Package</p>
+					</div>
+					<span class="package-card-trend-icon">
+						@components.IconTrendingUp()
+					</span>
+				</div>
+
+				<div class="package-card-footer">
+					<div class="package-card-price">₹60,000</div>
+					<div class="package-card-actions">
+						<a href="/settings/packages/edit?id=1" class="crm-page-btn" style="text-decoration: none; border-radius: var(--radius-full); padding: 5px 14px;">Manage</a>
+						<button class="feedback-icon-btn delete" style="width: 28px; height: 28px;" title="Delete Package" onclick="confirm('Are you sure you want to delete this package?')" aria-label="Delete">
+							@components.IconTrash2()
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="package-card">
+				<div class="package-card-header">
+					<div>
+						<h3 class="package-card-title">Destination Elite 2-Day</h3>
+						<p class="package-card-desc">Complete multi-day wedding celebration</p>
+					</div>
+					<span class="package-card-trend-icon">
+						@components.IconTrendingUp()
+					</span>
+				</div>
+
+				<div class="package-card-footer">
+					<div class="package-card-price">₹1,80,000</div>
+					<div class="package-card-actions">
+						<a href="/settings/packages/edit?id=2" class="crm-page-btn" style="text-decoration: none; border-radius: var(--radius-full); padding: 5px 14px;">Manage</a>
+						<button class="feedback-icon-btn delete" style="width: 28px; height: 28px;" title="Delete Package" onclick="confirm('Are you sure you want to delete this package?')" aria-label="Delete">
+							@components.IconTrash2()
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="package-card">
+				<div class="package-card-header">
+					<div>
+						<h3 class="package-card-title">Studio Editorial & Headshots</h3>
+						<p class="package-card-desc">Personal branding & executive studio portraits</p>
+					</div>
+					<span class="package-card-trend-icon">
+						@components.IconTrendingUp()
+					</span>
+				</div>
+
+				<div class="package-card-footer">
+					<div class="package-card-price">₹25,000</div>
+					<div class="package-card-actions">
+						<a href="/settings/packages/edit?id=3" class="crm-page-btn" style="text-decoration: none; border-radius: var(--radius-full); padding: 5px 14px;">Manage</a>
+						<button class="feedback-icon-btn delete" style="width: 28px; height: 28px;" title="Delete Package" onclick="confirm('Are you sure you want to delete this package?')" aria-label="Delete">
+							@components.IconTrash2()
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ PackageEditor(isEdit bool, id string) {
+	@layouts.DashboardLayout("Package Editor - Settings", "settings_packages", []layouts.BreadcrumbItem{
+		{Label: "Settings", URL: "/settings"},
+		{Label: "Packages", URL: "/settings/packages"},
+		{Label: "Editor"},
+	}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div style="display: flex; align-items: center; gap: 12px;">
+				<a href="/settings/packages" class="crm-page-btn" style="text-decoration: none;">← Back</a>
+				<h1 style="font-size: 18px; font-weight: 700; color: var(--text-main); margin: 0;">
+					if isEdit {
+						Edit Package
+					} else {
+						Create Package
+					}
+				</h1>
+			</div>
+			<div style="display: flex; align-items: center; gap: 10px;">
+				if isEdit {
+					<button class="crm-page-btn" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4); display: inline-flex; align-items: center; gap: 6px;" onclick="if(confirm('Are you sure you want to delete this package?')) { window.location.href='/settings/packages'; }">
+						@components.IconTrash2()
+						<span>Delete Package</span>
+					</button>
+				}
+				<button class="c-btn c-btn-primary" style="background: #00b894; border-color: #00b894;">Save</button>
+			</div>
+		</div>
+
+		<div class="package-editor-shell">
+
+			<div>
+				<label class="session-field-label">Package Name <span class="required-star">*</span></label>
+				<input type="text" class="session-input" value="Sample Wedding Package" placeholder="Enter package name..."/>
+			</div>
+
+			<div>
+				<label class="session-field-label">Package Description</label>
+				<textarea class="session-input" style="height: 70px; resize: none;" placeholder="Enter package description...">Sample Wedding Package</textarea>
+			</div>
+
+			<div>
+				<div style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 10px;">Services</div>
+
+				<div class="package-services-table">
+					<div style="display: grid; grid-template-columns: 2fr 50px 110px 110px 60px; padding: 10px 14px; background: var(--bg-surface-hover); font-weight: 600; font-size: 12px; color: var(--text-muted);">
+						<div>Service Group & Services</div>
+						<div>Qty</div>
+						<div>Service Cost</div>
+						<div>Sub Total</div>
+						<div>Actions</div>
+					</div>
+
+					<div style="display: grid; grid-template-columns: 2fr 50px 110px 110px 60px; padding: 10px 14px; border-top: 1px solid var(--border-row); align-items: center;">
+						<div>
+							<select class="service-row-select" style="max-width: 220px;">
+								<option selected>Evening Reception</option>
+								<option>Wedding Ceremony</option>
+								<option>Pre-Wedding Sunset</option>
+							</select>
+						</div>
+						<div>1</div>
+						<div>INR 30000</div>
+						<div>INR 30000</div>
+						<div>
+							<button class="service-remove-btn">⊖</button>
+						</div>
+					</div>
+
+					<div style="background: var(--bg-surface); padding: 8px 14px; border-top: 1px solid var(--border-row);">
+						<div class="service-item-row">
+							<div>
+								<div style="font-weight: 600; font-size: 12.5px;">Traditional Photography</div>
+								<div style="font-size: 11px; color: var(--text-dim);">₹200</div>
+							</div>
+							<div class="service-qty-controls">
+								<button class="service-qty-btn">+</button>
+								<span style="font-size: 12px; font-weight: 600;">1</span>
+								<button class="service-qty-btn">-</button>
+							</div>
+						</div>
+
+						<div class="service-item-row">
+							<div>
+								<div style="font-weight: 600; font-size: 12.5px;">Traditional Videography</div>
+								<div style="font-size: 11px; color: var(--text-dim);">₹200</div>
+							</div>
+							<div class="service-qty-controls">
+								<button class="service-qty-btn">+</button>
+								<span style="font-size: 12px; font-weight: 600;">1</span>
+								<button class="service-qty-btn">-</button>
+							</div>
+						</div>
+
+						<div class="service-item-row" style="border-bottom: none;">
+							<div>
+								<div style="font-weight: 600; font-size: 12.5px;">Candid Photography</div>
+								<div style="font-size: 11px; color: var(--text-dim);">₹150</div>
+							</div>
+							<div class="service-qty-controls">
+								<button class="service-qty-btn">+</button>
+								<span style="font-size: 12px; font-weight: 600;">1</span>
+								<button class="service-qty-btn">-</button>
+							</div>
+						</div>
+
+						<div style="display: flex; gap: 16px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
+							<button class="crm-page-btn" style="font-size: 11px; color: #00cec9;">+ Add Service</button>
+							<button class="crm-page-btn" style="font-size: 11px;">+ Add Custom</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="service-group-add-box" style="margin-top: 12px;">
+					+ Add Service Group
+				</div>
+			</div>
+
+			<div style="display: flex; justify-content: flex-end; padding: 12px 0;">
+				<div style="font-size: 16px; font-weight: 800; color: var(--text-main);">
+					Total Cost <span style="color: var(--accent-active-text);">₹30,000</span>
+				</div>
+			</div>
+
+			<div>
+				<label class="session-field-label" style="margin-bottom: 2px;">Deliverables</label>
+				<div style="font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Choose Deliverables</div>
+
+				<div class="deliverables-tag-container">
+					<div class="deliverable-tag-pill">
+						<span>Raw Photos</span>
+						<span class="tag-close">
+							@components.IconX()
+						</span>
+					</div>
+					<div class="deliverable-tag-pill">
+						<span>Album</span>
+						<span class="tag-close">
+							@components.IconX()
+						</span>
+					</div>
+					<div class="deliverable-tag-pill">
+						<span>Pen drive</span>
+						<span class="tag-close">
+							@components.IconX()
+						</span>
+					</div>
+					<div class="deliverable-tag-pill">
+						<span>Wedding Teaser</span>
+						<span class="tag-close">
+							@components.IconX()
+						</span>
+					</div>
+					<input type="text" placeholder="Add deliverable..." style="background: transparent; border: none; outline: none; font-size: 12px; color: var(--text-main); min-width: 120px;"/>
+				</div>
+			</div>
+		</div>
+	}
+}

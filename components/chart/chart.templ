@@ -1,0 +1,1686 @@
+package chart
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"sort"
+	"strings"
+
+	"components/utils"
+)
+
+type Config []Series
+
+type Series struct {
+	Key   string
+	Label string
+	Color string
+
+	Theme *SeriesTheme
+
+	Icon templ.Component
+}
+
+type SeriesTheme struct {
+	Light string
+	Dark  string
+}
+
+func (c Config) styleBlock(id string) string {
+	hasColor := false
+	for _, s := range c {
+		if s.Color != "" || s.Theme != nil {
+			hasColor = true
+			break
+		}
+	}
+	if !hasColor {
+		return ""
+	}
+	var sb strings.Builder
+	for _, theme := range []struct{ Name, Prefix string }{{"light", ""}, {"dark", ".dark "}} {
+		fmt.Fprintf(&sb, "%s[data-chart=%s] {\n", theme.Prefix, id)
+		for _, s := range c {
+			color := s.Color
+			if s.Theme != nil {
+				themed := s.Theme.Light
+				if theme.Name == "dark" {
+					themed = s.Theme.Dark
+				}
+				if themed != "" {
+					color = themed
+				}
+			}
+			if color != "" {
+				fmt.Fprintf(&sb, "  --color-%s: %s;\n", s.Key, color)
+			}
+		}
+		sb.WriteString("}\n")
+	}
+	return sb.String()
+}
+
+type ContainerProps struct {
+
+	ID         string
+	Config     Config
+	Class      string
+	Attributes templ.Attributes
+}
+
+type StyleProps struct {
+	ID     string
+	Config Config
+}
+
+templ Style(props ...StyleProps) {
+	{{ var p StyleProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	if block := p.Config.styleBlock(p.ID); block != "" {
+		@templ.Raw("<style>" + block + "</style>")
+	}
+}
+
+templ Container(props ...ContainerProps) {
+	{{ var p ContainerProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	id := p.ID
+	if id == "" {
+		id = utils.RandomID()
+	}
+	chartID := "chart-" + id
+
+	ctx = context.WithValue(ctx, configCtxKey, p.Config)
+	}}
+	<div
+		data-slot="chart"
+		data-chart={ chartID }
+		class={ utils.CN(
+			"cn-chart flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector]:outline-hidden [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-surface]:outline-hidden",
+			p.Class,
+		) }
+		{ p.Attributes... }
+	>
+		if block := p.Config.styleBlock(chartID); block != "" {
+			@templ.Raw("<style>" + block + "</style>")
+		}
+		{ children... }
+	</div>
+}
+
+type Datum map[string]any
+
+type Margin struct {
+	Top, Right, Bottom, Left float64
+}
+
+type CurveType string
+
+const (
+	CurveNatural  CurveType = "natural"
+	CurveMonotone CurveType = "monotone"
+	CurveLinear   CurveType = "linear"
+	CurveStep     CurveType = "step"
+)
+
+type CartesianGridProps struct {
+	Horizontal *bool
+	Vertical   *bool
+}
+
+func Bool(v bool) *bool {
+	return &v
+}
+
+func Float(v float64) *float64 {
+	return &v
+}
+
+func Index(i int) *int {
+	return &i
+}
+
+func boolOr(v *bool, def bool) bool {
+	if v == nil {
+		return def
+	}
+	return *v
+}
+
+type XAxisProps struct {
+	DataKey string
+
+	Type          string
+	Hide          bool
+	TickLine      bool
+	AxisLine      bool
+	TickMargin    float64
+	MinTickGap    float64
+	TickCount     int
+	TickFormatter func(any) string
+
+	Ticks []float64
+
+	Domain []any
+
+	AllowDataOverflow bool
+
+	Reversed bool
+}
+
+type YAxisProps struct {
+	DataKey string
+
+	Type          string
+	Hide          bool
+	TickLine      bool
+	AxisLine      bool
+	TickMargin    float64
+	TickCount     int
+	Width         float64
+	TickFormatter func(any) string
+
+	Ticks []float64
+
+	Domain []any
+
+	AllowDataOverflow bool
+}
+
+type TooltipProps struct {
+
+	Cursor  *bool
+	Content TooltipContentProps
+
+	DefaultIndex *int
+}
+
+type TooltipContentProps struct {
+	Indicator      string
+	LabelKey       string
+	HideLabel      bool
+	HideIndicator  bool
+	NameKey        string
+	Class          string
+	LabelClassName     string
+
+	Color          string
+	LabelFormatter func(any) string
+
+	Formatter func(value any, name string, item Datum, index int) templ.Component
+}
+
+type LinearGradientProps struct {
+	ID             string
+	X1, Y1, X2, Y2 string
+	Stops          string
+}
+
+type AreaProps struct {
+
+	Hide    bool
+	DataKey string
+	Type    CurveType
+
+	Fill        string
+	Stroke      string
+	StackID     string
+	FillOpacity float64
+}
+
+type BarProps struct {
+
+	Hide    bool
+	DataKey string
+	Fill    string
+	StackID string
+
+	Radius      any
+	StrokeWidth float64
+
+	ActiveIndex *int
+	ActiveBar   *RectangleProps
+}
+
+type RectangleProps struct {
+	FillOpacity      float64
+	Stroke           string
+	StrokeDasharray  float64
+	StrokeDashoffset float64
+}
+
+type CellProps struct {
+	Fill string
+}
+
+type LineProps struct {
+
+	Hide        bool
+	DataKey     string
+	Type        CurveType
+	Stroke      string
+	StrokeWidth float64
+
+	StrokeDasharray string
+
+	Dot *DotProps
+
+	ActiveDot *ActiveDotProps
+}
+
+type DotProps struct {
+	R           float64
+	FillOpacity float64
+	Fill        string
+	DataFill    bool
+	Icon        templ.Component
+	Size        float64
+
+	Show func(index int, row Datum) bool
+}
+
+type ActiveDotProps struct {
+	R float64
+}
+
+type LabelListProps struct {
+
+	Position    string
+	Offset      float64
+	FontSize    float64
+	FillOpacity float64
+	Class       string
+	DataKey     string
+	Formatter   func(any) string
+}
+
+type LegendProps struct {
+
+	NameKey string
+	Class   string
+
+	VerticalAlign string
+
+	HideIcon bool
+}
+
+type LineChartProps struct {
+
+	AccessibilityLayer bool
+	Data               []Datum
+	Margin             *Margin
+}
+
+type PieProps struct {
+	Data        []Datum
+	DataKey     string
+	NameKey     string
+	InnerRadius float64
+
+	OuterRadius float64
+	StrokeWidth float64
+
+	Stroke string
+
+	Label     *PieLabelProps
+	LabelLine *bool
+
+	ActiveIndex *int
+	ActiveShape []SectorProps
+}
+
+type PieLabelProps struct {
+
+	Fill string
+}
+
+type SectorProps struct {
+	InnerRadius float64
+	OuterRadius float64
+}
+
+type LabelProps struct {
+	Spans []LabelSpan
+
+	DominantBaseline string
+}
+
+type LabelSpan struct {
+	Text  string
+	Class string
+
+	OffsetY float64
+}
+
+type AreaChartProps struct {
+
+	AccessibilityLayer bool
+	Data               []Datum
+	Margin             *Margin
+
+	StackOffset string
+}
+
+type BarChartProps struct {
+
+	AccessibilityLayer bool
+	Data               []Datum
+
+	Layout string
+	Margin *Margin
+}
+
+type RadarChartProps struct {
+	Data   []Datum
+	Margin *Margin
+}
+
+type PolarGridProps struct {
+
+	GridType string
+
+	RadialLines *bool
+
+	PolarRadius []float64
+
+	Stroke      string
+	StrokeWidth float64
+	Class       string
+}
+
+type PolarAngleAxisProps struct {
+	DataKey string
+
+	Tick func(Datum, int) TickContent
+}
+
+type TickContent struct {
+	Spans      []TickSpan
+	FontSize   float64
+	FontWeight string
+
+	OffsetY float64
+}
+
+type TickSpan struct {
+	Text     string
+	Class    string
+	FontSize float64
+
+	Dy     string
+	ResetX bool
+}
+
+type RadarProps struct {
+	DataKey string
+	Fill    string
+
+	FillOpacity *float64
+	Stroke      string
+	StrokeWidth float64
+	Dot         *DotProps
+}
+
+type RadialBarChartProps struct {
+	Data []Datum
+
+	StartAngle  float64
+	EndAngle    *float64
+	InnerRadius float64
+
+	OuterRadius float64
+	Margin      *Margin
+}
+
+type RadialBarProps struct {
+	DataKey string
+	Fill    string
+
+	Background   bool
+	CornerRadius float64
+	StackID      string
+	Class        string
+}
+
+type PolarRadiusAxisProps struct {
+
+	Tick     *bool
+	TickLine *bool
+	AxisLine *bool
+}
+
+type PieChartProps struct{}
+
+const (
+	defaultXAxisHeight  = 30.0
+	defaultLegendHeight = 28.0
+)
+
+type chartState struct {
+	kind        string
+	data        []Datum
+	margin      *Margin
+	stackOffset string
+	grid        *CartesianGridProps
+	layout      string
+	x           *XAxisProps
+	y           *YAxisProps
+	tooltip     *TooltipProps
+	legend      *LegendProps
+	defs        []LinearGradientProps
+	areas       []AreaProps
+	bars        []*barState
+	lines       []*lineState
+	pies        []*pieState
+	polarGrid   *PolarGridProps
+	angleAxis   *PolarAngleAxisProps
+	radars      []RadarProps
+	radialBars  []*radialBarState
+	radiusAxis  *PolarRadiusAxisProps
+	center      *LabelProps
+	startAngle  float64
+	endAngle    *float64
+	innerRadius float64
+	outerRadius float64
+
+	accessibilityLayer bool
+}
+
+type radialBarState struct {
+	props     RadialBarProps
+	labelList *LabelListProps
+}
+
+type lineState struct {
+	props     LineProps
+	labelList *LabelListProps
+}
+
+type pieState struct {
+	props     PieProps
+	label     *LabelProps
+	labelList *LabelListProps
+}
+
+type barState struct {
+	props      BarProps
+	labelLists []LabelListProps
+	cells      []CellProps
+}
+
+type ctxKey int
+
+const (
+	configCtxKey ctxKey = iota
+	stateCtxKey
+)
+
+func configFrom(ctx context.Context) Config {
+	if c, ok := ctx.Value(configCtxKey).(Config); ok {
+		return c
+	}
+	return nil
+}
+
+func stateFrom(ctx context.Context) *chartState {
+	if s, ok := ctx.Value(stateCtxKey).(*chartState); ok {
+		return s
+	}
+	return nil
+}
+
+func num(v any) float64 {
+	switch n := v.(type) {
+	case float64:
+		return n
+	case float32:
+		return float64(n)
+	case int:
+		return float64(n)
+	case int64:
+		return float64(n)
+	}
+	return 0
+}
+
+func str(v any) string {
+	return fmt.Sprint(v)
+}
+
+func renderHTML(ctx context.Context, c templ.Component) string {
+	if c == nil {
+		return ""
+	}
+	var sb strings.Builder
+	if err := c.Render(ctx, &sb); err != nil {
+		return ""
+	}
+	return sb.String()
+}
+
+func applyIcons(ctx context.Context, m *Model, config Config) {
+	for i := range m.Series {
+		for _, s := range config {
+			if s.Key == m.Series[i].Key && s.Icon != nil {
+				m.Series[i].Icon = renderHTML(ctx, s.Icon)
+			}
+		}
+	}
+}
+
+func seriesColor(key string) string {
+	return "var(--color-" + key + ")"
+}
+
+func (c Config) Label(key string) string {
+	for _, s := range c {
+		if s.Key == key {
+			return s.Label
+		}
+	}
+	return key
+}
+
+templ AreaChart(props ...AreaChartProps) {
+	{{ var p AreaChartProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	st := &chartState{kind: "area", data: p.Data, margin: p.Margin, stackOffset: p.StackOffset, accessibilityLayer: p.AccessibilityLayer}
+	ctx = context.WithValue(ctx, stateCtxKey, st)
+	}}
+	@responsiveContainer() {
+		{ children... }
+		@chartOutput(st)
+	}
+}
+
+templ BarChart(props ...BarChartProps) {
+	{{ var p BarChartProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	st := &chartState{kind: "bar", data: p.Data, margin: p.Margin, layout: p.Layout, accessibilityLayer: p.AccessibilityLayer}
+	ctx = context.WithValue(ctx, stateCtxKey, st)
+	}}
+	@responsiveContainer() {
+		{ children... }
+		@chartOutput(st)
+	}
+}
+
+templ LineChart(props ...LineChartProps) {
+	{{ var p LineChartProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	st := &chartState{kind: "line", data: p.Data, margin: p.Margin, accessibilityLayer: p.AccessibilityLayer}
+	ctx = context.WithValue(ctx, stateCtxKey, st)
+	}}
+	@responsiveContainer() {
+		{ children... }
+		@chartOutput(st)
+	}
+}
+
+templ RadarChart(props ...RadarChartProps) {
+	{{ var p RadarChartProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	st := &chartState{kind: "radar", data: p.Data, margin: p.Margin}
+	ctx = context.WithValue(ctx, stateCtxKey, st)
+	}}
+	@responsiveContainer() {
+		{ children... }
+		@chartOutput(st)
+	}
+}
+
+templ PolarGrid(props ...PolarGridProps) {
+	{{ var p PolarGridProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.polarGrid = &p
+	}
+	}}
+}
+
+templ PolarAngleAxis(props ...PolarAngleAxisProps) {
+	{{ var p PolarAngleAxisProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.angleAxis = &p
+	}
+	}}
+}
+
+templ Radar(props ...RadarProps) {
+	{{ var p RadarProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.radars = append(st.radars, p)
+	}
+	}}
+}
+
+templ RadialBarChart(props ...RadialBarChartProps) {
+	{{ var p RadialBarChartProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	st := &chartState{
+		kind: "radial", data: p.Data, margin: p.Margin,
+		startAngle: p.StartAngle, endAngle: p.EndAngle,
+		innerRadius: p.InnerRadius, outerRadius: p.OuterRadius,
+	}
+	ctx = context.WithValue(ctx, stateCtxKey, st)
+	}}
+	@responsiveContainer() {
+		{ children... }
+		@chartOutput(st)
+	}
+}
+
+templ RadialBar(props ...RadialBarProps) {
+	{{ var p RadialBarProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.radialBars = append(st.radialBars, &radialBarState{props: p})
+	}
+	}}
+	{ children... }
+}
+
+templ PolarRadiusAxis(props ...PolarRadiusAxisProps) {
+	{{ var p PolarRadiusAxisProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.radiusAxis = &p
+	}
+	}}
+	{ children... }
+}
+
+templ PieChart(props ...PieChartProps) {
+	{{ st := &chartState{kind: "pie"} }}
+	{{ ctx = context.WithValue(ctx, stateCtxKey, st) }}
+	@responsiveContainer() {
+		{ children... }
+		@chartOutput(st)
+	}
+}
+
+templ responsiveContainer() {
+	<div class="recharts-responsive-container" style="width:100%;height:100%;min-width:0">
+		<div style="width:0;height:0;overflow:visible">
+			<div class="recharts-wrapper" style="position:relative;cursor:default">
+				{ children... }
+			</div>
+		</div>
+	</div>
+}
+
+templ chartOutput(st *chartState) {
+	{{ m := buildModel(ctx, st) }}
+	@templ.Raw(ModelScript(m))
+	if st.legend != nil {
+		@legendContent(legendItems(configFrom(ctx), m, st, st.legend), st.legend)
+	}
+}
+
+templ CartesianGrid(props ...CartesianGridProps) {
+	{{ var p CartesianGridProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.grid = &p
+	}
+	}}
+}
+
+templ XAxis(props ...XAxisProps) {
+	{{ var p XAxisProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.x = &p
+	}
+	}}
+}
+
+templ YAxis(props ...YAxisProps) {
+	{{ var p YAxisProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.y = &p
+	}
+	}}
+}
+
+templ Tooltip(props ...TooltipProps) {
+	{{ var p TooltipProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.tooltip = &p
+	}
+	}}
+}
+
+templ Legend(props ...LegendProps) {
+	{{ var p LegendProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.legend = &p
+	}
+	}}
+}
+
+templ Defs() {
+	{ children... }
+}
+
+func LinearGradient(props ...LinearGradientProps) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		var p LinearGradientProps
+		if len(props) > 0 {
+			p = props[0]
+		}
+		st := stateFrom(ctx)
+		if st == nil {
+			return nil
+		}
+		var sb strings.Builder
+		if children := templ.GetChildren(ctx); children != nil {
+			if err := children.Render(templ.ClearChildren(ctx), &sb); err != nil {
+				return err
+			}
+		}
+		p.Stops = strings.TrimSpace(sb.String())
+		st.defs = append(st.defs, p)
+		return nil
+	})
+}
+
+templ Area(props ...AreaProps) {
+	{{ var p AreaProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.areas = append(st.areas, p)
+	}
+	}}
+}
+
+templ Bar(props ...BarProps) {
+	{{ var p BarProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.bars = append(st.bars, &barState{props: p})
+	}
+	}}
+	{ children... }
+}
+
+templ Cell(props ...CellProps) {
+	{{ var p CellProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil && len(st.bars) > 0 {
+		b := st.bars[len(st.bars)-1]
+		b.cells = append(b.cells, p)
+	}
+	}}
+}
+
+templ Line(props ...LineProps) {
+	{{ var p LineProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.lines = append(st.lines, &lineState{props: p})
+	}
+	}}
+	{ children... }
+}
+
+templ LabelList(props ...LabelListProps) {
+	{{ var p LabelListProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		if len(st.radialBars) > 0 {
+			st.radialBars[len(st.radialBars)-1].labelList = &p
+		} else if len(st.pies) > 0 {
+			st.pies[len(st.pies)-1].labelList = &p
+		} else if len(st.bars) > 0 {
+			b := st.bars[len(st.bars)-1]
+			b.labelLists = append(b.labelLists, p)
+		} else if len(st.lines) > 0 {
+			st.lines[len(st.lines)-1].labelList = &p
+		}
+	}
+	}}
+}
+
+templ Pie(props ...PieProps) {
+	{{ var p PieProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.pies = append(st.pies, &pieState{props: p})
+	}
+	}}
+	{ children... }
+}
+
+templ Label(props ...LabelProps) {
+	{{ var p LabelProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		if len(st.pies) > 0 {
+			st.pies[len(st.pies)-1].label = &p
+		} else {
+			st.center = &p
+		}
+	}
+	}}
+}
+
+func radiusCorners(v any) []float64 {
+	switch r := v.(type) {
+	case nil:
+		return nil
+	case float64:
+		return []float64{r}
+	case int:
+		return []float64{float64(r)}
+	case []float64:
+		return r
+	}
+	return nil
+}
+
+func hasFillColumn(data []Datum) bool {
+	for _, row := range data {
+		if _, ok := row["fill"]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func labelListModel(ll LabelListProps, seriesKey string, data []Datum) LabelListModel {
+	key := ll.DataKey
+	if key == "" {
+		key = seriesKey
+	}
+	lm := LabelListModel{
+		Position:    ll.Position,
+		Offset:      ll.Offset,
+		FontSize:    ll.FontSize,
+		FillOpacity: ll.FillOpacity,
+		Class:       ll.Class,
+		Labels:      make([]string, len(data)),
+	}
+	for i, row := range data {
+		if ll.Formatter != nil {
+			lm.Labels[i] = ll.Formatter(row[key])
+		} else {
+			lm.Labels[i] = str(row[key])
+		}
+	}
+	return lm
+}
+
+func buildModel(ctx context.Context, st *chartState) Model {
+	config := configFrom(ctx)
+	if st.kind == "pie" {
+		return buildPieModel(ctx, config, st)
+	}
+	if st.kind == "radar" {
+		return buildRadarModel(ctx, config, st)
+	}
+	if st.kind == "radial" {
+		return buildRadialModel(ctx, config, st)
+	}
+
+	m := Model{Kind: st.kind, StackOffset: st.stackOffset, Defs: st.defs, Layout: st.layout, AccessibilityLayer: st.accessibilityLayer}
+	if g := st.grid; g != nil {
+		m.Grid = true
+		m.GridHorizontal = boolOr(g.Horizontal, true)
+		m.GridVertical = boolOr(g.Vertical, true)
+	}
+	if y := st.y; y != nil {
+		m.YAxisWidth = y.Width
+		if m.YAxisWidth == 0 {
+			m.YAxisWidth = 60
+		}
+		m.YAxisMargin = y.TickMargin
+		m.YTickLine = y.TickLine
+		m.YAxisLine = y.AxisLine
+		m.YAxisHide = y.Hide
+		if y.Hide {
+			m.YAxisWidth = 0
+		}
+	}
+	if st.margin != nil {
+		m.MarginTop, m.MarginRight, m.MarginBottom, m.MarginLeft = st.margin.Top, st.margin.Right, st.margin.Bottom, st.margin.Left
+	} else {
+		m.MarginTop, m.MarginRight, m.MarginBottom, m.MarginLeft = 5, 5, 5, 5
+	}
+	if x := st.x; x != nil {
+		m.XAxisHeight = defaultXAxisHeight
+		m.TickMargin = x.TickMargin
+		m.MinTickGap = x.MinTickGap
+		if m.MinTickGap == 0 {
+			m.MinTickGap = 5
+		}
+		m.XTickLine = x.TickLine
+		m.XAxisLine = x.AxisLine
+		m.XAxisHide = x.Hide
+		m.XReversed = x.Reversed
+		if x.Hide {
+			m.XAxisHeight = 0
+		}
+	}
+	if st.legend != nil {
+		m.LegendHeight = defaultLegendHeight
+		m.LegendVAlign = st.legend.VerticalAlign
+	}
+	tt := st.tooltip
+	if tt != nil {
+		m.Cursor = boolOr(tt.Cursor, true)
+		m.HasTooltip = true
+		m.Tooltip = TooltipModel{Indicator: tt.Content.Indicator, HideLabel: tt.Content.HideLabel, HideIndicator: tt.Content.HideIndicator, Width: tt.Content.Class, LabelClassName: tt.Content.LabelClassName, Color: tt.Content.Color, DefaultIndex: tt.DefaultIndex}
+		if tt.Content.LabelKey != "" {
+			m.Tooltip.Label = config.Label(tt.Content.LabelKey)
+		}
+	}
+
+	dataKey, formatter := "", func(any) string(nil)
+	if st.layout == "vertical" {
+		if y := st.y; y != nil {
+			dataKey, formatter = y.DataKey, y.TickFormatter
+		}
+	} else if x := st.x; x != nil {
+		dataKey, formatter = x.DataKey, x.TickFormatter
+	}
+	m.Labels = make([]string, len(st.data))
+	m.TooltipLabels = make([]string, len(st.data))
+	if dataKey != "" {
+		for i, d := range st.data {
+			raw := d[dataKey]
+			if formatter != nil {
+				m.Labels[i] = formatter(raw)
+			} else {
+				m.Labels[i] = str(raw)
+			}
+			if tt != nil && tt.Content.LabelFormatter != nil {
+				m.TooltipLabels[i] = tt.Content.LabelFormatter(raw)
+			} else {
+				m.TooltipLabels[i] = str(raw)
+			}
+		}
+	}
+
+	if st.kind == "bar" {
+		m.CategoryGap = 0.1
+		stacked := false
+		for _, bs := range st.bars {
+			b := bs.props
+			s := modelSeries(config, b.DataKey, b.Fill, 0, st.data)
+			s.Hidden = b.Hide
+			s.Radius = radiusCorners(b.Radius)
+			s.StackID = b.StackID
+			s.StrokeWidth = b.StrokeWidth
+			s.ActiveIndex = b.ActiveIndex
+			s.ActiveBar = b.ActiveBar
+			if b.StackID != "" && !b.Hide {
+				stacked = true
+			}
+
+			if len(bs.cells) > 0 {
+				s.Cells = make([]string, len(bs.cells))
+				for i, c := range bs.cells {
+					s.Cells[i] = c.Fill
+				}
+			} else if hasFillColumn(st.data) {
+				s.Cells = make([]string, len(st.data))
+				for i, row := range st.data {
+					s.Cells[i] = str(row["fill"])
+				}
+			}
+			for _, ll := range bs.labelLists {
+				s.LabelLists = append(s.LabelLists, labelListModel(ll, b.DataKey, st.data))
+			}
+			m.Series = append(m.Series, s)
+		}
+		m.Stacked = stacked
+	} else if st.kind == "line" {
+		for _, l := range st.lines {
+			s := modelSeries(config, l.props.DataKey, "", 0, st.data)
+			s.Hidden = l.props.Hide
+			s.Curve = string(l.props.Type)
+			s.Stroke = l.props.Stroke
+			s.StrokeWidth = l.props.StrokeWidth
+			s.StrokeDasharray = l.props.StrokeDasharray
+			if l.props.ActiveDot != nil {
+				s.ActiveDotR = l.props.ActiveDot.R
+			}
+			if d := l.props.Dot; d != nil {
+				dm := &DotModel{R: d.R, Fill: d.Fill, Size: d.Size}
+				if d.Show != nil {
+					dm.Shown = make([]bool, len(st.data))
+					for i, row := range st.data {
+						dm.Shown[i] = d.Show(i, row)
+					}
+				}
+				if d.DataFill {
+					dm.Fills = make([]string, len(st.data))
+					for i, row := range st.data {
+						dm.Fills[i] = str(row["fill"])
+					}
+				}
+				if d.Icon != nil {
+					dm.Icon = renderHTML(ctx, d.Icon)
+				}
+				s.Dot = dm
+			}
+			if ll := l.labelList; ll != nil {
+				lm := labelListModel(*ll, l.props.DataKey, st.data)
+				s.LabelList = &lm
+			}
+			m.Series = append(m.Series, s)
+		}
+	} else {
+		stacked := false
+		for _, a := range st.areas {
+			if a.StackID != "" && !a.Hide {
+				stacked = true
+			}
+			s := modelSeries(config, a.DataKey, "", a.FillOpacity, st.data)
+			s.Hidden = a.Hide
+			s.Curve = string(a.Type)
+			s.Fill = a.Fill
+			s.Stroke = a.Stroke
+			m.Series = append(m.Series, s)
+		}
+		m.Stacked = stacked
+	}
+
+	if tt != nil && tt.Content.NameKey != "" {
+		for i := range m.Series {
+			m.Series[i].Label = config.Label(tt.Content.NameKey)
+		}
+	}
+
+	if tt != nil && tt.Content.Formatter != nil {
+		f := tt.Content.Formatter
+		m.Tooltip.Rows = make([][]string, len(m.Series))
+		for si, s := range m.Series {
+			m.Tooltip.Rows[si] = make([]string, len(st.data))
+			for i, d := range st.data {
+				m.Tooltip.Rows[si][i] = renderHTML(ctx, f(d[s.Key], s.Key, d, si))
+			}
+		}
+	}
+	setValueScale(&m, st)
+	applyIcons(ctx, &m, config)
+	return m
+}
+
+func buildRadarModel(ctx context.Context, config Config, st *chartState) Model {
+	m := Model{Kind: "radar"}
+	if st.margin != nil {
+		m.MarginTop, m.MarginRight, m.MarginBottom, m.MarginLeft = st.margin.Top, st.margin.Right, st.margin.Bottom, st.margin.Left
+	} else {
+		m.MarginTop, m.MarginRight, m.MarginBottom, m.MarginLeft = 5, 5, 5, 5
+	}
+	polar := PolarModel{RadialLines: true}
+	if g := st.polarGrid; g != nil {
+		polar = polarModel(g)
+	}
+	m.Labels = make([]string, len(st.data))
+	m.TooltipLabels = make([]string, len(st.data))
+	if a := st.angleAxis; a != nil {
+		polar.HasAngleAxis = true
+		for i, d := range st.data {
+			m.Labels[i] = str(d[a.DataKey])
+			m.TooltipLabels[i] = m.Labels[i]
+			if a.Tick != nil {
+				tc := a.Tick(d, i)
+				tm := TickContentModel{FontSize: tc.FontSize, FontWeight: tc.FontWeight, OffsetY: tc.OffsetY}
+				for _, sp := range tc.Spans {
+					tm.Spans = append(tm.Spans, TickSpanModel{Text: sp.Text, Class: sp.Class, FontSize: sp.FontSize, Dy: sp.Dy, ResetX: sp.ResetX})
+				}
+				polar.Ticks = append(polar.Ticks, tm)
+			}
+		}
+	}
+	m.Polar = &polar
+	for _, r := range st.radars {
+		s := modelSeries(config, r.DataKey, r.Fill, 0, st.data)
+		s.FillOpacityPtr = r.FillOpacity
+		s.Stroke = r.Stroke
+		s.StrokeWidth = r.StrokeWidth
+		if d := r.Dot; d != nil {
+			s.Dot = &DotModel{R: d.R, Fill: d.Fill, FillOpacity: d.FillOpacity}
+		}
+		m.Series = append(m.Series, s)
+	}
+	if st.legend != nil {
+		m.LegendHeight = defaultLegendHeight
+	}
+	if tt := st.tooltip; tt != nil {
+		m.Cursor = boolOr(tt.Cursor, true)
+		m.HasTooltip = true
+		m.Tooltip = TooltipModel{Indicator: tt.Content.Indicator, HideLabel: tt.Content.HideLabel, HideIndicator: tt.Content.HideIndicator, Width: tt.Content.Class, LabelClassName: tt.Content.LabelClassName, Color: tt.Content.Color}
+	}
+	return m
+}
+
+func buildRadialModel(ctx context.Context, config Config, st *chartState) Model {
+	m := Model{Kind: "radial"}
+	if st.margin != nil {
+		m.MarginTop, m.MarginRight, m.MarginBottom, m.MarginLeft = st.margin.Top, st.margin.Right, st.margin.Bottom, st.margin.Left
+	} else {
+		m.MarginTop, m.MarginRight, m.MarginBottom, m.MarginLeft = 5, 5, 5, 5
+	}
+
+	r := RadialModel{StartAngle: st.startAngle, EndAngle: 360, InnerRadius: st.innerRadius, OuterRadius: st.outerRadius}
+	if st.endAngle != nil {
+		r.EndAngle = *st.endAngle
+	}
+	if l := st.center; l != nil {
+		r.Center = labelModel(l)
+	}
+	if g := st.polarGrid; g != nil {
+		polar := polarModel(g)
+		m.Polar = &polar
+	}
+	m.Labels = make([]string, len(st.data))
+	for i := range st.data {
+
+		m.Labels[i] = str(i)
+	}
+	tt := st.tooltip
+	for _, rb := range st.radialBars {
+		p := rb.props
+		s := modelSeries(config, p.DataKey, p.Fill, 0, st.data)
+		s.Background = p.Background
+		s.CornerRadius = p.CornerRadius
+		s.StackID = p.StackID
+		s.Class = p.Class
+
+		if hasFillColumn(st.data) {
+			s.Cells = make([]string, len(st.data))
+			for i, row := range st.data {
+				s.Cells[i] = str(row["fill"])
+			}
+		}
+
+		nameKey := p.DataKey
+		if tt != nil && tt.Content.NameKey != "" {
+			nameKey = tt.Content.NameKey
+		}
+		s.TooltipNames = make([]string, len(st.data))
+		for i, row := range st.data {
+			s.TooltipNames[i] = config.Label(payloadConfigKey(row, nameKey))
+		}
+		if ll := rb.labelList; ll != nil {
+			lm := labelListModel(*ll, p.DataKey, st.data)
+			s.LabelList = &lm
+		}
+		m.Series = append(m.Series, s)
+	}
+	m.Radial = &r
+	if tt != nil {
+		m.Cursor = boolOr(tt.Cursor, true)
+		m.HasTooltip = true
+		m.Tooltip = TooltipModel{Indicator: tt.Content.Indicator, HideLabel: tt.Content.HideLabel, HideIndicator: tt.Content.HideIndicator, Width: tt.Content.Class, LabelClassName: tt.Content.LabelClassName, Color: tt.Content.Color}
+	}
+	return m
+}
+
+func polarModel(g *PolarGridProps) PolarModel {
+	return PolarModel{
+		HasGrid:     true,
+		GridType:    g.GridType,
+		RadialLines: boolOr(g.RadialLines, true),
+		PolarRadius: g.PolarRadius,
+		Stroke:      g.Stroke,
+		StrokeWidth: g.StrokeWidth,
+		GridClass:   g.Class,
+	}
+}
+
+func labelModel(l *LabelProps) *LabelModel {
+	lm := &LabelModel{DominantBaseline: l.DominantBaseline}
+	for _, sp := range l.Spans {
+		lm.Spans = append(lm.Spans, LabelSpanModel{Text: sp.Text, Class: sp.Class, OffsetY: sp.OffsetY})
+	}
+	return lm
+}
+
+func buildPieModel(ctx context.Context, config Config, st *chartState) Model {
+	m := Model{Kind: "pie", Cursor: false}
+	if st.legend != nil {
+		m.LegendHeight = defaultLegendHeight
+	}
+	for _, ps := range st.pies {
+		p := ps.props
+		pm := PieModel{
+			Key:         p.DataKey,
+			SeriesLabel: config.Label(p.DataKey),
+			NameKey:     p.NameKey,
+			InnerRadius: p.InnerRadius,
+			OuterRadius: p.OuterRadius,
+			StrokeWidth: p.StrokeWidth,
+			Stroke:      p.Stroke,
+			ActiveIndex: p.ActiveIndex,
+			ActiveShape: p.ActiveShape,
+			LabelLine:   boolOr(p.LabelLine, true),
+		}
+		if p.Label != nil {
+			pm.Label = &PieLabelModel{Fill: p.Label.Fill}
+		}
+		pm.Values = make([]float64, len(p.Data))
+		pm.Labels = make([]string, len(p.Data))
+		pm.TooltipNames = make([]string, len(p.Data))
+		pm.NameValues = make([]string, len(p.Data))
+		pm.Colors = make([]string, len(p.Data))
+		for i, d := range p.Data {
+			pm.Values[i] = num(d[p.DataKey])
+
+			key := p.DataKey
+			if p.NameKey != "" {
+				if v, ok := d[p.NameKey]; ok && v != nil {
+					key = str(v)
+				}
+			}
+			pm.NameValues[i] = key
+			pm.Labels[i] = config.Label(key)
+
+			nameKey := key
+			if st.tooltip != nil && st.tooltip.Content.NameKey != "" {
+				nameKey = st.tooltip.Content.NameKey
+			}
+			pm.TooltipNames[i] = config.Label(payloadConfigKey(d, nameKey))
+			if f, ok := d["fill"]; ok {
+				pm.Colors[i] = str(f)
+			} else {
+				pm.Colors[i] = seriesColor(key)
+			}
+		}
+		if l := ps.label; l != nil {
+			pm.Center = labelModel(l)
+		}
+		if ll := ps.labelList; ll != nil {
+
+			lm := labelListModel(*ll, p.NameKey, p.Data)
+			pm.LabelList = &lm
+		}
+		m.Pies = append(m.Pies, pm)
+	}
+	if tt := st.tooltip; tt != nil {
+		m.Cursor = boolOr(tt.Cursor, true)
+		m.HasTooltip = true
+		m.Tooltip = TooltipModel{Indicator: tt.Content.Indicator, HideLabel: tt.Content.HideLabel, HideIndicator: tt.Content.HideIndicator, Width: tt.Content.Class, LabelClassName: tt.Content.LabelClassName, Color: tt.Content.Color}
+		if tt.Content.LabelKey != "" {
+			m.Tooltip.Label = config.Label(tt.Content.LabelKey)
+		}
+	}
+	return m
+}
+
+func modelSeries(config Config, key, fill string, fillOpacity float64, data []Datum) ModelSeries {
+	color := fill
+	if color == "" || color == "gradient" {
+		color = seriesColor(key)
+	}
+	values := make([]float64, len(data))
+
+	var gaps []bool
+	for i, d := range data {
+		values[i] = num(d[key])
+		if d[key] == nil {
+			if gaps == nil {
+				gaps = make([]bool, len(data))
+			}
+			gaps[i] = true
+		}
+	}
+	return ModelSeries{Key: key, Label: config.Label(key), Color: color, Values: values, Gaps: gaps, FillOpacity: fillOpacity}
+}
+
+type LegendItem struct {
+	Label string
+	Color string
+	Icon  string
+
+	Value string
+}
+
+func payloadConfigKey(row Datum, key string) string {
+	if row != nil {
+		if v, ok := row[key]; ok {
+			if sv, isString := v.(string); isString {
+				return sv
+			}
+		}
+	}
+	return key
+}
+
+func legendItems(config Config, m Model, st *chartState, p *LegendProps) []LegendItem {
+	var out []LegendItem
+	if m.Kind == "pie" {
+		for pi, pie := range m.Pies {
+			rows := st.pies[pi].props.Data
+			for i := range pie.Labels {
+
+				name := pie.Labels[i]
+				if p.NameKey != "" && i < len(rows) {
+					if v, ok := rows[i][p.NameKey]; ok && v != nil {
+						name = config.Label(str(v))
+					}
+				}
+				out = append(out, LegendItem{Label: name, Color: pie.Colors[i], Value: pie.NameValues[i]})
+			}
+		}
+	} else {
+		for _, s := range m.Series {
+			label := s.Label
+			if p.NameKey != "" {
+				label = config.Label(p.NameKey)
+			}
+			out = append(out, LegendItem{Label: label, Color: s.Color, Icon: s.Icon, Value: s.Key})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Value < out[j].Value })
+	return out
+}
+
+templ legendContent(items []LegendItem, p *LegendProps) {
+	<div
+		class="recharts-legend-wrapper"
+		if p.VerticalAlign == "top" {
+			style="position:absolute;left:0;right:0;top:5px"
+		} else {
+			style="position:absolute;left:0;right:0;bottom:5px"
+		}
+	>
+		<div class={ utils.CN("flex items-center justify-center gap-4 " + legendPad(p.VerticalAlign), p.Class) }>
+			for _, it := range items {
+				<div class="flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground">
+					if it.Icon != "" && !p.HideIcon {
+						@templ.Raw(it.Icon)
+					} else {
+						<div class="h-2 w-2 shrink-0 rounded-[2px]" style={ "background-color:" + it.Color }></div>
+					}
+					{ it.Label }
+				</div>
+			}
+		</div>
+	</div>
+}
+
+func legendPad(verticalAlign string) string {
+	if verticalAlign == "top" {
+		return "pb-3"
+	}
+	return "pt-3"
+}
+
+type Model struct {
+	Kind              string     `json:"kind"`
+	MarginTop         float64    `json:"marginTop"`
+	MarginRight       float64    `json:"marginRight"`
+	MarginBottom      float64    `json:"marginBottom"`
+	MarginLeft        float64    `json:"marginLeft"`
+	XAxisHeight       float64    `json:"xAxisHeight,omitempty"`
+	TickMargin        float64    `json:"tickMargin,omitempty"`
+	MinTickGap        float64    `json:"minTickGap,omitempty"`
+	YAxisWidth        float64    `json:"yAxisWidth,omitempty"`
+	YAxisMargin       float64    `json:"yAxisMargin,omitempty"`
+	TickCount         int        `json:"tickCount,omitempty"`
+	AllowDataOverflow bool       `json:"allowDataOverflow,omitempty"`
+	Domain            [2]float64 `json:"domain"`
+	Ticks             []float64  `json:"ticks,omitempty"`
+	TickLabels        []string   `json:"tickLabels,omitempty"`
+	XTickLine         bool       `json:"xTickLine,omitempty"`
+	XAxisLine         bool       `json:"xAxisLine,omitempty"`
+	YTickLine         bool       `json:"yTickLine,omitempty"`
+	YAxisLine         bool       `json:"yAxisLine,omitempty"`
+	LegendHeight      float64    `json:"legendHeight,omitempty"`
+	LegendVAlign      string     `json:"legendVAlign,omitempty"`
+	CategoryGap       float64    `json:"categoryGap,omitempty"`
+	Radius            float64    `json:"radius,omitempty"`
+	Grid              bool       `json:"grid,omitempty"`
+	GridHorizontal    bool       `json:"gridHorizontal,omitempty"`
+	GridVertical      bool       `json:"gridVertical,omitempty"`
+
+	Layout      string                `json:"layout,omitempty"`
+	XAxisHide   bool                  `json:"xAxisHide,omitempty"`
+	XReversed   bool                  `json:"xReversed,omitempty"`
+	YAxisHide   bool                  `json:"yAxisHide,omitempty"`
+	Stacked     bool                  `json:"stacked,omitempty"`
+	StackOffset string                `json:"stackOffset,omitempty"`
+	Defs        []LinearGradientProps `json:"defs,omitempty"`
+	Cursor      bool                  `json:"cursor"`
+
+	HasTooltip    bool          `json:"hasTooltip,omitempty"`
+	Labels        []string      `json:"labels"`
+	TooltipLabels []string      `json:"tooltipLabels,omitempty"`
+	SliceColors   []string      `json:"sliceColors,omitempty"`
+	Series        []ModelSeries `json:"series"`
+	Tooltip       TooltipModel  `json:"tooltip"`
+
+	Pies []PieModel `json:"pies,omitempty"`
+
+	Polar *PolarModel `json:"polar,omitempty"`
+
+	Radial *RadialModel `json:"radial,omitempty"`
+
+	AccessibilityLayer bool `json:"accessibilityLayer,omitempty"`
+}
+
+type RadialModel struct {
+	StartAngle  float64     `json:"startAngle"`
+	EndAngle    float64     `json:"endAngle"`
+	InnerRadius float64     `json:"innerRadius,omitempty"`
+	OuterRadius float64     `json:"outerRadius,omitempty"`
+	Center      *LabelModel `json:"center,omitempty"`
+}
+
+type LabelModel struct {
+	Spans            []LabelSpanModel `json:"spans"`
+	DominantBaseline string           `json:"dominantBaseline,omitempty"`
+}
+
+type LabelSpanModel struct {
+	Text    string  `json:"text"`
+	Class   string  `json:"class,omitempty"`
+	OffsetY float64 `json:"offsetY,omitempty"`
+}
+
+type TickContentModel struct {
+	Spans      []TickSpanModel `json:"spans"`
+	FontSize   float64         `json:"fontSize,omitempty"`
+	FontWeight string          `json:"fontWeight,omitempty"`
+	OffsetY    float64         `json:"offsetY,omitempty"`
+}
+
+type TickSpanModel struct {
+	Text     string  `json:"text"`
+	Class    string  `json:"class,omitempty"`
+	FontSize float64 `json:"fontSize,omitempty"`
+	Dy       string  `json:"dy,omitempty"`
+	ResetX   bool    `json:"resetX,omitempty"`
+}
+
+type PolarModel struct {
+	GridType    string    `json:"gridType,omitempty"`
+	RadialLines bool      `json:"radialLines"`
+	PolarRadius []float64 `json:"polarRadius,omitempty"`
+	Stroke      string    `json:"stroke,omitempty"`
+	StrokeWidth float64   `json:"strokeWidth,omitempty"`
+	GridClass   string    `json:"gridClass,omitempty"`
+	Ticks       []TickContentModel `json:"ticks,omitempty"`
+	HasGrid     bool      `json:"hasGrid,omitempty"`
+	HasAngleAxis bool     `json:"hasAngleAxis,omitempty"`
+}
+
+type PieModel struct {
+	Key         string           `json:"key"`
+	SeriesLabel string           `json:"seriesLabel,omitempty"`
+	Values      []float64        `json:"values"`
+	Labels       []string        `json:"labels"`
+	TooltipNames []string        `json:"tooltipNames,omitempty"`
+	NameKey     string           `json:"nameKey,omitempty"`
+	NameValues  []string         `json:"nameValues,omitempty"`
+	Colors      []string         `json:"colors"`
+	InnerRadius float64          `json:"innerRadius,omitempty"`
+	OuterRadius float64          `json:"outerRadius,omitempty"`
+	StrokeWidth float64          `json:"strokeWidth,omitempty"`
+	Stroke      string           `json:"stroke,omitempty"`
+	Label       *PieLabelModel   `json:"label,omitempty"`
+	LabelLine   bool             `json:"labelLine,omitempty"`
+	LabelList   *LabelListModel  `json:"labelList,omitempty"`
+	ActiveIndex *int             `json:"activeIndex,omitempty"`
+	ActiveShape []SectorProps    `json:"activeShape,omitempty"`
+	Center      *LabelModel      `json:"center,omitempty"`
+}
+
+type PieLabelModel struct {
+	Fill string `json:"fill,omitempty"`
+}
+
+type ModelSeries struct {
+	Hidden          bool             `json:"hidden,omitempty"`
+	Key             string           `json:"key"`
+	Label           string           `json:"label"`
+	Color           string           `json:"color"`
+	Values          []float64        `json:"values"`
+	Gaps            []bool           `json:"gaps,omitempty"`
+	FillOpacity     float64          `json:"fillOpacity,omitempty"`
+	Curve           string           `json:"curve,omitempty"`
+	FillOpacityPtr  *float64         `json:"fillOpacityPtr,omitempty"`
+	Icon            string           `json:"icon,omitempty"`
+	Fill            string           `json:"fill,omitempty"`
+	Stroke          string           `json:"stroke,omitempty"`
+	Radius          []float64        `json:"radius,omitempty"`
+	StackID         string           `json:"stackId,omitempty"`
+	Cells           []string         `json:"cells,omitempty"`
+	ActiveIndex     *int             `json:"activeIndex,omitempty"`
+	ActiveBar       *RectangleProps  `json:"activeBar,omitempty"`
+	LabelLists      []LabelListModel `json:"labelLists,omitempty"`
+	StrokeWidth     float64          `json:"strokeWidth,omitempty"`
+	StrokeDasharray string           `json:"strokeDasharray,omitempty"`
+	Dot             *DotModel        `json:"dot,omitempty"`
+	ActiveDotR      float64          `json:"activeDotR,omitempty"`
+	LabelList       *LabelListModel  `json:"labelList,omitempty"`
+
+	Background   bool     `json:"background,omitempty"`
+	CornerRadius float64  `json:"cornerRadius,omitempty"`
+	Class        string   `json:"class,omitempty"`
+	TooltipNames []string `json:"tooltipNames,omitempty"`
+}
+
+type DotModel struct {
+	R           float64  `json:"r,omitempty"`
+	FillOpacity float64  `json:"fillOpacity,omitempty"`
+	Fill        string   `json:"fill,omitempty"`
+	Fills       []string `json:"fills,omitempty"`
+	Icon        string   `json:"icon,omitempty"`
+	Size        float64  `json:"size,omitempty"`
+	Shown       []bool   `json:"shown,omitempty"`
+}
+
+type LabelListModel struct {
+	Position    string   `json:"position,omitempty"`
+	Offset      float64  `json:"offset,omitempty"`
+	FontSize    float64  `json:"fontSize,omitempty"`
+	FillOpacity float64  `json:"fillOpacity,omitempty"`
+	Class       string   `json:"class,omitempty"`
+	Labels      []string `json:"labels"`
+}
+
+type TooltipModel struct {
+	Indicator     string `json:"indicator,omitempty"`
+	Label         string `json:"label,omitempty"`
+	HideLabel     bool   `json:"hideLabel,omitempty"`
+	HideIndicator bool   `json:"hideIndicator,omitempty"`
+	Width         string `json:"width,omitempty"`
+	LabelClassName    string `json:"labelClass,omitempty"`
+	Color         string `json:"color,omitempty"`
+
+	DefaultIndex *int `json:"defaultIndex,omitempty"`
+
+	Rows [][]string `json:"rows,omitempty"`
+}
+
+func ModelScript(m Model) string {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return ""
+	}
+	return `<script type="application/json" data-templ-chart-model>` + string(b) + `</script>`
+}

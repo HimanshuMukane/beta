@@ -1,11 +1,44 @@
 package components
 
-templ Input(name string, inputType string, placeholder string, value string) {
+type InputProps struct {
+	Type        string
+	Name        string
+	Value       string
+	Placeholder string
+	Required    bool
+	Disabled    bool
+	Class       string
+	ID          string
+}
+
+templ Input(props InputProps) {
+	{{
+		inputType := "text"
+		if props.Type != "" {
+			inputType = props.Type
+		}
+	}}
 	<input
 		type={ inputType }
-		name={ name }
-		class="form-input"
-		placeholder={ placeholder }
-		value={ value }
+		if props.ID != "" {
+			id={ props.ID }
+		}
+		if props.Name != "" {
+			name={ props.Name }
+		}
+		if props.Value != "" {
+			value={ props.Value }
+		}
+		if props.Placeholder != "" {
+			placeholder={ props.Placeholder }
+		}
+		if props.Required {
+			required
+		}
+		if props.Disabled {
+			disabled
+		}
+		class={ "crm-input", props.Class }
 	/>
 }
+

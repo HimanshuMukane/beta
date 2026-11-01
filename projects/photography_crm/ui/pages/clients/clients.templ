@@ -1,0 +1,105 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	"components"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ Clients() {
+	@layouts.DashboardLayout("Clients Directory - Aperture CRM", "clients", []layouts.BreadcrumbItem{
+		{Label: "Clients"},
+	}) {
+		@crmComponents.PageHeader("Clients Directory", "Manage client profiles, shoot histories, contracts, and booked sessions.") {
+			<button class="c-btn c-btn-primary">
+				@components.IconUserPlus()
+				<span>Add Client</span>
+			</button>
+		}
+
+		<div class="crm-stats-grid">
+			@crmComponents.StatCard("Total Clients", "126", "+8% this month", true, "users")
+			@crmComponents.StatCard("Active Clients", "34", "With ongoing bookings", true, "sparkles")
+			@crmComponents.StatCard("Recent Clients", "9", "Joined last 30 days", true, "user-plus")
+			@crmComponents.StatCard("Client Lifetime Value", "$3,620", "+12% avg", true, "dollar")
+		</div>
+
+		<div class="crm-filter-bar">
+			<input type="text" placeholder="Search clients by name, email, phone..." class="crm-search-input" style="width: 280px;"/>
+			<div style="display: flex; gap: 8px;">
+				<select class="crm-select">
+					<option>All Client Types</option>
+					<option>Wedding & Couples</option>
+					<option>Commercial / Corporate</option>
+					<option>Portrait & Fashion</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="crm-table-container">
+			<table class="crm-table">
+				<thead>
+					<tr>
+						<th>Client Name & Email</th>
+						<th>Phone</th>
+						<th>Category</th>
+						<th>Orders</th>
+						<th>Total Spent</th>
+						<th>Active Projects</th>
+						<th>Status</th>
+						<th style="text-align: right;">Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>
+							<div style="font-weight: 600;"><a href="/clients/details?id=1" style="color: var(--text-main); text-decoration: none;">Olivia & James Thornton</a></div>
+							<div style="font-size: 11px; color: var(--text-muted);">olivia.thornton@gmail.com</div>
+						</td>
+						<td style="color: var(--text-muted); font-size: 11.5px;">+1 (555) 234-9811</td>
+						<td><span class="status-pill pill-purple">Wedding & Couples</span></td>
+						<td>2 Orders</td>
+						<td style="font-weight: 600;">$5,800.00</td>
+						<td>1 Active Shoot</td>
+						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td style="text-align: right;">
+							<a href="/clients/details?id=1" class="crm-page-btn" style="text-decoration: none;">View Profile</a>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div style="font-weight: 600;"><a href="/clients/details?id=2" style="color: var(--text-main); text-decoration: none;">Marcus Vance</a></div>
+							<div style="font-size: 11px; color: var(--text-muted);">marcus.vance@studioeight.com</div>
+						</td>
+						<td style="color: var(--text-muted); font-size: 11.5px;">+1 (555) 872-3312</td>
+						<td><span class="status-pill pill-blue">Commercial / Fashion</span></td>
+						<td>4 Orders</td>
+						<td style="font-weight: 600;">$14,200.00</td>
+						<td>2 Active Shoots</td>
+						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td style="text-align: right;">
+							<a href="/clients/details?id=2" class="crm-page-btn" style="text-decoration: none;">View Profile</a>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div style="font-weight: 600;"><a href="/clients/details?id=3" style="color: var(--text-main); text-decoration: none;">Kavya Rajendran</a></div>
+							<div style="font-size: 11px; color: var(--text-muted);">kavya.raj@outlook.com</div>
+						</td>
+						<td style="color: var(--text-muted); font-size: 11.5px;">+91 98402 11928</td>
+						<td><span class="status-pill pill-purple">Wedding & Couples</span></td>
+						<td>1 Order</td>
+						<td style="font-weight: 600;">$3,400.00</td>
+						<td>1 Active Shoot</td>
+						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td style="text-align: right;">
+							<a href="/clients/details?id=3" class="crm-page-btn" style="text-decoration: none;">View Profile</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+
+			@crmComponents.Pagination(1, 3, 24)
+		</div>
+	}
+}

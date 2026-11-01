@@ -1,0 +1,56 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ DeliverablePresetsSettings() {
+	@layouts.DashboardLayout("Deliverable Presets - Settings", "settings", []layouts.BreadcrumbItem{
+		{Label: "Settings", URL: "/settings"},
+		{Label: "Deliverable Presets"},
+	}) {
+		@crmComponents.PageHeader("Deliverable Presets", "Configure turn-around deadlines, print lab partnerships, and digital proofing defaults.")
+
+		@layouts.SettingsLayout("deliverable_presets") {
+			<div style="margin-bottom: 20px;">
+				<h2 style="font-size: 16px; font-weight: 600;">Delivery Defaults</h2>
+				<p style="font-size: 12px; color: var(--text-muted);">Standard turn-around times and lab preferences per service type.</p>
+			</div>
+
+			<div class="crm-table-container">
+				<table class="crm-table">
+					<thead>
+						<tr>
+							<th>Deliverable Type</th>
+							<th>Default Turnaround</th>
+							<th>Preferred Lab / Provider</th>
+							<th>Resolution / Format</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td style="font-weight: 600;">Digital Proofing Gallery</td>
+							<td>3 Weeks from Shoot Date</td>
+							<td>Pixieset / Cloud Gallery</td>
+							<td>300 DPI High-Res JPEG</td>
+						</tr>
+						<tr>
+							<td style="font-weight: 600;">Fine Art Leather Album</td>
+							<td>6 Weeks from Design Approval</td>
+							<td>Graphistudio Italy Lab</td>
+							<td>Flush Mount Lustre</td>
+						</tr>
+						<tr>
+							<td style="font-weight: 600;">Sneak Peek Highlights</td>
+							<td>48 Hours from Shoot Date</td>
+							<td>Direct Client Portal</td>
+							<td>Web Optimized 2048px</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}
+

@@ -1,0 +1,106 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ Followups(filter string) {
+	@layouts.DashboardLayout("Follow-ups - Aperture CRM", "followups", []layouts.BreadcrumbItem{
+		{Label: "Follow-ups"},
+	}) {
+		@crmComponents.PageHeader("Follow-ups Management", "Keep track of scheduled calls, client reminders, and proposal follow-ups.") {
+			<button class="c-btn c-btn-primary">+ Create Follow-up</button>
+		}
+
+		<div class="crm-filter-bar">
+			<div class="crm-filter-tabs">
+				<a href="/followups" class={ "crm-filter-tab", templ.KV("active", filter == "" || filter == "all") }>All Follow-ups (14)</a>
+				<a href="/followups?filter=my" class={ "crm-filter-tab", templ.KV("active", filter == "my") }>My Follow-ups (8)</a>
+				<a href="/followups?filter=today" class={ "crm-filter-tab", templ.KV("active", filter == "today") }>Due Today (3)</a>
+				<a href="/followups?filter=overdue" class={ "crm-filter-tab", templ.KV("active", filter == "overdue") }>Overdue (1)</a>
+				<a href="/followups?filter=upcoming" class={ "crm-filter-tab", templ.KV("active", filter == "upcoming") }>Upcoming (10)</a>
+			</div>
+
+			<div style="display: flex; gap: 8px;">
+				<input type="text" placeholder="Search follow-ups..." class="crm-search-input"/>
+				<button class="crm-page-btn">📅 Calendar View</button>
+			</div>
+		</div>
+
+		<div class="crm-table-container">
+			<table class="crm-table">
+				<thead>
+					<tr>
+						<th style="width: 20px;"><input type="checkbox"/></th>
+						<th>Contact</th>
+						<th>Related Lead / Client</th>
+						<th>Follow-up Date & Time</th>
+						<th>Assigned To</th>
+						<th>Priority</th>
+						<th>Status</th>
+						<th>Notes</th>
+						<th style="text-align: right;">Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><input type="checkbox"/></td>
+						<td style="font-weight: 600;">Jessica Parker</td>
+						<td><a href="/leads/details?id=1" style="color: var(--accent-active-text); text-decoration: none;">Lake Como Wedding</a></td>
+						<td style="color: #ff7675; font-weight: 600;">Today at 14:00</td>
+						<td>Himanshu M.</td>
+						<td><span class="status-pill pill-red">High</span></td>
+						<td>@crmComponents.StatusPill("Pending", "yellow")</td>
+						<td style="color: var(--text-muted); font-size: 11.5px;">Confirm second shooter itinerary and contract signing.</td>
+						<td style="text-align: right;">
+							<button class="crm-page-btn">✓ Done</button>
+						</td>
+					</tr>
+					<tr>
+						<td><input type="checkbox"/></td>
+						<td style="font-weight: 600;">Marcus Vance</td>
+						<td><a href="/leads/details?id=2" style="color: var(--accent-active-text); text-decoration: none;">Vance Brands Lookbook</a></td>
+						<td>Nov 4 at 11:00</td>
+						<td>Aniket K.</td>
+						<td><span class="status-pill pill-blue">Medium</span></td>
+						<td>@crmComponents.StatusPill("Scheduled", "blue")</td>
+						<td style="color: var(--text-muted); font-size: 11.5px;">Follow up on commercial license quote.</td>
+						<td style="text-align: right;">
+							<button class="crm-page-btn">✓ Done</button>
+						</td>
+					</tr>
+					<tr>
+						<td><input type="checkbox"/></td>
+						<td style="font-weight: 600;">Chloe Bennett</td>
+						<td><a href="/leads/details?id=3" style="color: var(--accent-active-text); text-decoration: none;">Newborn Studio Session</a></td>
+						<td>Nov 5 at 10:00</td>
+						<td>Vanshita S.</td>
+						<td><span class="status-pill pill-purple">Normal</span></td>
+						<td>@crmComponents.StatusPill("Scheduled", "blue")</td>
+						<td style="color: var(--text-muted); font-size: 11.5px;">Check if maternity wardrobe selection is finalized.</td>
+						<td style="text-align: right;">
+							<button class="crm-page-btn">✓ Done</button>
+						</td>
+					</tr>
+					<tr>
+						<td><input type="checkbox"/></td>
+						<td style="font-weight: 600;">Arthur Pendelton</td>
+						<td>Corporate Headshots</td>
+						<td style="color: #ff7675; font-weight: 600;">Oct 31 at 16:00 (Overdue)</td>
+						<td>Dishita V.</td>
+						<td><span class="status-pill pill-red">Urgent</span></td>
+						<td>@crmComponents.StatusPill("Overdue", "red")</td>
+						<td style="color: var(--text-muted); font-size: 11.5px;">Client requested invoice revision.</td>
+						<td style="text-align: right;">
+							<button class="crm-page-btn">✓ Done</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+
+			@crmComponents.Pagination(1, 2, 14)
+		</div>
+	}
+}
+

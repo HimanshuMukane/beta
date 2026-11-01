@@ -1,0 +1,97 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	"components"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ Orders(statusFilter string) {
+	@layouts.DashboardLayout("Orders Management - Aperture CRM", "orders", []layouts.BreadcrumbItem{
+		{Label: "Orders"},
+	}) {
+		@crmComponents.PageHeader("Orders & Bookings", "Manage client orders, package purchases, line items, and payment statuses.") {
+			<a href="/settings/order-presets" class="crm-page-btn" style="text-decoration: none;">
+				@components.IconSettings()
+				<span>Configure Order Items</span>
+			</a>
+			<button class="c-btn c-btn-primary" onclick="openAddOrderModal()">
+				@components.IconPlus()
+				<span>Add Order</span>
+			</button>
+		}
+
+		<div class="crm-filter-bar">
+			<div class="crm-filter-tabs">
+				<a href="/orders" class={ "crm-filter-tab", templ.KV("active", statusFilter == "" || statusFilter == "all") }>All Orders (28)</a>
+				<a href="/orders?status=pending" class={ "crm-filter-tab", templ.KV("active", statusFilter == "pending") }>Pending (4)</a>
+				<a href="/orders?status=confirmed" class={ "crm-filter-tab", templ.KV("active", statusFilter == "confirmed") }>Confirmed (18)</a>
+				<a href="/orders?status=completed" class={ "crm-filter-tab", templ.KV("active", statusFilter == "completed") }>Completed (5)</a>
+				<a href="/orders?status=cancelled" class={ "crm-filter-tab", templ.KV("active", statusFilter == "cancelled") }>Cancelled (1)</a>
+			</div>
+
+			<input type="text" placeholder="Search orders..." class="crm-search-input"/>
+		</div>
+
+		<div class="crm-table-container">
+			<table class="crm-table">
+				<thead>
+					<tr>
+						<th>Order ID</th>
+						<th>Client</th>
+						<th>Package / Services</th>
+						<th>Order Date</th>
+						<th>Total Amount</th>
+						<th>Paid Amount</th>
+						<th>Balance</th>
+						<th>Status</th>
+						<th style="text-align: right;">Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td style="font-weight: 600;"><a href="/orders/details?id=ORD-942" style="color: var(--accent-active-text); text-decoration: none;">ORD-942</a></td>
+						<td>Olivia & James Thornton</td>
+						<td>Fine Art Leather Album & Canvas</td>
+						<td style="color: var(--text-muted);">Oct 10, 2026</td>
+						<td style="font-weight: 600;">$1,000.00</td>
+						<td>$500.00</td>
+						<td style="color: #ff7675; font-weight: 600;">$500.00</td>
+						<td>@crmComponents.StatusPill("Confirmed", "blue")</td>
+						<td style="text-align: right;">
+							<a href="/orders/details?id=ORD-942" class="crm-page-btn" style="text-decoration: none;">View</a>
+						</td>
+					</tr>
+					<tr>
+						<td style="font-weight: 600;"><a href="/orders/details?id=ORD-941" style="color: var(--accent-active-text); text-decoration: none;">ORD-941</a></td>
+						<td>Kora Fashion Apparel</td>
+						<td>Spring Lookbook Commercial Shoot</td>
+						<td style="color: var(--text-muted);">Oct 08, 2026</td>
+						<td style="font-weight: 600;">$4,200.00</td>
+						<td>$4,200.00</td>
+						<td style="color: #00cec9; font-weight: 600;">$0.00</td>
+						<td>@crmComponents.StatusPill("Completed", "green")</td>
+						<td style="text-align: right;">
+							<a href="/orders/details?id=ORD-941" class="crm-page-btn" style="text-decoration: none;">View</a>
+						</td>
+					</tr>
+					<tr>
+						<td style="font-weight: 600;"><a href="/orders/details?id=ORD-940" style="color: var(--accent-active-text); text-decoration: none;">ORD-940</a></td>
+						<td>Kearney & Partners Legal</td>
+						<td>Executive Corporate Portraits</td>
+						<td style="color: var(--text-muted);">Oct 04, 2026</td>
+						<td style="font-weight: 600;">$2,400.00</td>
+						<td>$1,200.00</td>
+						<td style="color: #ff7675; font-weight: 600;">$1,200.00</td>
+						<td>@crmComponents.StatusPill("Pending", "yellow")</td>
+						<td style="text-align: right;">
+							<a href="/orders/details?id=ORD-940" class="crm-page-btn" style="text-decoration: none;">View</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+
+			@crmComponents.Pagination(1, 1, 8)
+		</div>
+	}
+}

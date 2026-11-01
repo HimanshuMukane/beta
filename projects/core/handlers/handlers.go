@@ -132,8 +132,11 @@ func SignupAPIHandler(cfg utils.Config, defaultRole ...string) http.HandlerFunc 
 		if err != nil {
 			if errors.Is(err, repositories.ErrRoleNotFound) {
 				role, err = roleRepo.CreateRole(r.Context(), targetRole)
+				if errors.Is(err, repositories.ErrRoleAlreadyExists) {
+					role, err = roleRepo.GetRoleByName(r.Context(), targetRole)
+				}
 			}
-			if err != nil {
+			if err != nil || role == nil {
 				utils.WriteError(w, http.StatusInternalServerError, "Failed to resolve default role")
 				return
 			}
@@ -145,6 +148,7 @@ func SignupAPIHandler(cfg utils.Config, defaultRole ...string) http.HandlerFunc 
 			Email:     input.Email,
 			Password:  input.Password,
 			RoleID:    role.ID,
+			RoleName:  targetRole,
 		})
 		if err != nil {
 			if errors.Is(err, repositories.ErrEmailAlreadyExists) {

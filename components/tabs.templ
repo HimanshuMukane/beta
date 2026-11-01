@@ -1,0 +1,33 @@
+package components
+
+templ Tabs(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div class={ "crm-tabs-list", extraClass }>
+		{ children... }
+	</div>
+}
+
+type TabTriggerProps struct {
+	Active bool
+	Href   string
+	Class  string
+	Onclick string
+}
+
+templ TabTrigger(props TabTriggerProps) {
+	if props.Href != "" {
+		<a href={ templ.SafeURL(props.Href) } class={ "crm-tab-trigger", templ.KV("active", props.Active), props.Class }>
+			{ children... }
+		</a>
+	} else {
+		<button type="button" class={ "crm-tab-trigger", templ.KV("active", props.Active), props.Class } onclick={ templ.ComponentScript{Call: props.Onclick} }>
+			{ children... }
+		</button>
+	}
+}
+

@@ -78,7 +78,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(templ.EscapeString(string(rune('0' + row.Index))))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/pages/dashboard.templ`, Line: 84, Col: 133}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/cms/ui/pages/dashboard.templ`, Line: 84, Col: 133}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -91,7 +91,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(row.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/pages/dashboard.templ`, Line: 86, Col: 24}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/cms/ui/pages/dashboard.templ`, Line: 86, Col: 24}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -109,7 +109,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues("background-color: " + a.BgColor + ";")
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/pages/dashboard.templ`, Line: 91, Col: 86}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/cms/ui/pages/dashboard.templ`, Line: 91, Col: 86}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 					if templ_7745c5c3_Err != nil {
@@ -122,7 +122,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(a.Initials)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/pages/dashboard.templ`, Line: 91, Col: 101}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/cms/ui/pages/dashboard.templ`, Line: 91, Col: 101}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -141,7 +141,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(row.Assignees[0].Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/pages/dashboard.templ`, Line: 96, Col: 33}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/cms/ui/pages/dashboard.templ`, Line: 96, Col: 33}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {
@@ -159,7 +159,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 						var templ_7745c5c3_Var8 string
 						templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(row.Assignees[1].Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/pages/dashboard.templ`, Line: 98, Col: 36}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/cms/ui/pages/dashboard.templ`, Line: 98, Col: 36}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 						if templ_7745c5c3_Err != nil {
@@ -179,7 +179,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 					var templ_7745c5c3_Var9 string
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(row.Status)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/pages/dashboard.templ`, Line: 107, Col: 22}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/cms/ui/pages/dashboard.templ`, Line: 107, Col: 22}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -197,7 +197,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 					var templ_7745c5c3_Var10 string
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(row.Status)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/pages/dashboard.templ`, Line: 112, Col: 22}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/cms/ui/pages/dashboard.templ`, Line: 112, Col: 22}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
@@ -215,7 +215,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(row.DueDate)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/pages/dashboard.templ`, Line: 116, Col: 24}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/cms/ui/pages/dashboard.templ`, Line: 116, Col: 24}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -228,7 +228,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(row.Priority)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/pages/dashboard.templ`, Line: 117, Col: 25}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/cms/ui/pages/dashboard.templ`, Line: 117, Col: 25}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {

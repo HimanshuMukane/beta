@@ -1,0 +1,181 @@
+package pages
+
+import (
+"chi-mysql-server/ui/layouts"
+"components"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+type LeadRow struct {
+    ID           string
+    Name         string
+    Email        string
+    Phone        string
+    Source       string
+    Service      string
+    Photographer string
+    Stage        string
+    StageColor   string
+    Value        string
+    LastContact  string
+    NextFollowup string
+}
+
+templ Leads(activeStage string, activeSource string) {
+    @layouts.DashboardLayout("Leads Pipeline - Aperture CRM", "leads", []layouts.BreadcrumbItem{{Label: "Leads"}}) {
+        @crmComponents.PageHeader("Leads Management", "Track inquiries, qualify prospects, and convert photography clients.") {
+            <button class="c-btn" style="background: var(--bg-surface-subtle); color: var(--text-main);">📥 Export Leads</button>
+            <a href="/leads/details?id=new" class="c-btn c-btn-primary">+ Add Lead</a>
+        }
+
+        <!-- Pipeline Stage Tabs -->
+        <div class="crm-filter-bar">
+            @components.Tabs() {
+                @components.TabTrigger(components.TabTriggerProps{Href: "/leads", Active: activeStage == "" || activeStage == "all"}) {
+                    All Leads (42)
+                }
+                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=new", Active: activeStage == "new"}) {
+                    New (8)
+                }
+                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=contacted", Active: activeStage == "contacted"}) {
+                    Contacted (11)
+                }
+                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=qualified", Active: activeStage == "qualified"}) {
+                    Qualified (7)
+                }
+                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=negotiation", Active: activeStage == "negotiation"}) {
+                    Negotiation (6)
+                }
+                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=ready", Active: activeStage == "ready"}) {
+                    Ready to Book (4)
+                }
+                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=converted", Active: activeStage == "converted"}) {
+                    Converted (5)
+                }
+                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=lost", Active: activeStage == "lost"}) {
+                    Lost (1)
+                }
+            }
+
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <select class="crm-select" onchange="window.location.href='/leads?source='+this.value">
+                                                                <option value="all">All Sources</option>
+                                                                    <option value="instagram">Instagram</option>
+                                                                        <option value="whatsapp">WhatsApp</option>
+                                                                            <option value="messenger">Facebook Messenger</option>
+                                                                                <option value="ads">Lead Ads</option>
+                                                                                    <option value="website">Website Forms</option>
+                                                                                        <option value="manual">Manual Entry</option>
+                                                                                        </select>
+                                                                                        <input type="text" placeholder="Search leads..." class="crm-search-input"/>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                    @components.Table() {
+                                                                                        <thead>
+                                                                                            <tr>
+                                                                                                <th style="width: 20px;"><input type="checkbox"/></th>
+                                                                                                    <th>Lead Name & Contact</th>
+                                                                                                        <th>Source</th>
+                                                                                                            <th>Photography Service</th>
+                                                                                                                <th>Assigned To</th>
+                                                                                                                    <th>Pipeline Stage</th>
+                                                                                                                        <th>Expected Value</th>
+                                                                                                                            <th>Last Contacted</th>
+                                                                                                                                <th>Next Follow-up</th>
+                                                                                                                                    <th style="text-align: right;">Actions</th>
+                                                                                                                                    </tr>
+                                                                                                                                </thead>
+                                                                                                                                <tbody>
+                                                                                                                                    <tr>
+                                                                                                                                        <td><input type="checkbox"/></td>
+                                                                                                                                            <td>
+                                                                                                                                                <a href="/leads/details?id=1" style="font-weight: 600; color: var(--text-main); text-decoration: none;">Jessica Parker</a>
+                                                                                                                                                    <div style="font-size: 11px; color: var(--text-muted);">+1 (555) 392-1049 • jessica@luxuryweddings.com</div>
+                                                                                                                                                    </td>
+                                                                                                                                                    <td><span class="status-pill pill-purple">Instagram</span></td>
+                                                                                                                                                        <td>Destination Wedding</td>
+                                                                                                                                                            <td>Himanshu M.</td>
+                                                                                                                                                                <td>@crmComponents.StatusPill("Ready to Book", "green")</td>
+                                                                                                                                                                    <td style="font-weight: 600;">$4,500</td>
+                                                                                                                                                                        <td style="color: var(--text-muted); font-size: 11.5px;">Yesterday 16:40</td>
+                                                                                                                                                                            <td style="color: #ff7675; font-size: 11.5px; font-weight: 600;">Today 14:00</td>
+                                                                                                                                                                                <td style="text-align: right;">
+                                                                                                                                                                                    <a href="/leads/details?id=1" class="crm-page-btn" style="text-decoration: none;">View</a>
+                                                                                                                                                                                    </td>
+                                                                                                                                                                                </tr>
+                                                                                                                                                                                <tr>
+                                                                                                                                                                                    <td><input type="checkbox"/></td>
+                                                                                                                                                                                        <td>
+                                                                                                                                                                                            <a href="/leads/details?id=2" style="font-weight: 600; color: var(--text-main); text-decoration: none;">Marcus Vance</a>
+                                                                                                                                                                                                <div style="font-size: 11px; color: var(--text-muted);">+1 (555) 882-9901 • marcus@vancebrands.co</div>
+                                                                                                                                                                                                </td>
+                                                                                                                                                                                                <td><span class="status-pill pill-blue">Website Form</span></td>
+                                                                                                                                                                                                    <td>Commercial Lookbook</td>
+                                                                                                                                                                                                        <td>Aniket K.</td>
+                                                                                                                                                                                                            <td>@crmComponents.StatusPill("Negotiation", "yellow")</td>
+                                                                                                                                                                                                                <td style="font-weight: 600;">$3,200</td>
+                                                                                                                                                                                                                    <td style="color: var(--text-muted); font-size: 11.5px;">2 days ago</td>
+                                                                                                                                                                                                                        <td style="color: var(--text-muted); font-size: 11.5px;">Nov 4, 11:00</td>
+                                                                                                                                                                                                                            <td style="text-align: right;">
+                                                                                                                                                                                                                                <a href="/leads/details?id=2" class="crm-page-btn" style="text-decoration: none;">View</a>
+                                                                                                                                                                                                                                </td>
+                                                                                                                                                                                                                            </tr>
+                                                                                                                                                                                                                            <tr>
+                                                                                                                                                                                                                                <td><input type="checkbox"/></td>
+                                                                                                                                                                                                                                    <td>
+                                                                                                                                                                                                                                        <a href="/leads/details?id=3" style="font-weight: 600; color: var(--text-main); text-decoration: none;">Chloe Bennett</a>
+                                                                                                                                                                                                                                            <div style="font-size: 11px; color: var(--text-muted);">+1 (555) 412-8823 • chloe.b@gmail.com</div>
+                                                                                                                                                                                                                                            </td>
+                                                                                                                                                                                                                                            <td><span class="status-pill pill-green">WhatsApp</span></td>
+                                                                                                                                                                                                                                                <td>Maternity & Newborn</td>
+                                                                                                                                                                                                                                                    <td>Vanshita S.</td>
+                                                                                                                                                                                                                                                        <td>@crmComponents.StatusPill("Qualified", "blue")</td>
+                                                                                                                                                                                                                                                            <td style="font-weight: 600;">$1,400</td>
+                                                                                                                                                                                                                                                                <td style="color: var(--text-muted); font-size: 11.5px;">3 days ago</td>
+                                                                                                                                                                                                                                                                    <td style="color: var(--text-muted); font-size: 11.5px;">Nov 5, 10:00</td>
+                                                                                                                                                                                                                                                                        <td style="text-align: right;">
+                                                                                                                                                                                                                                                                            <a href="/leads/details?id=3" class="crm-page-btn" style="text-decoration: none;">View</a>
+                                                                                                                                                                                                                                                                            </td>
+                                                                                                                                                                                                                                                                        </tr>
+                                                                                                                                                                                                                                                                        <tr>
+                                                                                                                                                                                                                                                                            <td><input type="checkbox"/></td>
+                                                                                                                                                                                                                                                                                <td>
+                                                                                                                                                                                                                                                                                    <a href="/leads/details?id=4" style="font-weight: 600; color: var(--text-main); text-decoration: none;">Aria Montgomery</a>
+                                                                                                                                                                                                                                                                                        <div style="font-size: 11px; color: var(--text-muted);">+1 (555) 723-5511 • aria@montgomery.art</div>
+                                                                                                                                                                                                                                                                                        </td>
+                                                                                                                                                                                                                                                                                        <td><span class="status-pill pill-purple">Instagram</span></td>
+                                                                                                                                                                                                                                                                                            <td>Fine Art Portraiture</td>
+                                                                                                                                                                                                                                                                                                <td>Himanshu M.</td>
+                                                                                                                                                                                                                                                                                                    <td>@crmComponents.StatusPill("New", "blue")</td>
+                                                                                                                                                                                                                                                                                                        <td style="font-weight: 600;">$2,100</td>
+                                                                                                                                                                                                                                                                                                            <td style="color: var(--text-muted); font-size: 11.5px;">Today 09:15</td>
+                                                                                                                                                                                                                                                                                                                <td style="color: #ff7675; font-size: 11.5px; font-weight: 600;">Today 18:00</td>
+                                                                                                                                                                                                                                                                                                                    <td style="text-align: right;">
+                                                                                                                                                                                                                                                                                                                        <a href="/leads/details?id=4" class="crm-page-btn" style="text-decoration: none;">View</a>
+                                                                                                                                                                                                                                                                                                                        </td>
+                                                                                                                                                                                                                                                                                                                    </tr>
+                                                                                                                                                                                                                                                                                                                    <tr>
+                                                                                                                                                                                                                                                                                                                        <td><input type="checkbox"/></td>
+                                                                                                                                                                                                                                                                                                                            <td>
+                                                                                                                                                                                                                                                                                                                                <a href="/leads/details?id=5" style="font-weight: 600; color: var(--text-main); text-decoration: none;">David Sterling</a>
+                                                                                                                                                                                                                                                                                                                                    <div style="font-size: 11px; color: var(--text-muted);">+1 (555) 910-3301 • david@sterlinglaw.com</div>
+                                                                                                                                                                                                                                                                                                                                    </td>
+                                                                                                                                                                                                                                                                                                                                    <td><span class="status-pill pill-gray">Manual Entry</span></td>
+                                                                                                                                                                                                                                                                                                                                        <td>Corporate Headshots</td>
+                                                                                                                                                                                                                                                                                                                                            <td>Dishita V.</td>
+                                                                                                                                                                                                                                                                                                                                                <td>@crmComponents.StatusPill("Contacted", "yellow")</td>
+                                                                                                                                                                                                                                                                                                                                                    <td style="font-weight: 600;">$1,850</td>
+                                                                                                                                                                                                                                                                                                                                                        <td style="color: var(--text-muted); font-size: 11.5px;">Yesterday 11:30</td>
+                                                                                                                                                                                                                                                                                                                                                            <td style="color: var(--text-muted); font-size: 11.5px;">Nov 6, 15:30</td>
+                                                                                                                                                                                                                                                                                                                                                                <td style="text-align: right;">
+                                                                                                                                                                                                                                                                                                                                                                    <a href="/leads/details?id=5" class="crm-page-btn" style="text-decoration: none;">View</a>
+                                                                                                                                                                                                                                                                                                                                                                    </td>
+                                                                                                                                                                                                                                                                                                                                                                </tr>
+                                                                                                                                                                                                                                                                                                                                                            </tbody>
+                                                                                                                                                                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                                                                                                                                                                        @crmComponents.Pagination(1, 4, 42)
+                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                }
+

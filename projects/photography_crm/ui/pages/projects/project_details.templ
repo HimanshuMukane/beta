@@ -1,0 +1,383 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+)
+
+templ ProjectDetails(id string) {
+	if id == "new" {
+		@NewProject()
+	} else {
+		@ViewProjectDetails(id)
+	}
+}
+
+templ NewProject() {
+	@layouts.DashboardLayout("New Project - Aperture CRM", "projects", []layouts.BreadcrumbItem{
+		{Label: "Projects", URL: "/projects"},
+		{Label: "New Project"},
+	}) {
+		<div class="projects-layout">
+
+			<div class="new-project-header">
+				<div class="new-project-header-left">
+					<a href="/projects" class="new-project-back-btn" title="Back to projects">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="19" y1="12" x2="5" y2="12"></line>
+							<polyline points="12 19 5 12 12 5"></polyline>
+						</svg>
+					</a>
+					<div>
+						<h1 style="font-size: 16px; font-weight: 700; color: var(--text-main); margin: 0;">New Projects</h1>
+						<p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Create a new project to manage work, tasks, and timelines....</p>
+					</div>
+				</div>
+
+				<div class="new-project-header-right">
+					<div class="manager-select-btn">
+						<span class="project-avatar project-avatar-dark" style="width: 22px; height: 22px; font-size: 10px;">E</span>
+						<div style="display: flex; flex-direction: column; line-height: 1.1;">
+							<span style="font-weight: 600; font-size: 11.5px;">especa</span>
+							<span style="font-size: 9px; color: var(--text-dim); text-transform: uppercase;">Projects Manager</span>
+						</div>
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px; color: var(--text-muted);">
+							<polyline points="6 9 12 15 18 9"></polyline>
+						</svg>
+					</div>
+					<button type="button" class="projects-new-btn">Create</button>
+				</div>
+			</div>
+
+			<div class="new-project-grid">
+
+				<div class="project-form-section">
+					<h2 class="project-form-section-title">Client Details</h2>
+
+					<div class="project-form-group">
+						<label class="project-form-label">Name <span class="required">*</span></label>
+						<input type="text" class="crm-input" placeholder="Name" style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 12.5px; color: var(--text-main); outline: none;"/>
+					</div>
+
+					<div class="project-form-group">
+						<label class="project-form-label">Mobile No <span class="required">*</span></label>
+						<div class="phone-input-row">
+							<select class="phone-prefix-select">
+								<option value="+91">🇮🇳 +91</option>
+								<option value="+1">🇺🇸 +1</option>
+								<option value="+44">🇬🇧 +44</option>
+								<option value="+971">🇦🇪 +971</option>
+							</select>
+							<input type="tel" placeholder="Mobile No"/>
+						</div>
+					</div>
+
+					<div class="project-form-group">
+						<label class="project-form-label">Email Address</label>
+						<input type="email" class="crm-input" placeholder="Email Address" style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 12.5px; color: var(--text-main); outline: none;"/>
+					</div>
+
+					<div class="project-form-group">
+						<label class="project-form-label">Address</label>
+						<textarea class="crm-input" placeholder="Address" rows="3" style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 12.5px; color: var(--text-main); outline: none; resize: vertical;"></textarea>
+					</div>
+
+					<div class="project-form-group">
+						<label class="project-form-label">Lead Source <span class="required">*</span></label>
+						<select class="crm-select" style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 12.5px; color: var(--text-main); outline: none; width: 100%;">
+							<option value="">Lead Source</option>
+							<option value="instagram">Instagram</option>
+							<option value="whatsapp">WhatsApp</option>
+							<option value="referral">Referral</option>
+							<option value="website">Website</option>
+							<option value="walkin">Walk-in</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="project-form-section">
+					<h2 class="project-form-section-title">Projects Details</h2>
+
+					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+						<div class="project-form-group" style="margin-bottom: 0;">
+							<label class="project-form-label">Projects Name</label>
+							<input type="text" class="crm-input" placeholder="e.g. Johnson Wedding" style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 12.5px; color: var(--text-main); outline: none;"/>
+						</div>
+						<div class="project-form-group" style="margin-bottom: 0;">
+							<label class="project-form-label">Projects Address</label>
+							<input type="text" class="crm-input" placeholder="Venue or address" style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 12.5px; color: var(--text-main); outline: none;"/>
+						</div>
+					</div>
+
+					<div style="margin-top: 20px;">
+						<div style="display: flex; align-items: center; justify-content: space-between;">
+							<div style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; color: var(--text-main);">
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+									<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+									<line x1="16" y1="2" x2="16" y2="6"></line>
+									<line x1="8" y1="2" x2="8" y2="6"></line>
+									<line x1="3" y1="10" x2="21" y2="10"></line>
+								</svg>
+								<span>Projects Segments</span>
+							</div>
+							<span style="font-size: 11px; color: var(--text-dim);">Add one segment per date block</span>
+						</div>
+
+						<div class="segment-box">
+							<div class="segment-header">
+								<div style="display: flex; align-items: center;">
+									<span class="segment-num-badge">1</span>
+									<span class="segment-name">New segment</span>
+								</div>
+								<span style="color: var(--text-dim); cursor: grab; font-size: 14px;">⋮⋮</span>
+							</div>
+
+							<div class="segment-grid">
+								<div>
+									<label class="project-form-label">Type</label>
+									<select class="crm-select" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 12.5px; color: var(--text-main); outline: none; width: 100%;">
+										<option value="">Projects Type</option>
+										<option value="wedding" selected>Wedding</option>
+										<option value="pre-wedding">Pre-Wedding</option>
+										<option value="maternity">Maternity</option>
+										<option value="commercial">Commercial</option>
+										<option value="portrait">Portrait</option>
+									</select>
+								</div>
+								<div>
+									<label class="project-form-label">Event Date Range</label>
+									<div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 7px 12px;">
+										<span style="font-size: 12px; color: var(--text-muted);">Start date → End date</span>
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+											<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+											<line x1="16" y1="2" x2="16" y2="6"></line>
+											<line x1="8" y1="2" x2="8" y2="6"></line>
+											<line x1="3" y1="10" x2="21" y2="10"></line>
+										</svg>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<button type="button" class="add-segment-btn">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<line x1="12" y1="5" x2="12" y2="19"></line>
+								<line x1="5" y1="12" x2="19" y2="12"></line>
+							</svg>
+							<span>Add Projects segment</span>
+						</button>
+						<div class="segment-hint">Long-duration Projects are easier to manage in calendars with segments.</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ ViewProjectDetails(id string) {
+	@layouts.DashboardLayout("Kavya Rajendran Wedding - Aperture CRM", "projects", []layouts.BreadcrumbItem{
+		{Label: "Projects", URL: "/projects"},
+		{Label: "Kavya Rajendran Wedding"},
+	}) {
+		<div class="projects-layout">
+
+			<div class="project-details-header">
+				<div class="project-details-header-left">
+					<a href="/projects" class="new-project-back-btn" title="Back to projects">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="19" y1="12" x2="5" y2="12"></line>
+							<polyline points="12 19 5 12 12 5"></polyline>
+						</svg>
+					</a>
+					<div class="project-details-avatar">
+						KW
+					</div>
+					<div class="project-title-wrapper">
+						<div class="project-title-row">
+							<span class="project-title">Kavya Rajendran Wedding</span>
+							<button type="button" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px;" title="Edit Name">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M12 20h9"></path>
+									<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+								</svg>
+							</button>
+						</div>
+						<div class="project-client-sub">Kavya Rajendran</div>
+					</div>
+				</div>
+
+				<div class="project-details-header-center">
+
+					<div class="project-dropdown-selector" id="status-selector-container">
+						<span class="selector-label">Status</span>
+						<button class="selector-pill-btn status-pill-gray" type="button" onclick="document.getElementById('status-menu').classList.toggle('show'); document.getElementById('stage-menu').classList.remove('show'); event.stopPropagation();">
+							<span id="current-status-text">New</span>
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="6 9 12 15 18 9"></polyline>
+							</svg>
+						</button>
+						<div class="dropdown-menu-list" id="status-menu">
+							<button class="dropdown-item active" type="button" onclick="setStatus('New')">New</button>
+							<button class="dropdown-item" type="button" onclick="setStatus('Booked')">Booked</button>
+							<button class="dropdown-item" type="button" onclick="setStatus('Active')">Active</button>
+							<button class="dropdown-item" type="button" onclick="setStatus('On Hold')">On Hold</button>
+							<button class="dropdown-item" type="button" onclick="setStatus('Completed')">Completed</button>
+							<button class="dropdown-item" type="button" onclick="setStatus('Cancelled')">Cancelled</button>
+						</div>
+					</div>
+
+					<div class="project-dropdown-selector" id="stage-selector-container">
+						<span class="selector-label">Stage</span>
+						<button class="selector-pill-btn stage-pill-blue" type="button" onclick="document.getElementById('stage-menu').classList.toggle('show'); document.getElementById('status-menu').classList.remove('show'); event.stopPropagation();">
+							<span id="current-stage-text">Booked</span>
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="6 9 12 15 18 9"></polyline>
+							</svg>
+						</button>
+						<div class="dropdown-menu-list" id="stage-menu">
+							<button class="dropdown-item active" type="button" onclick="setStage('Booked')">Booked</button>
+							<button class="dropdown-item" type="button" onclick="setStage('Shoot Planning')">Shoot Planning</button>
+							<button class="dropdown-item" type="button" onclick="setStage('Shoot Completed')">Shoot Completed</button>
+							<button class="dropdown-item" type="button" onclick="setStage('Editing')">Editing</button>
+							<button class="dropdown-item" type="button" onclick="setStage('Delivery')">Delivery</button>
+							<button class="dropdown-item" type="button" onclick="setStage('Closure')">Closure</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="project-details-header-right">
+					<button class="action-dropdown-btn" type="button">
+						<span>Action</span>
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="6 9 12 15 18 9"></polyline>
+						</svg>
+					</button>
+					<button class="delete-icon-btn" type="button" title="Delete Project">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="3 6 5 6 21 6"></polyline>
+							<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+						</svg>
+					</button>
+				</div>
+			</div>
+
+			<div class="project-subnav-tabs">
+				<a href="#" class="project-subnav-tab active">Documents</a>
+				<a href="#" class="project-subnav-tab">Insights</a>
+				<a href="#" class="project-subnav-tab">Sessions</a>
+				<a href="#" class="project-subnav-tab">Tasks</a>
+				<a href="#" class="project-subnav-tab">Printing</a>
+				<a href="#" class="project-subnav-tab">Deliverables</a>
+				<a href="#" class="project-subnav-tab">Expense</a>
+				<a href="#" class="project-subnav-tab">Notes</a>
+			</div>
+
+			<div class="project-details-grid">
+
+				<div class="crm-table-container">
+					<div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+						<h2 style="font-size: 15px; font-weight: 700; color: var(--text-main); margin: 0;">Documents</h2>
+						<button class="projects-new-btn" style="padding: 5px 14px; font-size: 12px;">Create</button>
+					</div>
+
+					<table class="crm-table">
+						<tbody>
+							<tr>
+								<td style="width: 70px;">
+									<span class="doc-type-badge">Form</span>
+								</td>
+								<td style="font-weight: 500; color: var(--text-main); font-size: 13px;">Lead Form</td>
+								<td style="color: var(--text-dim); font-size: 13px;">—</td>
+								<td>
+									<span class="doc-status-submitted">• Submitted</span>
+								</td>
+								<td style="color: var(--text-muted); font-size: 12px;">01/11/2026</td>
+								<td style="text-align: right; color: var(--text-dim); cursor: pointer; font-size: 15px;">•••</td>
+							</tr>
+							<tr>
+								<td>
+									<span class="doc-type-badge">Lead</span>
+								</td>
+								<td style="font-weight: 500; color: var(--text-main); font-size: 13px;">Kavya Rajendran</td>
+								<td style="color: var(--text-muted); font-size: 12.5px;">ESPE/LQuote/101</td>
+								<td>
+									<span class="doc-status-converted">• Converted</span>
+								</td>
+								<td style="color: var(--text-muted); font-size: 12px;">01/11/2026</td>
+								<td style="text-align: right; color: var(--text-dim); cursor: pointer; font-size: 15px;">•••</td>
+							</tr>
+							<tr>
+								<td>
+									<span class="doc-type-badge">Invoice</span>
+								</td>
+								<td style="font-weight: 500; color: var(--text-main); font-size: 13px;">Invoice - Kavya Rajendr...</td>
+								<td style="color: var(--text-muted); font-size: 12.5px;">
+									ESPE/INVOICE/101 &nbsp; <span style="font-weight: 600; color: var(--text-main);">INR 54,000</span>
+								</td>
+								<td>
+									<span class="doc-status-pending">• Pending</span>
+								</td>
+								<td style="color: var(--text-muted); font-size: 12px;">01/11/2026</td>
+								<td style="text-align: right; color: var(--text-dim); cursor: pointer; font-size: 15px;">•••</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="gallery-card">
+					<div class="gallery-header">
+						<h2 style="font-size: 15px; font-weight: 700; color: var(--text-main); margin: 0;">Gallery</h2>
+						<button class="projects-toolbar-btn" style="font-size: 11.5px; padding: 4px 10px;">Add</button>
+					</div>
+
+					<div class="gallery-empty-box">
+						<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.35;">
+							<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+							<polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+							<line x1="12" y1="22.08" x2="12" y2="12"></line>
+						</svg>
+						<span>No Data</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			function setStatus(status) {
+				const label = document.getElementById('current-status-text');
+				if (label) label.textContent = status;
+				const menu = document.getElementById('status-menu');
+				if (menu) {
+					menu.classList.remove('show');
+					menu.querySelectorAll('.dropdown-item').forEach(el => {
+						if (el.textContent.trim() === status) el.classList.add('active');
+						else el.classList.remove('active');
+					});
+				}
+			}
+
+			function setStage(stage) {
+				const label = document.getElementById('current-stage-text');
+				if (label) label.textContent = stage;
+				const menu = document.getElementById('stage-menu');
+				if (menu) {
+					menu.classList.remove('show');
+					menu.querySelectorAll('.dropdown-item').forEach(el => {
+						if (el.textContent.trim() === stage) el.classList.add('active');
+						else el.classList.remove('active');
+					});
+				}
+			}
+
+			window.addEventListener('click', function(e) {
+				const statusMenu = document.getElementById('status-menu');
+				const stageMenu = document.getElementById('stage-menu');
+				if (statusMenu && !e.target.closest('#status-selector-container')) {
+					statusMenu.classList.remove('show');
+				}
+				if (stageMenu && !e.target.closest('#stage-selector-container')) {
+					stageMenu.classList.remove('show');
+				}
+			});
+		</script>
+	}
+}

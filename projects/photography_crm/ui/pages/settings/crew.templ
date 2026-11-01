@@ -1,0 +1,216 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	"components"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ CrewSettings() {
+	@layouts.DashboardLayout("Crew Management - Settings", "settings_crew", []layouts.BreadcrumbItem{
+		{Label: "Settings", URL: "/settings"},
+		{Label: "Crew"},
+	}) {
+		@crmComponents.PageHeader("Studio Crew & Team", "Manage photographers, cinematographers, second shooters, and team designations.") {
+			<div class="crew-header-actions">
+				<button class="crm-page-btn" onclick="openDesignationModal()" style="display: inline-flex; align-items: center; gap: 6px;">
+					@components.IconTag()
+					<span>Manage Designations</span>
+				</button>
+				<button class="c-btn c-btn-primary" onclick="openAddCrewModal()">+ Add Crew Member</button>
+			</div>
+		}
+
+		<div class="crm-table-container">
+			<table class="crm-table">
+				<thead>
+					<tr>
+						<th>Crew Member</th>
+						<th>Designation</th>
+						<th>Mobile No</th>
+						<th>Email Address</th>
+						<th>Status</th>
+						<th>Notes</th>
+						<th style="text-align: right;">Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>
+							<div style="display: flex; align-items: center; gap: 10px;">
+								<div style="width: 34px; height: 34px; border-radius: 50%; background: #7c5dfa; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">HM</div>
+								<div>
+									<div style="font-weight: 600; font-size: 13px;">Himanshu Mukane</div>
+									<div style="font-size: 10.5px; color: var(--text-muted);">Lead & Founder</div>
+								</div>
+							</div>
+						</td>
+						<td><span class="status-pill pill-purple">Lead Photographer</span></td>
+						<td>+1 (555) 019-2831</td>
+						<td>himanshu@aperture.com</td>
+						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td style="color: var(--text-muted); font-size: 11.5px;">Sony A1 & Hasselblad 500CM Film Specialist</td>
+						<td style="text-align: right;"><button class="crm-page-btn">Edit</button></td>
+					</tr>
+					<tr>
+						<td>
+							<div style="display: flex; align-items: center; gap: 10px;">
+								<div style="width: 34px; height: 34px; border-radius: 50%; background: #00cec9; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">AK</div>
+								<div>
+									<div style="font-weight: 600; font-size: 13px;">Aniket K.</div>
+									<div style="font-size: 10.5px; color: var(--text-muted);">Senior Associate</div>
+								</div>
+							</div>
+						</td>
+						<td><span class="status-pill pill-blue">Cinematographer</span></td>
+						<td>+1 (555) 774-9021</td>
+						<td>aniket@aperture.com</td>
+						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td style="color: var(--text-muted); font-size: 11.5px;">Gimbal op & drone licensed</td>
+						<td style="text-align: right;"><button class="crm-page-btn">Edit</button></td>
+					</tr>
+					<tr>
+						<td>
+							<div style="display: flex; align-items: center; gap: 10px;">
+								<div style="width: 34px; height: 34px; border-radius: 50%; background: #fdcb6e; color: #222; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">VS</div>
+								<div>
+									<div style="font-weight: 600; font-size: 13px;">Vanshita S.</div>
+									<div style="font-size: 10.5px; color: var(--text-muted);">Associate</div>
+								</div>
+							</div>
+						</td>
+						<td><span class="status-pill pill-yellow">Candid Photographer</span></td>
+						<td>+1 (555) 662-1109</td>
+						<td>vanshita@aperture.com</td>
+						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td style="color: var(--text-muted); font-size: 11.5px;">Maternity & family portraits specialist</td>
+						<td style="text-align: right;"><button class="crm-page-btn">Edit</button></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div id="add-crew-modal" class="session-modal-overlay">
+			<div class="session-modal-box" style="max-width: 580px;">
+				<div class="session-modal-header">
+					<h3 style="font-size: 15px; font-weight: 600; color: var(--text-main);">Add Crew Member</h3>
+					<button class="crm-page-btn" onclick="closeAddCrewModal()" aria-label="Close">
+						@components.IconX()
+					</button>
+				</div>
+				<div class="session-modal-body">
+
+					<div>
+						<label class="session-field-label">Profile Photo</label>
+						<div style="display: flex; align-items: center; gap: 16px; padding: 12px; background: var(--bg-surface-subtle); border-radius: var(--radius-sm); border: 1px dashed var(--border-color);">
+							<div style="width: 48px; height: 48px; border-radius: 50%; background: var(--bg-surface-hover); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+								@components.IconCamera()
+							</div>
+							<div>
+								<button class="crm-page-btn" style="margin-bottom: 4px;">Choose File</button>
+								<div style="font-size: 11px; color: var(--text-muted);">JPG or PNG. Max 1 MB recommended.</div>
+							</div>
+						</div>
+					</div>
+
+					<div>
+						<label class="session-field-label">Full Name <span class="required-star">*</span></label>
+						<input type="text" class="session-input" placeholder="e.g. Rahul Sharma" required/>
+					</div>
+
+					<div class="session-form-grid-2">
+						<div>
+							<label class="session-field-label">Mobile No <span class="required-star">*</span></label>
+							<input type="tel" class="session-input" placeholder="+91 98765 43210" required/>
+						</div>
+						<div>
+							<label class="session-field-label">Email Address <span class="required-star">*</span></label>
+							<input type="email" class="session-input" placeholder="crew@studio.com" required/>
+						</div>
+					</div>
+
+					<div>
+						<label class="session-field-label">Designation <span class="required-star">*</span></label>
+						<select class="session-input">
+							<option value="">Select designation</option>
+							<option value="lead_photographer">Lead Photographer</option>
+							<option value="candid_photographer">Candid Photographer</option>
+							<option value="traditional_photographer">Traditional Photographer</option>
+							<option value="cinematographer">Cinematographer</option>
+							<option value="drone_pilot">Drone Pilot</option>
+							<option value="editor">Photo Retoucher / Editor</option>
+							<option value="assistant">Lighting Assistant</option>
+						</select>
+					</div>
+
+					<div>
+						<label class="session-field-label">Note</label>
+						<textarea class="session-input" style="height: 60px; resize: none;" placeholder="Special skills, gear owned, availability preferences..."></textarea>
+					</div>
+				</div>
+
+				<div class="session-modal-footer">
+					<button class="crm-page-btn" onclick="closeAddCrewModal()">Cancel</button>
+					<button class="c-btn c-btn-primary" onclick="closeAddCrewModal()">Save Crew Member</button>
+				</div>
+			</div>
+		</div>
+
+		<div id="designations-modal" class="session-modal-overlay">
+			<div class="session-modal-box" style="max-width: 500px;">
+				<div class="session-modal-header">
+					<h3 style="font-size: 15px; font-weight: 600; color: var(--text-main);">Manage Designations</h3>
+					<button class="crm-page-btn" onclick="closeDesignationModal()" aria-label="Close">
+						@components.IconX()
+					</button>
+				</div>
+				<div class="session-modal-body">
+					<div style="display: flex; gap: 8px;">
+						<input type="text" class="session-input" placeholder="New designation title..."/>
+						<button class="c-btn c-btn-primary">+ Add</button>
+					</div>
+
+					<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
+							<span>Lead Photographer</span>
+							<button class="service-remove-btn" aria-label="Remove">
+								@components.IconX()
+							</button>
+						</div>
+						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
+							<span>Cinematographer</span>
+							<button class="service-remove-btn" aria-label="Remove">
+								@components.IconX()
+							</button>
+						</div>
+						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
+							<span>Candid Photographer</span>
+							<button class="service-remove-btn" aria-label="Remove">
+								@components.IconX()
+							</button>
+						</div>
+					</div>
+				</div>
+				<div class="session-modal-footer">
+					<button class="c-btn c-btn-primary" onclick="closeDesignationModal()" style="width: 100%;">Done</button>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			function openAddCrewModal() {
+				document.getElementById('add-crew-modal')?.classList.add('is-active');
+			}
+			function closeAddCrewModal() {
+				document.getElementById('add-crew-modal')?.classList.remove('is-active');
+			}
+			function openDesignationModal() {
+				document.getElementById('designations-modal')?.classList.add('is-active');
+			}
+			function closeDesignationModal() {
+				document.getElementById('designations-modal')?.classList.remove('is-active');
+			}
+		</script>
+	}
+}
+

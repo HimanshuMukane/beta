@@ -1,0 +1,103 @@
+package components
+
+import (
+	"fmt"
+	"components"
+)
+
+templ PageHeader(title string, description string) {
+	<div class="crm-page-header">
+		<div>
+			<h1 class="crm-page-title">{ title }</h1>
+			if description != "" {
+				<p class="crm-page-desc">{ description }</p>
+			}
+		</div>
+		<div class="crm-page-actions">
+			{ children... }
+		</div>
+	</div>
+}
+
+templ StatCard(label string, value string, trend string, isUp bool, icon string) {
+	@components.Card("crm-stat-card") {
+		<div class="crm-stat-header">
+			<span class="crm-stat-label">{ label }</span>
+			<span class="crm-stat-icon">
+				if icon == "👥" || icon == "users" {
+					@components.IconUsers()
+				} else if icon == "✨" || icon == "sparkles" {
+					@components.IconSparkles()
+				} else if icon == "🎯" || icon == "target" {
+					@components.IconTarget()
+				} else if icon == "📁" || icon == "folder" {
+					@components.IconFolder()
+				} else if icon == "📷" || icon == "camera" {
+					@components.IconCamera()
+				} else if icon == "💰" || icon == "💵" || icon == "💎" || icon == "dollar" {
+					@components.IconDollarSign()
+				} else if icon == "⏳" || icon == "clock" {
+					@components.IconClock()
+				} else if icon == "📈" || icon == "trending-up" {
+					@components.IconTrendingUp()
+				} else if icon == "📊" || icon == "chart" {
+					@components.IconBarChart3()
+				} else if icon == "🆕" || icon == "user-plus" {
+					@components.IconUserPlus()
+				} else {
+					<span>{ icon }</span>
+				}
+			</span>
+		</div>
+		<div class="crm-stat-value">{ value }</div>
+		if trend != "" {
+			<div class={ "crm-stat-trend", templ.KV("trend-up", isUp), templ.KV("trend-down", !isUp) }>
+				if isUp {
+					<span>↑ { trend }</span>
+				} else {
+					<span>↓ { trend }</span>
+				}
+			</div>
+		}
+	}
+}
+
+templ StatusPill(label string, color string) {
+	@components.Badge(components.BadgeProps{Variant: color}) {
+		{ label }
+	}
+}
+
+templ EmptyState(title string, desc string, icon string) {
+	<div class="crm-empty-state">
+		<div class="empty-state-icon">{ icon }</div>
+		<h3 class="empty-state-title">{ title }</h3>
+		<p class="empty-state-desc">{ desc }</p>
+		{ children... }
+	</div>
+}
+
+templ Pagination(page int, totalPages int, totalItems int) {
+	<div class="crm-pagination">
+		<span class="crm-pagination-info">Showing <span class="crm-pagination-count">1</span> to <span class="crm-pagination-count">{ fmt.Sprintf("%d", totalItems) }</span> of <span class="crm-pagination-count">{ fmt.Sprintf("%d", totalItems) }</span> entries</span>
+		<div class="crm-pagination-controls">
+			<button class="crm-page-btn crm-page-nav" disabled aria-label="Previous page">
+				@components.IconChevronLeft()
+				<span>Previous</span>
+			</button>
+			<div class="crm-pagination-pages">
+				<button class="crm-page-btn is-active" aria-current="page">1</button>
+				if totalPages > 1 {
+					<button class="crm-page-btn">2</button>
+				}
+				if totalPages > 2 {
+					<button class="crm-page-btn">3</button>
+				}
+			</div>
+			<button class="crm-page-btn crm-page-nav" disabled?={ totalPages <= 1 } aria-label="Next page">
+				<span>Next</span>
+				@components.IconChevronRight()
+			</button>
+		</div>
+	</div>
+}

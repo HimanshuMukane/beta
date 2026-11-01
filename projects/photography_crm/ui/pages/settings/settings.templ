@@ -1,0 +1,58 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ Settings(activeTab string) {
+	@layouts.DashboardLayout("Studio Settings - Aperture CRM", "settings", []layouts.BreadcrumbItem{
+		{Label: "Settings"},
+	}) {
+		@crmComponents.PageHeader("Studio Settings & Configuration", "Configure photography master data, package pricing, workflow stages, and branding.")
+
+		@layouts.SettingsLayout("photographers") {
+			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+				<div>
+					<h2 style="font-size: 16px; font-weight: 600; color: var(--text-main);">Studio Photographers</h2>
+					<p style="font-size: 12px; color: var(--text-muted);">Manage roster, associate second shooters, and gear assignments.</p>
+				</div>
+				<a href="/settings/photographers" class="c-btn c-btn-primary">Manage Photographers ›</a>
+			</div>
+
+			<div class="crm-table-container">
+				<table class="crm-table">
+					<thead>
+						<tr>
+							<th>Photographer</th>
+							<th>Role</th>
+							<th>Specialization</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td style="font-weight: 600;">Himanshu Mukane</td>
+							<td>Lead Principal</td>
+							<td>Fine Art Weddings, Editorial</td>
+							<td>@crmComponents.StatusPill("Active", "green")</td>
+						</tr>
+						<tr>
+							<td style="font-weight: 600;">Aniket K.</td>
+							<td>Senior Associate</td>
+							<td>Commercial, Lookbook</td>
+							<td>@crmComponents.StatusPill("Active", "green")</td>
+						</tr>
+						<tr>
+							<td style="font-weight: 600;">Vanshita S.</td>
+							<td>Associate</td>
+							<td>Maternity, Portraiture</td>
+							<td>@crmComponents.StatusPill("Active", "green")</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}
+

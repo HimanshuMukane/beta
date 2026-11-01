@@ -1,0 +1,254 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	"components"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ SequenceIDsSettings() {
+	@layouts.DashboardLayout("Sequence ID Formats - Settings", "settings_sequence_ids", []layouts.BreadcrumbItem{
+		{Label: "Settings", URL: "/settings"},
+		{Label: "Sequence IDs"},
+	}) {
+		@crmComponents.PageHeader("Sequence ID Formats", "Standardize reference IDs across inquiries, clients, contracts, and financial documents.") {
+			<button class="c-btn c-btn-primary" onclick="alert('Sequence formatting rules saved successfully.')">Save Changes</button>
+		}
+
+		@layouts.SettingsLayout("sequence_ids") {
+			<div class="settings-modern-container">
+
+				<div class="seq-token-helper-bar">
+					<div style="font-size: 12px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+						@components.IconSlidersHorizontal()
+						<span>Available Dynamic Tokens:</span>
+					</div>
+					<span class="seq-token-tag" title="4-digit Current Year">&#123;YYYY&#125;</span>
+					<span class="seq-token-tag" title="2-digit Current Year">&#123;YY&#125;</span>
+					<span class="seq-token-tag" title="2-digit Current Month">&#123;MM&#125;</span>
+					<span class="seq-token-tag" title="4-digit Auto-increment">&#123;SEQ:4&#125;</span>
+					<span class="seq-token-tag" title="3-digit Auto-increment">&#123;SEQ:3&#125;</span>
+					<span class="seq-token-tag" title="5-digit Auto-increment">&#123;SEQ:5&#125;</span>
+					<span style="font-size: 11px; color: var(--text-muted); margin-left: auto;">Click a token to copy or insert into patterns</span>
+				</div>
+
+				<div class="settings-section-card">
+					<div class="settings-card-header">
+						<div class="settings-card-header-left">
+							<div class="settings-card-title">
+								@components.IconSlidersHorizontal()
+								<span>Document Numbering Rules</span>
+							</div>
+							<div class="settings-card-subtitle">Define prefix patterns, dynamic dates, zero-padding, and starting increments.</div>
+						</div>
+						<div>
+							<span class="crm-badge" style="font-size: 11px; background: rgba(0, 119, 255, 0.1); color: var(--accent-primary);">6 Sequences Active</span>
+						</div>
+					</div>
+
+					<div class="settings-card-body">
+						<div class="seq-table-list">
+
+							<div style="display: grid; grid-template-columns: 220px 1fr 200px 100px; gap: 18px; padding: 0 18px 8px 18px; font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">
+								<div>Document Entity</div>
+								<div>Format Pattern</div>
+								<div>Live Sample Preview</div>
+								<div style="text-align: center;">Next Counter</div>
+							</div>
+
+							<div class="seq-item-card">
+								<div class="seq-item-info">
+									<div class="seq-item-name">Inquiry & Lead ID</div>
+									<div class="seq-item-desc">Inbound client requests and leads</div>
+								</div>
+								<div class="seq-input-group">
+									<input type="text" value="LEAD-{YYYY}-{SEQ:4}" id="seq-lead-input" oninput="updateSeqPreview('lead')"/>
+								</div>
+								<div class="seq-preview-box">
+									<span class="seq-preview-label">Live Preview</span>
+									<span class="seq-preview-badge" id="seq-lead-preview">LEAD-2026-0042</span>
+								</div>
+								<div>
+									<input type="number" class="seq-counter-input" value="42" title="Next sequence number"/>
+								</div>
+							</div>
+
+							<div class="seq-item-card">
+								<div class="seq-item-info">
+									<div class="seq-item-name">Client Account ID</div>
+									<div class="seq-item-desc">Individual and corporate client files</div>
+								</div>
+								<div class="seq-input-group">
+									<input type="text" value="CLI-{SEQ:4}" id="seq-client-input" oninput="updateSeqPreview('client')"/>
+								</div>
+								<div class="seq-preview-box">
+									<span class="seq-preview-label">Live Preview</span>
+									<span class="seq-preview-badge" id="seq-client-preview">CLI-0128</span>
+								</div>
+								<div>
+									<input type="number" class="seq-counter-input" value="128" title="Next sequence number"/>
+								</div>
+							</div>
+
+							<div class="seq-item-card">
+								<div class="seq-item-info">
+									<div class="seq-item-name">Project / Booking ID</div>
+									<div class="seq-item-desc">Wedding & commercial project workspaces</div>
+								</div>
+								<div class="seq-input-group">
+									<input type="text" value="PRJ-{YY}-{SEQ:3}" id="seq-project-input" oninput="updateSeqPreview('project')"/>
+								</div>
+								<div class="seq-preview-box">
+									<span class="seq-preview-label">Live Preview</span>
+									<span class="seq-preview-badge" id="seq-project-preview">PRJ-26-104</span>
+								</div>
+								<div>
+									<input type="number" class="seq-counter-input" value="104" title="Next sequence number"/>
+								</div>
+							</div>
+
+							<div class="seq-item-card">
+								<div class="seq-item-info">
+									<div class="seq-item-name">Order / Proposal ID</div>
+									<div class="seq-item-desc">Client proposals, quotations & bookings</div>
+								</div>
+								<div class="seq-input-group">
+									<input type="text" value="ORD-{YYYY}-{SEQ:3}" id="seq-order-input" oninput="updateSeqPreview('order')"/>
+								</div>
+								<div class="seq-preview-box">
+									<span class="seq-preview-label">Live Preview</span>
+									<span class="seq-preview-badge" id="seq-order-preview">ORD-2026-942</span>
+								</div>
+								<div>
+									<input type="number" class="seq-counter-input" value="942" title="Next sequence number"/>
+								</div>
+							</div>
+
+							<div class="seq-item-card">
+								<div class="seq-item-info">
+									<div class="seq-item-name">Tax Invoice ID</div>
+									<div class="seq-item-desc">Invoices, payment receipts & bills</div>
+								</div>
+								<div class="seq-input-group">
+									<input type="text" value="INV-{YYYY}-{MM}-{SEQ:4}" id="seq-invoice-input" oninput="updateSeqPreview('invoice')"/>
+								</div>
+								<div class="seq-preview-box">
+									<span class="seq-preview-label">Live Preview</span>
+									<span class="seq-preview-badge" id="seq-invoice-preview">INV-2026-11-0094</span>
+								</div>
+								<div>
+									<input type="number" class="seq-counter-input" value="94" title="Next sequence number"/>
+								</div>
+							</div>
+
+							<div class="seq-item-card">
+								<div class="seq-item-info">
+									<div class="seq-item-name">Legal Contract ID</div>
+									<div class="seq-item-desc">Legally binding client contracts</div>
+								</div>
+								<div class="seq-input-group">
+									<input type="text" value="CTR-{YYYY}-{SEQ:4}" id="seq-contract-input" oninput="updateSeqPreview('contract')"/>
+								</div>
+								<div class="seq-preview-box">
+									<span class="seq-preview-label">Live Preview</span>
+									<span class="seq-preview-badge" id="seq-contract-preview">CTR-2026-0042</span>
+								</div>
+								<div>
+									<input type="number" class="seq-counter-input" value="42" title="Next sequence number"/>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="settings-card-footer">
+						<button class="crm-page-btn" onclick="resetToDefaults()">Reset to Defaults</button>
+						<button class="c-btn c-btn-primary" onclick="alert('All sequence formats saved successfully.')">Save Numbering Rules</button>
+					</div>
+				</div>
+
+				<div class="settings-section-card">
+					<div class="settings-card-header">
+						<div class="settings-card-header-left">
+							<div class="settings-card-title">
+								@components.IconClock()
+								<span>Sequence Reset & Rollover Rules</span>
+							</div>
+							<div class="settings-card-subtitle">Automate when counters should restart from zero or one.</div>
+						</div>
+					</div>
+
+					<div class="settings-card-body">
+						<div class="pref-row-card">
+							<div class="pref-row-info">
+								<div class="pref-row-title">Yearly Reset for Invoices and Leads</div>
+								<div class="pref-row-desc">Automatically roll sequence counter back to 0001 at midnight on January 1st every year.</div>
+							</div>
+							<label class="switch-label">
+								<input type="checkbox" checked/>
+								<span class="switch-slider"></span>
+							</label>
+						</div>
+
+						<div class="pref-row-card">
+							<div class="pref-row-info">
+								<div class="pref-row-title">Enforce Zero-Padding Format</div>
+								<div class="pref-row-desc">Strictly pad numbers with leading zeros (e.g. 0005 instead of 5) to keep alphabetical sorting intact.</div>
+							</div>
+							<label class="switch-label">
+								<input type="checkbox" checked/>
+								<span class="switch-slider"></span>
+							</label>
+						</div>
+
+						<div class="pref-row-card">
+							<div class="pref-row-info">
+								<div class="pref-row-title">Prevent Sequence Number Gaps</div>
+								<div class="pref-row-desc">When a draft quote or lead is discarded, recycle or reserve its sequence index.</div>
+							</div>
+							<label class="switch-label">
+								<input type="checkbox"/>
+								<span class="switch-slider"></span>
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<script>
+				function updateSeqPreview(key) {
+					const input = document.getElementById('seq-' + key + '-input');
+					const preview = document.getElementById('seq-' + key + '-preview');
+					if (!input || !preview) return;
+
+					let pattern = input.value;
+					const now = new Date();
+					const yyyy = now.getFullYear();
+					const yy = String(yyyy).slice(-2);
+					const mm = String(now.getMonth() + 1).padStart(2, '0');
+
+					let rendered = pattern
+						.replace('{YYYY}', yyyy)
+						.replace('{YY}', yy)
+						.replace('{MM}', mm)
+						.replace('{SEQ:4}', '0042')
+						.replace('{SEQ:3}', '042')
+						.replace('{SEQ:5}', '00042');
+
+					preview.textContent = rendered;
+				}
+
+				function resetToDefaults() {
+					if (confirm("Reset all sequence rules back to factory defaults?")) {
+						document.getElementById('seq-lead-input').value = "LEAD-{YYYY}-{SEQ:4}";
+						document.getElementById('seq-client-input').value = "CLI-{SEQ:4}";
+						document.getElementById('seq-project-input').value = "PRJ-{YY}-{SEQ:3}";
+						document.getElementById('seq-order-input').value = "ORD-{YYYY}-{SEQ:3}";
+						document.getElementById('seq-invoice-input').value = "INV-{YYYY}-{MM}-{SEQ:4}";
+						document.getElementById('seq-contract-input').value = "CTR-{YYYY}-{SEQ:4}";
+						['lead', 'client', 'project', 'order', 'invoice', 'contract'].forEach(updateSeqPreview);
+					}
+				}
+			</script>
+		}
+	}
+}

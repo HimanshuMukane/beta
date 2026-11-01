@@ -1,0 +1,12 @@
+package pages
+
+templ BillingSubnav(activeTab string) {
+	<div class="billing-subnav">
+		<a href="/billing/payments" class={ "billing-tab-link", templ.KV("active", activeTab == "payments") }>Payments</a>
+		<a href="/billing/invoices" class={ "billing-tab-link", templ.KV("active", activeTab == "invoices") }>Invoice</a>
+		<a href="/billing/expenses" class={ "billing-tab-link", templ.KV("active", activeTab == "expenses") }>Expense</a>
+		<a href="/billing/cancelled" class={ "billing-tab-link", templ.KV("active", activeTab == "cancelled") }>Cancelled</a>
+		<a href="/billing/refunds" class={ "billing-tab-link", templ.KV("active", activeTab == "refunded") }>Refunded</a>
+	</div>
+}
+

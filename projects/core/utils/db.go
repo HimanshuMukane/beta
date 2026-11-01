@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"core/db/schema"
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
 )
@@ -83,6 +84,11 @@ func OpenDB(path string) (*sqlx.DB, error) {
 	if err := db.Ping(); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("ping sqlite: %w", err)
+	}
+
+	if _, err := db.Exec(schema.SchemaSQL); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("apply schema: %w", err)
 	}
 
 	return db, nil

@@ -1,0 +1,86 @@
+package components
+
+templ Dialog(id string, class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div id={ id } class={ "crm-dialog-overlay", extraClass }>
+		{ children... }
+	</div>
+}
+
+templ DialogContent(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div class={ "crm-dialog-content", extraClass }>
+		{ children... }
+	</div>
+}
+
+templ DialogHeader(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div class={ "crm-dialog-header", extraClass }>
+		{ children... }
+	</div>
+}
+
+templ DialogTitle(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<h3 class={ "crm-dialog-title", extraClass }>
+		{ children... }
+	</h3>
+}
+
+templ DialogDescription(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<p class={ "crm-dialog-desc", extraClass }>
+		{ children... }
+	</p>
+}
+
+templ DialogBody(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div class={ "crm-dialog-body", extraClass }>
+		{ children... }
+	</div>
+}
+
+templ DialogFooter(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div class={ "crm-dialog-footer", extraClass }>
+		{ children... }
+	</div>
+}
+

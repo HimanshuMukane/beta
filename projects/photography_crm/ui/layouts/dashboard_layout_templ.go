@@ -8,7 +8,17 @@ package layouts
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func DashboardLayout(title string) templ.Component {
+import (
+	"components"
+	"strings"
+)
+
+type BreadcrumbItem struct {
+	Label string
+	URL   string
+}
+
+func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbItem) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -36,13 +46,1103 @@ func DashboardLayout(title string) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 9, Col: 17}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 19, Col: 30}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"/static/css/globals.css\"><link rel=\"stylesheet\" href=\"/static/css/style.css\"><link rel=\"stylesheet\" href=\"/static/css/dashboard.css\"><script src=\"/static/js/auth.js\"></script></head><body><div class=\"app-root\"><div class=\"app-body\"><!-- Collapsible Sidebar Matching Reference Exactly --><aside id=\"sidebar\" class=\"app-sidebar\"><div class=\"sidebar-top-section\"><!-- Workspace Header --><div class=\"sidebar-brand-row\"><div class=\"brand-info\"><div class=\"brand-orb\"></div><span class=\"brand-text\">Kentucky LLC <span class=\"brand-dots\">···</span></span></div></div><!-- Search Box --><div class=\"sidebar-search-box\" data-tooltip=\"Search anything...\" data-shortcut=\"/\"><span class=\"search-icon\">🔍</span> <input type=\"text\" placeholder=\"Search anything...\"> <span class=\"sidebar-search-slash\">/</span></div><!-- Nav Menu Items --><nav class=\"sidebar-nav-list\"><a class=\"nav-item\" data-tooltip=\"Dashboard\" data-shortcut=\"⌘ D\"><div class=\"nav-item-left\"><span class=\"nav-icon\">🏠</span> <span class=\"nav-label\">Dashboard</span></div></a> <a class=\"nav-item\" data-tooltip=\"Tasks\" data-shortcut=\"⌘ T\"><div class=\"nav-item-left\"><span class=\"nav-icon\">☑️</span> <span class=\"nav-label\">Tasks</span></div><span class=\"nav-arrow\">›</span></a> <a class=\"nav-item\" data-tooltip=\"Customers\" data-shortcut=\"⌘ C\"><div class=\"nav-item-left\"><span class=\"nav-icon\">👤</span> <span class=\"nav-label\">Customers</span></div><span class=\"nav-arrow\">›</span></a> <a class=\"nav-item active\" data-tooltip=\"Invoices\" data-shortcut=\"⌘ I\"><div class=\"nav-item-left\"><span class=\"nav-icon\" style=\"color: var(--accent-active-text);\">📄</span> <span class=\"nav-label\">Invoices</span></div></a> <a class=\"nav-item\" data-tooltip=\"Reports\" data-shortcut=\"⌘ R\"><div class=\"nav-item-left\"><span class=\"nav-icon\">📊</span> <span class=\"nav-label\">Reports</span></div></a><div style=\"height: 10px;\"></div><a class=\"nav-item\" data-tooltip=\"Settings\" data-shortcut=\"⌘ ,\"><div class=\"nav-item-left\"><span class=\"nav-icon\">🎚️</span> <span class=\"nav-label\">Settings</span></div></a> <a class=\"nav-item\" data-tooltip=\"Invite users\" data-shortcut=\"⌘ U\"><div class=\"nav-item-left\"><span class=\"nav-icon\">👥+</span> <span class=\"nav-label\">Invite users</span></div></a></nav><div class=\"sidebar-divider\"></div><!-- Favorites List --><div class=\"favorites-section\"><div class=\"favorites-header\"><span>⌄</span> <span>Favorites</span></div><div class=\"sidebar-nav-list\" style=\"margin-top: 4px;\"><a class=\"favorite-item\" data-tooltip=\"Nextgen.ai\" data-shortcut=\"\"><span class=\"fav-circle\" style=\"background: linear-gradient(135deg, #ff7675, #fab1a0);\"></span> <span class=\"favorite-name\">Nextgen.ai</span></a> <a class=\"favorite-item\" data-tooltip=\"Stacks.com\" data-shortcut=\"\"><span class=\"fav-circle\" style=\"background: linear-gradient(135deg, #74b9ff, #0984e3);\"></span> <span class=\"favorite-name\">Stacks.com</span></a> <a class=\"favorite-item\" data-tooltip=\"Aether.ai\" data-shortcut=\"\"><span class=\"fav-circle\" style=\"background: linear-gradient(135deg, #00cec9, #55efc4);\"></span> <span class=\"favorite-name\">Aether.ai</span></a> <a class=\"favorite-item\" data-tooltip=\"Cloudchat.com\" data-shortcut=\"\"><span class=\"fav-circle\" style=\"background: linear-gradient(135deg, #a8e6cf, #dcedc1);\"></span> <span class=\"favorite-name\">Cloudchat.com</span></a> <a class=\"favorite-item\" data-tooltip=\"Console.org\" data-shortcut=\"\"><span class=\"fav-circle\" style=\"background: linear-gradient(135deg, #ff8b94, #ffaaa5);\"></span> <span class=\"favorite-name\">Console.org</span></a></div></div></div><!-- Profile Bottom Footer --><div class=\"sidebar-profile-footer\" data-tooltip=\"Lily Senate\" data-shortcut=\"PRO\"><div class=\"profile-left\"><div class=\"profile-avatar\"></div><span class=\"profile-name\">Lily Senate</span> <span class=\"badge-pro\">PRO</span></div><span class=\"profile-dots\">···</span></div></aside><!-- Main Content Area with Top Navbar that adjusts with sidebar width --><main class=\"main-viewport\"><!-- Top Navbar: size dynamically adjusts as sidebar expands/collapses --><nav class=\"top-nav-bar\"><div class=\"top-nav-left\"><!-- Sidebar Toggle on the Left Corner of Navbar --><button id=\"sidebar-toggle-btn\" class=\"nav-toggle-btn\" title=\"Toggle Sidebar (Expand / Collapse)\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"></rect> <line x1=\"9\" y1=\"3\" x2=\"9\" y2=\"21\"></line></svg></button><!-- Workspace Switcher Pill --><button class=\"ws-switcher-pill\"><span class=\"ws-pill-badge\">H</span> <span class=\"ws-pill-text\">Himanshu Mukane's Workspace</span> <svg class=\"ws-chevron\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg></button><!-- Panel toggle icon --><button class=\"super-icon-btn\" title=\"Toggle panels\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"></rect> <line x1=\"9\" y1=\"3\" x2=\"9\" y2=\"21\"></line></svg></button></div><div class=\"top-nav-right\"><!-- Icon Actions --><button class=\"super-action-icon-btn\" title=\"Tasks\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle> <polyline points=\"9 12 11 14 15 10\"></polyline></svg></button> <button class=\"super-action-icon-btn\" title=\"Meet / Video\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polygon points=\"23 7 16 12 23 17 23 7\"></polygon> <rect x=\"1\" y=\"5\" width=\"15\" height=\"14\" rx=\"2\" ry=\"2\"></rect></svg></button> <button class=\"super-action-icon-btn\" title=\"Notifications / Voice\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z\"></path> <path d=\"M19 10v2a7 7 0 0 1-14 0v-2\"></path> <line x1=\"12\" y1=\"19\" x2=\"12\" y2=\"23\"></line> <line x1=\"8\" y1=\"23\" x2=\"16\" y2=\"23\"></line></svg></button><!-- User Profile Avatar with Online indicator & dropdown arrow --><div class=\"super-avatar-wrap\"><div class=\"super-avatar\"><span>HM</span> <span class=\"avatar-status-dot\"></span></div><svg class=\"super-avatar-chevron\" width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg></div><!-- Global Search Bar with Shortcut --><div class=\"super-search-box\"><svg class=\"super-search-svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"8\"></circle> <line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"></line></svg> <span class=\"super-search-label\">Search</span> <kbd class=\"super-search-kbd\">⌘ K</kbd></div><!-- AI Chats Pill Button with 4-color gradient icon --><button class=\"super-ai-chats-btn\"><span class=\"ai-chats-text\">AI Chats</span> <span class=\"ai-sparkle-quad\"><span class=\"ai-dot ai-dot-1\"></span> <span class=\"ai-dot ai-dot-2\"></span> <span class=\"ai-dot ai-dot-3\"></span> <span class=\"ai-dot ai-dot-4\"></span></span></button></div></nav><!-- Subnav Bar: Breadcrumbs & Page Actions (formerly top-nav-bar) --><div class=\"subnav-bar\"><div class=\"subnav-left\"><!-- Breadcrumb trail --><div class=\"breadcrumb-trail\"><span style=\"color: #74b9ff;\">📁</span> <span>Especa's Space</span> <span style=\"color: var(--text-dim);\">/</span> <span>📂 Projects</span> <span style=\"color: var(--text-dim);\">/</span> <span class=\"breadcrumb-item-active\"><span>⚡ Frontend Project</span> <span style=\"font-size: 10px; color: var(--text-dim);\">▼</span> <span style=\"color: var(--text-dim); margin-left: 4px;\">☆</span></span></div></div><div class=\"subnav-actions\"><button id=\"theme-btn\" class=\"breadcrumb-action-btn\" title=\"Toggle Theme\">☀️ Theme</button> <button class=\"breadcrumb-action-btn\">👓 Agents</button> <button class=\"breadcrumb-action-btn\">⚡ Automate</button> <button class=\"breadcrumb-action-btn\">🧠 Brain³</button> <button class=\"breadcrumb-action-btn\">🔗 Share</button></div></div><!-- Slot for page contents (views, tables, etc.) --><div class=\"page-content-viewport\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"/static/css/globals.css\"><link rel=\"stylesheet\" href=\"/static/css/style.css\"><link rel=\"stylesheet\" href=\"/static/css/dashboard.css\"><link rel=\"stylesheet\" href=\"/static/css/crm_shared.css\"><link rel=\"stylesheet\" href=\"/static/css/pages/sessions.css\"><link rel=\"stylesheet\" href=\"/static/css/pages/projects.css\"><link rel=\"stylesheet\" href=\"/static/css/pages/settings.css\"><link rel=\"stylesheet\" href=\"/static/css/pages/settings_extra.css\"><script src=\"/static/js/auth.js\"></script></head><body><div class=\"app-root\"><div class=\"app-body\"><aside id=\"sidebar\" class=\"app-sidebar\"><div class=\"sidebar-top-section\"><div class=\"sidebar-brand-row\"><a href=\"/\" class=\"brand-info\" style=\"text-decoration: none; color: inherit;\"><div class=\"brand-orb\" style=\"background: linear-gradient(135deg, #0077ff, #00cec9);\"></div><span class=\"brand-text\">Aperture CRM <span class=\"brand-dots\">···</span></span></a></div><div class=\"sidebar-search-box\" data-tooltip=\"Search anything...\" data-shortcut=\"/\"><span class=\"search-icon\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconSearch().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</span> <input type=\"text\" placeholder=\"Search studio...\" id=\"sidebar-quick-search\"> <span class=\"sidebar-search-slash\">/</span></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if strings.HasPrefix(activeNav, "settings") {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<nav class=\"sidebar-nav-list\"><div style=\"padding: 6px 12px 10px 12px; display: flex; align-items: center; justify-content: space-between;\"><span style=\"font-size: 11px; font-weight: 700; color: var(--accent-active-text);\">STUDIO SETTINGS</span> <a href=\"/\" style=\"font-size: 11px; color: var(--text-dim); text-decoration: none;\">← Exit</a></div><div class=\"sidebar-group-header\">MASTER DATA</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var3 = []any{"nav-item", templ.KV("active", activeNav == "settings_crew" || activeNav == "settings_photographers")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var3...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<a href=\"/settings/crew\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var4 string
+			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var3).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" data-tooltip=\"Crew & Team\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconUsers().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</span> <span class=\"nav-label\">Crew</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var5 = []any{"nav-item", templ.KV("active", activeNav == "settings_sequence_ids")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var5...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<a href=\"/settings/sequence-ids\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var6 string
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var5).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" data-tooltip=\"Sequence IDs\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconSlidersHorizontal().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</span> <span class=\"nav-label\">Sequence IDs</span></div></a><div class=\"sidebar-group-header\">PRESETS CONFIGURATION</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var7 = []any{"nav-item", templ.KV("active", activeNav == "settings_services")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var7...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<a href=\"/settings/services\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var8 string
+			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var7).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" data-tooltip=\"Services\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconZap().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</span> <span class=\"nav-label\">Services</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var9 = []any{"nav-item", templ.KV("active", activeNav == "settings_packages")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var9...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<a href=\"/settings/packages\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var10 string
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var9).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" data-tooltip=\"Packages\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconPackage().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</span> <span class=\"nav-label\">Packages</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var11 = []any{"nav-item", templ.KV("active", activeNav == "settings_order_presets")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var11...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<a href=\"/settings/order-presets\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var12 string
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var11).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" data-tooltip=\"Order Presets\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconReceipt().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</span> <span class=\"nav-label\">Order Presets</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var13 = []any{"nav-item", templ.KV("active", activeNav == "settings_deliverable_presets")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var13...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<a href=\"/settings/deliverable-presets\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var14 string
+			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var13).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\" data-tooltip=\"Deliverable Presets\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconCamera().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</span> <span class=\"nav-label\">Deliverable Presets</span></div></a><div class=\"sidebar-group-header\">TEMPLATES & FORMS</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var15 = []any{"nav-item", templ.KV("active", activeNav == "settings_forms")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var15...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<a href=\"/settings/forms\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var16 string
+			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var15).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\" data-tooltip=\"Forms Builder\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconFileText().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</span> <span class=\"nav-label\">Forms</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var17 = []any{"nav-item", templ.KV("active", activeNav == "settings_quotations")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var17...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<a href=\"/settings/quotations\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var18 string
+			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var17).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" data-tooltip=\"Quotation Templates\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconReceipt().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</span> <span class=\"nav-label\">Quotations</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var19 = []any{"nav-item", templ.KV("active", activeNav == "settings_invoices")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var19...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<a href=\"/settings/invoices\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var20 string
+			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var19).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" data-tooltip=\"Invoice Templates\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconCreditCard().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</span> <span class=\"nav-label\">Invoices</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var21 = []any{"nav-item", templ.KV("active", activeNav == "settings_contracts")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var21...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<a href=\"/settings/contracts\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var22 string
+			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var21).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\" data-tooltip=\"Contract Templates\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconFileText().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</span> <span class=\"nav-label\">Contracts</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var23 = []any{"nav-item", templ.KV("active", activeNav == "settings_feedback")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var23...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<a href=\"/settings/feedback\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var24 string
+			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var23).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\" data-tooltip=\"Feedback Templates\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconSparkles().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</span> <span class=\"nav-label\">Feedback</span></div></a><div class=\"sidebar-group-header\">SYSTEM & AUTOMATION</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var25 = []any{"nav-item", templ.KV("active", activeNav == "settings_workflow")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var25...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<a href=\"/settings/workflow\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var26 string
+			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var25).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var26)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" data-tooltip=\"Workflow Engine\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconSlidersHorizontal().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</span> <span class=\"nav-label\">Workflow</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var27 = []any{"nav-item", templ.KV("active", activeNav == "settings_integrations")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var27...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<a href=\"/settings/integrations\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var28 string
+			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var27).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var28)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "\" data-tooltip=\"Integrations\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconZap().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</span> <span class=\"nav-label\">Integrations</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var29 = []any{"nav-item", templ.KV("active", activeNav == "settings_business")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var29...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<a href=\"/settings/business\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var30 string
+			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var29).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var30)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "\" data-tooltip=\"Business Info\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconSettings().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</span> <span class=\"nav-label\">Business Info</span></div></a><div style=\"margin-top: 16px; padding: 0 12px;\"><a href=\"/\" class=\"c-btn\" style=\"width: 100%; font-size: 11px; background: var(--bg-surface-subtle); color: var(--text-main); text-decoration: none;\">← Back to Dashboard</a></div></nav>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<nav class=\"sidebar-nav-list\"><div class=\"sidebar-group-header\">WORKSPACE</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var31 = []any{"nav-item", templ.KV("active", activeNav == "dashboard")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var31...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<a href=\"/\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var32 string
+			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var31).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\" data-tooltip=\"Dashboard\" data-shortcut=\"⌘ D\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconDashboard().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "</span> <span class=\"nav-label\">Dashboard</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var33 = []any{"nav-item", templ.KV("active", activeNav == "leads" || activeNav == "lead_details")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var33...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "<a href=\"/leads\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var34 string
+			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var33).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var34)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "\" data-tooltip=\"Leads\" data-shortcut=\"⌘ L\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconTarget().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</span> <span class=\"nav-label\">Leads</span></div><span class=\"nav-badge-pill\">12</span></a><div class=\"nav-collapsible-group\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var35 = []any{"nav-item", templ.KV("active", activeNav == "inbox")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var35...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<a href=\"/inbox\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var36 string
+			templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var35).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var36)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\" data-tooltip=\"Inbox\" data-shortcut=\"⌘ M\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconMessageSquare().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "</span> <span class=\"nav-label\">Inbox</span></div><span class=\"nav-badge-pill\" style=\"background: rgba(124, 93, 250, 0.2); color: var(--accent-active-text);\">5</span></a><div class=\"nav-subitems\"><a href=\"/inbox?filter=all\" class=\"subnav-link\">All Messages</a> <a href=\"/inbox?filter=whatsapp\" class=\"subnav-link\">WhatsApp</a> <a href=\"/inbox?filter=instagram\" class=\"subnav-link\">Instagram</a> <a href=\"/inbox?filter=messenger\" class=\"subnav-link\">Messenger</a></div></div><div class=\"nav-collapsible-group\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var37 = []any{"nav-item", templ.KV("active", activeNav == "followups")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var37...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "<a href=\"/followups\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var38 string
+			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var37).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var38)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "\" data-tooltip=\"Follow-ups\" data-shortcut=\"⌘ F\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconClock().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "</span> <span class=\"nav-label\">Follow-ups</span></div><span class=\"nav-badge-pill\" style=\"background: rgba(255, 107, 107, 0.2); color: #ff6b6b;\">3</span></a><div class=\"nav-subitems\"><a href=\"/followups?filter=all\" class=\"subnav-link\">All Follow-ups</a> <a href=\"/followups?filter=my\" class=\"subnav-link\">My Follow-ups</a> <a href=\"/followups?filter=today\" class=\"subnav-link\">Due Today</a> <a href=\"/followups?filter=overdue\" class=\"subnav-link\">Overdue</a> <a href=\"/followups?filter=upcoming\" class=\"subnav-link\">Upcoming</a></div></div><div class=\"sidebar-group-header\">STUDIO OPERATIONS</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var39 = []any{"nav-item", templ.KV("active", activeNav == "clients" || activeNav == "client_details")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var39...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "<a href=\"/clients\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var40 string
+			templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var39).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "\" data-tooltip=\"Clients\" data-shortcut=\"⌘ C\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconUsers().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "</span> <span class=\"nav-label\">Clients</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var41 = []any{"nav-item", templ.KV("active", activeNav == "orders" || activeNav == "order_details")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var41...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "<a href=\"/orders\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var42 string
+			templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var41).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var42)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\" data-tooltip=\"Orders\" data-shortcut=\"⌘ O\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconReceipt().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "</span> <span class=\"nav-label\">Orders</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var43 = []any{"nav-item", templ.KV("active", activeNav == "projects" || activeNav == "project_details")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var43...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "<a href=\"/projects\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var44 string
+			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var43).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var44)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "\" data-tooltip=\"Projects\" data-shortcut=\"⌘ P\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconFolder().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</span> <span class=\"nav-label\">Projects</span></div></a><div class=\"nav-collapsible-group\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var45 = []any{"nav-item", templ.KV("active", activeNav == "sessions")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var45...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "<a href=\"/sessions\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var46 string
+			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var45).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var46)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "\" data-tooltip=\"Sessions\" data-shortcut=\"⌘ S\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconCamera().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "</span> <span class=\"nav-label\">Sessions</span></div></a><div class=\"nav-subitems\"><a href=\"/sessions?tab=upcoming\" class=\"subnav-link\">Upcoming</a> <a href=\"/sessions?tab=past\" class=\"subnav-link\">Past</a> <a href=\"/sessions?tab=tbd\" class=\"subnav-link\">TBD</a></div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var47 = []any{"nav-item", templ.KV("active", activeNav == "calendar")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var47...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<a href=\"/calendar\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var48 string
+			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var47).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var48)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "\" data-tooltip=\"Calendar\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconCalendar().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "</span> <span class=\"nav-label\">Calendar</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var49 = []any{"nav-item", templ.KV("active", activeNav == "contracts")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var49...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "<a href=\"/contracts\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var50 string
+			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var49).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var50)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "\" data-tooltip=\"Contracts\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconFileText().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "</span> <span class=\"nav-label\">Contracts</span></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var51 = []any{"nav-item", templ.KV("active", activeNav == "deliverables")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var51...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "<a href=\"/deliverables\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var52 string
+			templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var51).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var52)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "\" data-tooltip=\"Deliverables\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconPackage().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</span> <span class=\"nav-label\">Deliverables</span></div></a><div class=\"sidebar-group-header\">FINANCE</div><div class=\"nav-collapsible-group\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var53 = []any{"nav-item", templ.KV("active", strings.HasPrefix(activeNav, "billing"))}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var53...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "<a href=\"/billing\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var54 string
+			templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var53).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var54)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "\" data-tooltip=\"Billing\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconCreditCard().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</span> <span class=\"nav-label\">Billing</span></div></a><div class=\"nav-subitems\"><a href=\"/billing\" class=\"subnav-link\">Overview</a> <a href=\"/billing/payments\" class=\"subnav-link\">Payments</a> <a href=\"/billing/invoices\" class=\"subnav-link\">Invoices</a> <a href=\"/billing/expenses\" class=\"subnav-link\">Expenses</a> <a href=\"/billing/refunds\" class=\"subnav-link\">Refunds</a> <a href=\"/billing/cancelled\" class=\"subnav-link\">Cancelled</a></div></div><div class=\"sidebar-group-header\">INSIGHTS</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var55 = []any{"nav-item", templ.KV("active", activeNav == "reports")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var55...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "<a href=\"/reports\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var56 string
+			templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var55).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var56)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "\" data-tooltip=\"Reports\" data-shortcut=\"⌘ R\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconTrendingUp().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "</span> <span class=\"nav-label\">Reports</span></div></a><div class=\"sidebar-group-header\">ADMINISTRATION</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var57 = []any{"nav-item", templ.KV("active", strings.HasPrefix(activeNav, "settings"))}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var57...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<a href=\"/settings\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var58 string
+			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var57).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var58)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "\" data-tooltip=\"Settings\" data-shortcut=\"⌘ ,\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconSettings().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "</span> <span class=\"nav-label\">Settings</span></div></a></nav>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</div><div class=\"sidebar-profile-footer\" data-tooltip=\"Himanshu Mukane\" data-shortcut=\"STUDIO\"><div class=\"profile-left\"><div class=\"profile-avatar\" style=\"background: #27272a; color: #fff; font-weight: bold; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 1px solid #3f3f46;\">HM</div><div style=\"display: flex; flex-direction: column; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\"><span class=\"profile-name\">Himanshu M.</span> <span style=\"font-size: 10px; color: var(--text-muted);\">Lead Photographer</span></div><span class=\"badge-pro\" style=\"background: rgba(124, 93, 250, 0.2); color: var(--accent-active-text);\">PRO</span></div><a href=\"/signin\" title=\"Sign out\" style=\"color: var(--text-dim); text-decoration: none; font-size: 14px;\">↪</a></div></aside><main class=\"main-viewport\"><nav class=\"top-nav-bar\"><div class=\"top-nav-left\"><button id=\"sidebar-toggle-btn\" class=\"nav-toggle-btn\" title=\"Toggle Sidebar\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconSidebar().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</button> <button class=\"ws-switcher-pill\"><span class=\"ws-pill-badge\">H</span> <span class=\"ws-pill-text\">Himanshu Mukane's Workspace</span>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconChevronDown().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "</button></div><div class=\"top-nav-right\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if strings.HasPrefix(activeNav, "settings") {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<a href=\"/\" class=\"crm-page-btn\" style=\"text-decoration: none; display: flex; align-items: center; gap: 6px; background: var(--bg-surface-subtle); color: var(--text-main);\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconDashboard().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<span>Back to CRM</span></a>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "<a href=\"/settings\" class=\"crm-page-btn\" style=\"text-decoration: none; display: flex; align-items: center; gap: 6px; background: var(--bg-surface-subtle); color: var(--text-main);\" title=\"Switch to Settings View\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconSettings().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<span>Studio Settings</span></a>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<div class=\"split\"><a href=\"/leads?action=new\" class=\"split-btn-action\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconPlus().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<span>New</span></a> <button class=\"split-btn-trigger\" popovertarget=\"quick-create-menu\" aria-label=\"Open quick create options\"><span class=\"chev\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconChevronDown().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "</span></button></div><div id=\"quick-create-menu\" class=\"menu\" popover><a href=\"/leads?action=new\" class=\"menu-item\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconUsers().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "<span>New Lead</span></a> <a href=\"/clients?action=new\" class=\"menu-item\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconUsers().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "<span>New Client</span></a> <a href=\"/orders?action=new\" class=\"menu-item\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconTable().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "<span>New Order</span></a> <a href=\"/projects?action=new\" class=\"menu-item\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconFolder().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<span>New Project</span></a> <a href=\"/sessions?action=new\" class=\"menu-item\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconCalendar().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "<span>Book Session</span></a> <a href=\"/settings/crew?action=new\" class=\"menu-item\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconSettings().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "<span>Add Crew Member</span></a></div><button class=\"super-action-icon-btn\" title=\"Notifications\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconBell().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<span class=\"action-badge-dot\"></span></button><div class=\"super-search-box\"><span class=\"super-search-svg\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconSearch().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "</span> <input type=\"text\" placeholder=\"Search...\" class=\"super-search-input\" style=\"background: transparent; border: none; outline: none; color: inherit; font-size: 12px; width: 100px;\"> <kbd class=\"super-search-kbd\">⌘ K</kbd></div><div class=\"super-avatar-wrap\"><div class=\"super-avatar\"><span>HM</span> <span class=\"avatar-status-dot\"></span></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconChevronDown().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "</div></div></nav><div class=\"subnav-bar\"><div class=\"subnav-left\"><div class=\"breadcrumb-trail\"><span class=\"breadcrumb-space-icon\" style=\"display: inline-flex; align-items: center; gap: 5px; color: var(--accent-active-text);\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconLayout(16, "").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "<strong>Especo's Space</strong></span> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		for _, b := range breadcrumbs {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "<span style=\"color: var(--text-dim);\">/</span> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if b.URL != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "<a href=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var59 templ.SafeURL
+				templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(b.URL))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 423, Col: 630}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "\" style=\"text-decoration: none; color: inherit;\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var60 string
+				templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(b.Label)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 423, Col: 689}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "</a>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<span class=\"breadcrumb-item-active\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var61 string
+				templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(b.Label)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 425, Col: 650}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "</div></div><div class=\"subnav-actions\"><button id=\"theme-btn\" class=\"breadcrumb-action-btn\" title=\"Toggle Theme\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconSun().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<span>Theme</span></button> <a href=\"/calendar\" class=\"breadcrumb-action-btn\" style=\"text-decoration: none; color: inherit;\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconCalendar().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<span>Calendar</span></a> <a href=\"/settings\" class=\"breadcrumb-action-btn\" style=\"text-decoration: none; color: inherit;\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.IconSettings().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "<span>Settings</span></a></div></div><div class=\"page-content-viewport crm-main-content\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -50,7 +1150,7 @@ func DashboardLayout(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></main></div><!-- Floating Tooltip for Collapsed Sidebar Items --><div id=\"sidebar-tooltip\" class=\"custom-sidebar-tooltip\"><span id=\"tooltip-text\">Dashboard</span><div id=\"tooltip-shortcut-container\" class=\"tooltip-kbd-group\"></div></div></div><script>\n\t\t\t\t// Sidebar Toggle (Persisted in localStorage)\n\t\t\t\tconst sidebar = document.getElementById('sidebar');\n\t\t\t\tconst toggleBtn = document.getElementById('sidebar-toggle-btn');\n\t\t\t\tconst tooltip = document.getElementById('sidebar-tooltip');\n\t\t\t\tconst tooltipText = document.getElementById('tooltip-text');\n\t\t\t\tconst tooltipShortcut = document.getElementById('tooltip-shortcut-container');\n\n\t\t\t\tconst isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';\n\t\t\t\tif (isCollapsed) {\n\t\t\t\t\tsidebar.classList.add('is-collapsed');\n\t\t\t\t}\n\n\t\t\t\tif (toggleBtn) {\n\t\t\t\t\ttoggleBtn.addEventListener('click', () => {\n\t\t\t\t\t\tsidebar.classList.toggle('is-collapsed');\n\t\t\t\t\t\tconst collapsed = sidebar.classList.contains('is-collapsed');\n\t\t\t\t\t\tlocalStorage.setItem('sidebar-collapsed', collapsed);\n\t\t\t\t\t\thideTooltip();\n\t\t\t\t\t});\n\t\t\t\t}\n\n\t\t\t\t// Custom Tooltip for Collapsed Mode\n\t\t\t\tfunction showTooltip(el, e) {\n\t\t\t\t\tif (!sidebar.classList.contains('is-collapsed')) {\n\t\t\t\t\t\thideTooltip();\n\t\t\t\t\t\treturn;\n\t\t\t\t\t}\n\t\t\t\t\tconst title = el.getAttribute('data-tooltip');\n\t\t\t\t\tconst shortcut = el.getAttribute('data-shortcut');\n\t\t\t\t\tif (!title) return;\n\n\t\t\t\t\ttooltipText.textContent = title;\n\t\t\t\t\ttooltipShortcut.innerHTML = '';\n\n\t\t\t\t\tif (shortcut) {\n\t\t\t\t\t\tshortcut.split(' ').forEach(k => {\n\t\t\t\t\t\t\tconst kbd = document.createElement('span');\n\t\t\t\t\t\t\tkbd.className = 'tooltip-kbd';\n\t\t\t\t\t\t\tkbd.textContent = k;\n\t\t\t\t\t\t\ttooltipShortcut.appendChild(kbd);\n\t\t\t\t\t\t});\n\t\t\t\t\t}\n\n\t\t\t\t\tconst rect = el.getBoundingClientRect();\n\t\t\t\t\ttooltip.style.left = (rect.right + 10) + 'px';\n\t\t\t\t\ttooltip.style.top = (rect.top + (rect.height / 2) - 15) + 'px';\n\t\t\t\t\ttooltip.style.display = 'flex';\n\t\t\t\t}\n\n\t\t\t\tfunction hideTooltip() {\n\t\t\t\t\ttooltip.style.display = 'none';\n\t\t\t\t}\n\n\t\t\t\t// Attach tooltip events to items\n\t\t\t\tconst tooltipTargets = document.querySelectorAll('[data-tooltip]');\n\t\t\t\ttooltipTargets.forEach(el => {\n\t\t\t\t\tel.addEventListener('mouseenter', (e) => showTooltip(el, e));\n\t\t\t\t\tel.addEventListener('mouseleave', hideTooltip);\n\t\t\t\t});\n\n\t\t\t\t// Theme Toggle (Dark / Light Compatible)\n\t\t\t\tconst themeBtn = document.getElementById('theme-btn');\n\t\t\t\tconst html = document.documentElement;\n\t\t\t\tconst currentTheme = localStorage.getItem('theme') || 'dark';\n\t\t\t\thtml.setAttribute('data-theme', currentTheme);\n\n\t\t\t\tif (themeBtn) {\n\t\t\t\t\tthemeBtn.addEventListener('click', () => {\n\t\t\t\t\t\tconst next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';\n\t\t\t\t\t\thtml.setAttribute('data-theme', next);\n\t\t\t\t\t\tlocalStorage.setItem('theme', next);\n\t\t\t\t\t\tthemeBtn.textContent = next === 'dark' ? '☀️ Theme' : '🌙 Theme';\n\t\t\t\t\t});\n\t\t\t\t}\n\t\t\t</script></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "</div></main></div><div id=\"sidebar-tooltip\" class=\"custom-sidebar-tooltip\"><span id=\"tooltip-text\">Dashboard</span><div id=\"tooltip-shortcut-container\" class=\"tooltip-kbd-group\"></div></div></div><script>\n\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                (function() {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    const themeBtn = document.getElementById('theme-btn');\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if (themeBtn) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        themeBtn.addEventListener('click', function() {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const html = document.documentElement;\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const current = html.getAttribute('data-theme');\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const next = current === 'light' ? 'dark' : 'light';\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            html.setAttribute('data-theme', next);\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            localStorage.setItem('theme', next);\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        });\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    const savedTheme = localStorage.getItem('theme');\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if (savedTheme) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        document.documentElement.setAttribute('data-theme', savedTheme);\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                })();\n\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                \t\t\t\t\t(function() {\n\t\t\t\t\t\tconst sidebar = document.getElementById('sidebar');\n\t\t\t\t\t\tconst toggleBtn = document.getElementById('sidebar-toggle-btn');\n\t\t\t\t\t\tif (toggleBtn && sidebar) {\n\t\t\t\t\t\t\ttoggleBtn.addEventListener('click', function() {\n\t\t\t\t\t\t\t\tsidebar.classList.toggle('is-collapsed');\n\t\t\t\t\t\t\t\tdocument.querySelectorAll('.nav-subitems.is-open').forEach(el => el.classList.remove('is-open'));\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t}\n\n\t\t\t\t\t\tconst collapsibleGroups = document.querySelectorAll('.nav-collapsible-group');\n\t\t\t\t\t\tcollapsibleGroups.forEach(group => {\n\t\t\t\t\t\t\tconst parentLink = group.querySelector('.nav-item');\n\t\t\t\t\t\t\tconst subitems = group.querySelector('.nav-subitems');\n\t\t\t\t\t\t\tif (!parentLink || !subitems) return;\n\n\t\t\t\t\t\t\tparentLink.addEventListener('click', function(e) {\n\t\t\t\t\t\t\t\tconst isCollapsed = sidebar && sidebar.classList.contains('is-collapsed');\n\t\t\t\t\t\t\t\tif (isCollapsed) {\n\t\t\t\t\t\t\t\t\te.preventDefault();\n\t\t\t\t\t\t\t\t\te.stopPropagation();\n\n\t\t\t\t\t\t\t\t\tconst wasOpen = subitems.classList.contains('is-open');\n\t\t\t\t\t\t\t\t\tdocument.querySelectorAll('.nav-subitems.is-open').forEach(el => el.classList.remove('is-open'));\n\n\t\t\t\t\t\t\t\t\tif (!wasOpen) {\n\t\t\t\t\t\t\t\t\t\tconst rect = parentLink.getBoundingClientRect();\n\t\t\t\t\t\t\t\t\t\tsubitems.style.top = Math.max(8, rect.top) + 'px';\n\t\t\t\t\t\t\t\t\t\tsubitems.classList.add('is-open');\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\te.preventDefault();\n\t\t\t\t\t\t\t\t\tconst isClosed = group.classList.contains('is-closed');\n\t\t\t\t\t\t\t\t\tif (isClosed) {\n\t\t\t\t\t\t\t\t\t\tcollapsibleGroups.forEach(g => {\n\t\t\t\t\t\t\t\t\t\t\tif (g !== group) g.classList.add('is-closed');\n\t\t\t\t\t\t\t\t\t\t});\n\t\t\t\t\t\t\t\t\t\tgroup.classList.remove('is-closed');\n\t\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\t\tgroup.classList.add('is-closed');\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t});\n\n\t\t\t\t\t\tdocument.addEventListener('click', function(e) {\n\t\t\t\t\t\t\tif (!e.target.closest('.nav-collapsible-group')) {\n\t\t\t\t\t\t\t\tdocument.querySelectorAll('.nav-subitems.is-open').forEach(el => el.classList.remove('is-open'));\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t});\n\t\t\t\t\t})();\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </script></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

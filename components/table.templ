@@ -1,40 +1,77 @@
 package components
 
-templ TableWrapper() {
-	<div class="table-card">
-		<div class="table-scroll">
-			<table class="compact-table">
-				{ children... }
-			</table>
-		</div>
-	</div>
-}
-
-templ TableFilterBar() {
-	<div class="table-toolbar">
-		<div class="table-toolbar-group">
-			{ children... }
-		</div>
-	</div>
-}
-
-templ TableSearch(placeholder string, id string) {
-	<input type="text" id={ id } class="table-search" placeholder={ placeholder }/>
-}
-
-templ TableSelect(id string, options []string) {
-	<select id={ id } class="table-filter-select">
-		for _, opt := range options {
-			<option value={ opt }>{ opt }</option>
+templ Table(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
 		}
-	</select>
+	}}
+	<div class={ "crm-table-container", extraClass }>
+		<table class="crm-table">
+			{ children... }
+		</table>
+	</div>
 }
 
-templ TableFooter(totalText string) {
-	<div class="table-footer">
-		<span>{ totalText }</span>
-		<div style="display: flex; gap: 4px;">
+templ TableHead(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<thead class={ extraClass }>
+		<tr>
 			{ children... }
-		</div>
-	</div>
+		</tr>
+	</thead>
+}
+
+templ TableBody(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<tbody class={ extraClass }>
+		{ children... }
+	</tbody>
+}
+
+templ TableRow(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<tr class={ extraClass }>
+		{ children... }
+	</tr>
+}
+
+templ TableCell(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<td class={ extraClass }>
+		{ children... }
+	</td>
+}
+
+templ TableHeaderCell(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<th class={ extraClass }>
+		{ children... }
+	</th>
 }

@@ -1,0 +1,332 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	"components"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ ServicesSettings() {
+	@layouts.DashboardLayout("Services Configuration - Settings", "settings_services", []layouts.BreadcrumbItem{
+		{Label: "Settings", URL: "/settings"},
+		{Label: "Services"},
+	}) {
+		@crmComponents.PageHeader("Services & Pricing Configuration", "Configure studio service groups, line-item rates, quantities, and pricing units.") {
+			<div style="display: flex; gap: 10px;">
+				<button class="crm-page-btn" onclick="openServiceGroupModal()" style="display: inline-flex; align-items: center; gap: 6px;">
+					@components.IconFolder()
+					<span>Manage Service Group</span>
+				</button>
+				<button class="c-btn c-btn-primary" onclick="openAddServiceRow()">+ Add Service Item</button>
+			</div>
+		}
+
+		<div class="crm-table-container" style="padding: 16px 20px;">
+			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+				<div>
+					<h2 style="font-size: 15px; font-weight: 700; color: var(--text-main);">Manage Service Catalog</h2>
+					<p style="font-size: 12px; color: var(--text-muted);">Configure standard group rates with quantities and amounts.</p>
+				</div>
+				<button class="c-btn c-btn-primary" style="font-size: 12px;">Save Changes</button>
+			</div>
+
+			<table class="service-group-table">
+				<thead>
+					<tr>
+						<th style="width: 28%;">Group Name</th>
+						<th style="width: 36%;">Service Name</th>
+						<th style="width: 14%;">Quantity</th>
+						<th style="width: 18%;">Amount</th>
+						<th style="width: 4%;"></th>
+					</tr>
+				</thead>
+				<tbody id="services-tbody">
+					<tr>
+						<td>
+							<select class="service-row-select">
+								<option selected>Basic Service</option>
+								<option>Advance Service</option>
+								<option>Delivery</option>
+								<option>Other Service</option>
+							</select>
+						</td>
+						<td><input type="text" class="service-row-input" value="Traditional Photography"/></td>
+						<td><input type="number" class="service-row-input" value="1"/></td>
+						<td>
+							<div class="service-amount-box">
+								<span class="service-amount-prefix">INR</span>
+								<input type="number" class="service-amount-input" value="200"/>
+							</div>
+						</td>
+						<td><button class="service-remove-btn" title="Remove line item">⊖</button></td>
+					</tr>
+
+					<tr>
+						<td>
+							<select class="service-row-select">
+								<option selected>Basic Service</option>
+								<option>Advance Service</option>
+								<option>Delivery</option>
+								<option>Other Service</option>
+							</select>
+						</td>
+						<td><input type="text" class="service-row-input" value="Traditional Videography"/></td>
+						<td><input type="number" class="service-row-input" value="1"/></td>
+						<td>
+							<div class="service-amount-box">
+								<span class="service-amount-prefix">INR</span>
+								<input type="number" class="service-amount-input" value="200"/>
+							</div>
+						</td>
+						<td><button class="service-remove-btn" title="Remove line item">⊖</button></td>
+					</tr>
+
+					<tr>
+						<td>
+							<select class="service-row-select">
+								<option>Basic Service</option>
+								<option selected>Advance Service</option>
+								<option>Delivery</option>
+								<option>Other Service</option>
+							</select>
+						</td>
+						<td><input type="text" class="service-row-input" value="Candid Photography"/></td>
+						<td><input type="number" class="service-row-input" value="1"/></td>
+						<td>
+							<div class="service-amount-box">
+								<span class="service-amount-prefix">INR</span>
+								<input type="number" class="service-amount-input" value="150"/>
+							</div>
+						</td>
+						<td><button class="service-remove-btn" title="Remove line item">⊖</button></td>
+					</tr>
+
+					<tr>
+						<td>
+							<select class="service-row-select">
+								<option>Basic Service</option>
+								<option selected>Advance Service</option>
+								<option>Delivery</option>
+								<option>Other Service</option>
+							</select>
+						</td>
+						<td><input type="text" class="service-row-input" value="Candid Videography"/></td>
+						<td><input type="number" class="service-row-input" value="1"/></td>
+						<td>
+							<div class="service-amount-box">
+								<span class="service-amount-prefix">INR</span>
+								<input type="number" class="service-amount-input" value="150"/>
+							</div>
+						</td>
+						<td><button class="service-remove-btn" title="Remove line item">⊖</button></td>
+					</tr>
+
+					<tr>
+						<td>
+							<select class="service-row-select">
+								<option>Basic Service</option>
+								<option selected>Advance Service</option>
+								<option>Delivery</option>
+								<option>Other Service</option>
+							</select>
+						</td>
+						<td><input type="text" class="service-row-input" value="Cinematic Camera"/></td>
+						<td><input type="number" class="service-row-input" value="1"/></td>
+						<td>
+							<div class="service-amount-box">
+								<span class="service-amount-prefix">INR</span>
+								<input type="number" class="service-amount-input" value="200"/>
+							</div>
+						</td>
+						<td><button class="service-remove-btn" title="Remove line item">⊖</button></td>
+					</tr>
+
+					<tr>
+						<td>
+							<select class="service-row-select">
+								<option>Basic Service</option>
+								<option>Advance Service</option>
+								<option selected>Delivery</option>
+								<option>Other Service</option>
+							</select>
+						</td>
+						<td><input type="text" class="service-row-input" value="Frame"/></td>
+						<td><input type="number" class="service-row-input" value="1"/></td>
+						<td>
+							<div class="service-amount-box">
+								<span class="service-amount-prefix">INR</span>
+								<input type="number" class="service-amount-input" value="200"/>
+							</div>
+						</td>
+						<td><button class="service-remove-btn" title="Remove line item">⊖</button></td>
+					</tr>
+
+					<tr>
+						<td>
+							<select class="service-row-select">
+								<option>Basic Service</option>
+								<option>Advance Service</option>
+								<option selected>Delivery</option>
+								<option>Other Service</option>
+							</select>
+						</td>
+						<td><input type="text" class="service-row-input" value="Frame 12 X 10"/></td>
+						<td><input type="number" class="service-row-input" value="1"/></td>
+						<td>
+							<div class="service-amount-box">
+								<span class="service-amount-prefix">INR</span>
+								<input type="number" class="service-amount-input" value="100"/>
+							</div>
+						</td>
+						<td><button class="service-remove-btn" title="Remove line item">⊖</button></td>
+					</tr>
+
+					<tr>
+						<td>
+							<select class="service-row-select">
+								<option>Basic Service</option>
+								<option>Advance Service</option>
+								<option>Delivery</option>
+								<option selected>Other Service</option>
+							</select>
+						</td>
+						<td><input type="text" class="service-row-input" value="Live Streaming"/></td>
+						<td><input type="number" class="service-row-input" value="1"/></td>
+						<td>
+							<div class="service-amount-box">
+								<span class="service-amount-prefix">INR</span>
+								<input type="number" class="service-amount-input" value="150"/>
+							</div>
+						</td>
+						<td><button class="service-remove-btn" title="Remove line item">⊖</button></td>
+					</tr>
+
+					<tr>
+						<td>
+							<select class="service-row-select">
+								<option>Basic Service</option>
+								<option>Advance Service</option>
+								<option selected>Delivery</option>
+								<option>Other Service</option>
+							</select>
+						</td>
+						<td><input type="text" class="service-row-input" value="Album 250 Sheets"/></td>
+						<td><input type="number" class="service-row-input" value="1"/></td>
+						<td>
+							<div class="service-amount-box">
+								<span class="service-amount-prefix">INR</span>
+								<input type="number" class="service-amount-input" value="100"/>
+							</div>
+						</td>
+						<td><button class="service-remove-btn" title="Remove line item">⊖</button></td>
+					</tr>
+
+					<tr>
+						<td>
+							<select class="service-row-select">
+								<option>Basic Service</option>
+								<option>Advance Service</option>
+								<option>Delivery</option>
+								<option selected>Other Service</option>
+							</select>
+						</td>
+						<td><input type="text" class="service-row-input" value="Live Streaming 4 hours"/></td>
+						<td><input type="number" class="service-row-input" value="1"/></td>
+						<td>
+							<div class="service-amount-box">
+								<span class="service-amount-prefix">INR</span>
+								<input type="number" class="service-amount-input" value="500"/>
+							</div>
+						</td>
+						<td><button class="service-remove-btn" title="Remove line item">⊖</button></td>
+					</tr>
+				</tbody>
+			</table>
+
+			<div style="margin-top: 16px;">
+				<button class="crm-page-btn" onclick="openAddServiceRow()">+ Add Service Item</button>
+			</div>
+		</div>
+
+		<div id="service-group-modal" class="session-modal-overlay">
+			<div class="session-modal-box" style="max-width: 480px;">
+				<div class="session-modal-header">
+					<h3 style="font-size: 15px; font-weight: 600;">Manage Service Groups</h3>
+					<button class="crm-page-btn" onclick="closeServiceGroupModal()" aria-label="Close">
+						@components.IconX()
+					</button>
+				</div>
+				<div class="session-modal-body">
+					<div style="display: flex; gap: 8px;">
+						<input type="text" class="session-input" placeholder="New Group Name..."/>
+						<button class="c-btn c-btn-primary">+ Add</button>
+					</div>
+
+					<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
+							<span>Basic Service</span>
+							<button class="service-remove-btn" aria-label="Remove">
+								@components.IconX()
+							</button>
+						</div>
+						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
+							<span>Advance Service</span>
+							<button class="service-remove-btn" aria-label="Remove">
+								@components.IconX()
+							</button>
+						</div>
+						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
+							<span>Delivery</span>
+							<button class="service-remove-btn" aria-label="Remove">
+								@components.IconX()
+							</button>
+						</div>
+						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
+							<span>Other Service</span>
+							<button class="service-remove-btn" aria-label="Remove">
+								@components.IconX()
+							</button>
+						</div>
+					</div>
+				</div>
+				<div class="session-modal-footer">
+					<button class="c-btn c-btn-primary" onclick="closeServiceGroupModal()" style="width: 100%;">Save Groups</button>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			function openServiceGroupModal() {
+				document.getElementById('service-group-modal')?.classList.add('is-active');
+			}
+			function closeServiceGroupModal() {
+				document.getElementById('service-group-modal')?.classList.remove('is-active');
+			}
+			function openAddServiceRow() {
+				const tbody = document.getElementById('services-tbody');
+				if (!tbody) return;
+				const tr = document.createElement('tr');
+				tr.innerHTML = `
+					<td>
+						<select class="service-row-select">
+							<option>Basic Service</option>
+							<option>Advance Service</option>
+							<option>Delivery</option>
+							<option selected>Other Service</option>
+						</select>
+					</td>
+					<td><input type="text" class="service-row-input" placeholder="Service Name"/></td>
+					<td><input type="number" class="service-row-input" value="1"/></td>
+					<td>
+						<div class="service-amount-box">
+							<span class="service-amount-prefix">INR</span>
+							<input type="number" class="service-amount-input" value="100"/>
+						</div>
+					</td>
+					<td><button class="service-remove-btn" onclick="this.closest('tr').remove()">⊖</button></td>
+				`;
+				tbody.appendChild(tr);
+			}
+		</script>
+	}
+}

@@ -46,7 +46,7 @@ func (r *RoleRepository) CreateRole(ctx context.Context, name string) (*models.R
 		Name: name,
 	})
 	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "unique constraint failed") {
+		if strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return nil, ErrRoleAlreadyExists
 		}
 		return nil, fmt.Errorf("create role: %w", err)

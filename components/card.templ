@@ -1,14 +1,74 @@
 package components
 
-templ Card(title string) {
-	<div class="c-card">
-		if title != "" {
-			<div class="c-card-header">
-				<h3 class="c-card-title">{ title }</h3>
-			</div>
+templ Card(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
 		}
-		<div class="c-card-body">
-			{ children... }
-		</div>
+	}}
+	<div class={ "crm-card", extraClass }>
+		{ children... }
 	</div>
 }
+
+templ CardHeader(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div class={ "crm-card-header", extraClass }>
+		{ children... }
+	</div>
+}
+
+templ CardTitle(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<h3 class={ "crm-card-title", extraClass }>
+		{ children... }
+	</h3>
+}
+
+templ CardDescription(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<p class={ "crm-card-desc", extraClass }>
+		{ children... }
+	</p>
+}
+
+templ CardContent(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div class={ "crm-card-content", extraClass }>
+		{ children... }
+	</div>
+}
+
+templ CardFooter(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div class={ "crm-card-footer", extraClass }>
+		{ children... }
+	</div>
+}
+

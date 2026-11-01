@@ -99,7 +99,6 @@ func TestDatabaseRoutingMiddleware_ProductionSafeguard(t *testing.T) {
 	pool, cleanup := setupTestPool(t)
 	defer cleanup()
 
-	// In production, header-based test db selection should be strictly ignored
 	prodCfg := utils.AppConfig
 	prodCfg.AppEnv = "production"
 	prodCfg.AllowTestDBHeader = false

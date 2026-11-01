@@ -1,0 +1,91 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	crmComponents "chi-mysql-server/ui/components"
+)
+
+templ Contracts(filter string) {
+	@layouts.DashboardLayout("Contracts & Legal Agreements - Aperture CRM", "contracts", []layouts.BreadcrumbItem{
+		{Label: "Contracts"},
+	}) {
+		@crmComponents.PageHeader("Contracts & Agreements", "Manage photography legal contracts, model releases, and digital signatures.") {
+			<button class="c-btn c-btn-primary">+ Create Contract</button>
+		}
+
+		<div class="crm-filter-bar">
+			<div class="crm-filter-tabs">
+				<a href="/contracts" class={ "crm-filter-tab", templ.KV("active", filter == "" || filter == "all") }>All Contracts (18)</a>
+				<a href="/contracts?status=draft" class={ "crm-filter-tab", templ.KV("active", filter == "draft") }>Draft (3)</a>
+				<a href="/contracts?status=sent" class={ "crm-filter-tab", templ.KV("active", filter == "sent") }>Sent (4)</a>
+				<a href="/contracts?status=signed" class={ "crm-filter-tab", templ.KV("active", filter == "signed") }>Signed (10)</a>
+				<a href="/contracts?status=expired" class={ "crm-filter-tab", templ.KV("active", filter == "expired") }>Expired (1)</a>
+			</div>
+
+			<input type="text" placeholder="Search contracts..." class="crm-search-input"/>
+		</div>
+
+		<div class="crm-table-container">
+			<table class="crm-table">
+				<thead>
+					<tr>
+						<th>Contract Name & Number</th>
+						<th>Client</th>
+						<th>Project</th>
+						<th>Created Date</th>
+						<th>Expiry Date</th>
+						<th>Status</th>
+						<th style="text-align: right;">Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>
+							<div style="font-weight: 600;">Standard Wedding Photography Agreement</div>
+							<div style="font-size: 11px; color: var(--text-muted);">CTR-2026-042</div>
+						</td>
+						<td>Jessica Parker</td>
+						<td><a href="/leads/details?id=1" style="color: var(--accent-active-text); text-decoration: none;">Lake Como Destination Wedding</a></td>
+						<td style="color: var(--text-muted);">Oct 29, 2026</td>
+						<td style="color: var(--text-muted);">Nov 15, 2026</td>
+						<td>@crmComponents.StatusPill("Sent for Signature", "blue")</td>
+						<td style="text-align: right;">
+							<button class="crm-page-btn">Preview</button>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div style="font-weight: 600;">Destination Nuptials & Film Agreement</div>
+							<div style="font-size: 11px; color: var(--text-muted);">CTR-2026-039</div>
+						</td>
+						<td>Olivia & James Thornton</td>
+						<td><a href="/projects/details?id=PRJ-102" style="color: var(--accent-active-text); text-decoration: none;">The Thornton Nuptials</a></td>
+						<td style="color: var(--text-muted);">May 12, 2026</td>
+						<td style="color: var(--text-muted);">May 20, 2026</td>
+						<td>@crmComponents.StatusPill("Signed", "green")</td>
+						<td style="text-align: right;">
+							<button class="crm-page-btn">Download PDF</button>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div style="font-weight: 600;">Commercial Licensing & Media Release</div>
+							<div style="font-size: 11px; color: var(--text-muted);">CTR-2026-037</div>
+						</td>
+						<td>Kora Fashion Apparel</td>
+						<td><a href="/projects/details?id=PRJ-103" style="color: var(--accent-active-text); text-decoration: none;">Spring Lookbook 2026</a></td>
+						<td style="color: var(--text-muted);">Oct 05, 2026</td>
+						<td style="color: var(--text-muted);">Oct 12, 2026</td>
+						<td>@crmComponents.StatusPill("Signed", "green")</td>
+						<td style="text-align: right;">
+							<button class="crm-page-btn">Download PDF</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+
+			@crmComponents.Pagination(1, 2, 18)
+		</div>
+	}
+}
+

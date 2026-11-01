@@ -58,7 +58,6 @@ func TestSignupAPI_Success(t *testing.T) {
 		t.Fatal("expected session cookie to be set on signup")
 	}
 
-	// Now verify that the created user can also log in
 	loginPayload := map[string]string{
 		"email":    "alice@example.com",
 		"password": "StrongPass123!",
@@ -77,7 +76,6 @@ func TestSignupAPI_Success(t *testing.T) {
 func TestSignupAPI_DuplicateEmail(t *testing.T) {
 	handler := setupLoginAPITest(t)
 
-	// testLoginEmail already exists from setupLoginAPITest
 	payload := map[string]string{
 		"first_name": "Duplicate",
 		"last_name":  "User",

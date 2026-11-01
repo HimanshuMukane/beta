@@ -1,7 +1,22 @@
 package components
 
-templ Badge(label string, status string) {
-	<span class={ "c-badge c-badge-" + status }>
-		{ label }
-	</span>
+type BadgeProps struct {
+    Variant string
+    Class   string
+}
+
+templ Badge(props ...BadgeProps) {
+    {{
+        variant := "default"
+        class := ""
+        if len(props) > 0 {
+            if props[0].Variant != "" {
+                variant = props[0].Variant
+            }
+            class = props[0].Class
+        }
+    }}
+    <span class={ "crm-badge", "crm-badge-" + variant, class }>
+        { children... }
+    </span>
 }

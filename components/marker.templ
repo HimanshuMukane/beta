@@ -1,0 +1,47 @@
+package components
+
+type MarkerProps struct {
+	ID    string
+	Class string
+	Role  string
+}
+
+type MarkerContentProps struct {
+	ID    string
+	Class string
+}
+
+templ Marker(props ...MarkerProps) {
+	{{ var p MarkerProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		if p.Role != "" {
+			role={ p.Role }
+		}
+		data-slot="marker"
+		class={ "cn-marker", p.Class }
+	>
+		{ children... }
+	</div>
+}
+
+templ MarkerContent(props ...MarkerContentProps) {
+	{{ var p MarkerContentProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		data-slot="marker-content"
+		class={ "cn-marker-content", p.Class }
+	>
+		{ children... }
+	</div>
+}

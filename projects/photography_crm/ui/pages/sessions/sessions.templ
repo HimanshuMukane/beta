@@ -1,0 +1,317 @@
+package pages
+
+import (
+	"chi-mysql-server/ui/layouts"
+	"components"
+)
+
+type SessionModalData struct {
+	ID        string
+	Project   string
+	Date      string
+	StartTime string
+	EndTime   string
+	Duration  string
+	Location  string
+	Address   string
+	Type      string
+	Lighting  string
+	Status    string
+	Notes     string
+}
+
+templ Sessions(tab string) {
+	@layouts.DashboardLayout("Sessions - Aperture CRM", "sessions", []layouts.BreadcrumbItem{
+		{Label: "Sessions"},
+	}) {
+
+		<div class="sessions-top-bar">
+			<div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+
+				<div class="crm-filter-tabs">
+					<a href="/sessions?tab=upcoming" class={ "crm-filter-tab", templ.KV("active", tab == "" || tab == "upcoming") }>
+						@components.IconCalendar()
+						<span>Upcoming</span>
+					</a>
+					<a href="/sessions?tab=past" class={ "crm-filter-tab", templ.KV("active", tab == "past") }>
+						@components.IconClock()
+						<span>Past</span>
+					</a>
+					<a href="/sessions?tab=tbd" class={ "crm-filter-tab", templ.KV("active", tab == "tbd") }>
+						@components.IconCalendar()
+						<span>TBD</span>
+					</a>
+				</div>
+
+				<button class="crm-page-btn" style="display: flex; align-items: center; gap: 6px;">
+					@components.IconClock()
+					<span>Recently Created</span>
+				</button>
+			</div>
+
+			<div style="display: flex; align-items: center; gap: 10px;">
+				<button class="crm-page-btn" style="display: flex; align-items: center; gap: 6px;">
+					@components.IconFilter()
+					<span>Filters</span>
+				</button>
+				<button class="c-btn c-btn-primary" onclick="openSessionModal('new')">
+					@components.IconPlus()
+					<span>New Session</span>
+				</button>
+			</div>
+		</div>
+
+		<div class="sessions-container">
+			<div class="sessions-month-title">November, 2026</div>
+
+			<div class="session-card" onclick="openSessionModal('1')">
+				<div class="session-date-col">
+					<span class="session-date-dayname">Wed</span>
+					<span class="session-date-daynum">11</span>
+				</div>
+
+				<div class="session-info-col">
+					<div class="session-meta-row">
+						<span class="session-meta-icon">@components.IconClock()</span>
+						<span>06:00 PM - 10:00 PM</span>
+					</div>
+					<div class="session-meta-row">
+						<span class="session-meta-icon">@components.IconMapPin()</span>
+						<span>Leela Palace</span>
+					</div>
+					<div class="session-meta-row">
+						<span class="session-meta-icon">@components.IconCompass()</span>
+						<span>Chennai</span>
+					</div>
+				</div>
+
+				<div class="session-title-col">
+					<div class="session-project-name">
+						Kavya Rajendran Wedding - Reception | Sunset
+					</div>
+					<div class="session-crew-status">
+						No Members Added
+					</div>
+				</div>
+
+				<div>
+					<span class="session-status-badge">New</span>
+				</div>
+			</div>
+
+			<div class="session-card" onclick="openSessionModal('2')">
+				<div class="session-date-col">
+					<span class="session-date-dayname">Sat</span>
+					<span class="session-date-daynum">14</span>
+				</div>
+
+				<div class="session-info-col">
+					<div class="session-meta-row">
+						<span class="session-meta-icon">@components.IconClock()</span>
+						<span>04:30 PM - 08:30 PM</span>
+					</div>
+					<div class="session-meta-row">
+						<span class="session-meta-icon">@components.IconMapPin()</span>
+						<span>Leela Palace</span>
+					</div>
+					<div class="session-meta-row">
+						<span class="session-meta-icon">@components.IconCompass()</span>
+						<span>Chennai</span>
+					</div>
+				</div>
+
+				<div class="session-title-col">
+					<div class="session-project-name">
+						Kavya Rajendran Wedding - Wedding | Golden Hour (Evening)
+					</div>
+					<div class="session-crew-status">
+						No Members Added
+					</div>
+				</div>
+
+				<div>
+					<span class="session-status-badge">New</span>
+				</div>
+			</div>
+
+			<div class="session-card" onclick="openSessionModal('3')">
+				<div class="session-date-col">
+					<span class="session-date-dayname">Thu</span>
+					<span class="session-date-daynum">19</span>
+				</div>
+
+				<div class="session-info-col">
+					<div class="session-meta-row">
+						<span class="session-meta-icon">@components.IconClock()</span>
+						<span>02:00 PM - 06:00 PM</span>
+					</div>
+					<div class="session-meta-row">
+						<span class="session-meta-icon">@components.IconMapPin()</span>
+						<span>Villa Monticello</span>
+					</div>
+					<div class="session-meta-row">
+						<span class="session-meta-icon">@components.IconCompass()</span>
+						<span>Lake Como</span>
+					</div>
+				</div>
+
+				<div class="session-title-col">
+					<div class="session-project-name">
+						Olivia & James Thornton - Main Ceremony | Sunset
+					</div>
+					<div class="session-crew-status">
+						2 Crew Assigned: Himanshu M., Aniket K.
+					</div>
+				</div>
+
+				<div>
+					<span class="session-status-badge" style="background: rgba(0, 184, 148, 0.2); color: #00cec9;">Scheduled</span>
+				</div>
+			</div>
+		</div>
+
+		<div id="session-modal" class="session-modal-overlay" style="display: none;">
+			<div class="session-modal-container">
+
+				<div class="session-modal-header">
+					<div class="session-modal-pill-group">
+
+						<select class="session-pill-select" id="modal-workspace">
+							<option value="especa">especa</option>
+							<option value="aperture" selected>Aperture Studio</option>
+						</select>
+
+						<select class="session-pill-select" id="modal-event-type">
+							<option value="wedding_reception">Wedding + Reception</option>
+							<option value="wedding">Wedding</option>
+							<option value="reception" selected>Reception</option>
+							<option value="engagement">Engagement</option>
+							<option value="birthday">Birthday</option>
+							<option value="newborn">New Born Babyshoot</option>
+							<option value="babyshower">Baby Shower</option>
+						</select>
+
+						<select class="session-pill-select" id="modal-lighting-slot">
+							<option value="midday">Midday</option>
+							<option value="blue_hour">Blue Hour / Twilight</option>
+							<option value="night">Night</option>
+							<option value="morning">Morning</option>
+							<option value="sunset" selected>Sunset</option>
+							<option value="early_morning">Early Morning</option>
+							<option value="golden_hour">Golden Hour (Evening)</option>
+						</select>
+
+						<select class="session-pill-select status-pill-primary" id="modal-status">
+							<option value="new" selected>New</option>
+							<option value="tbd">TBD</option>
+							<option value="scheduled">Scheduled</option>
+							<option value="upcoming">Upcoming</option>
+							<option value="in_progress">In Progress</option>
+							<option value="completed">Completed</option>
+							<option value="rescheduled">Rescheduled</option>
+						</select>
+					</div>
+
+					<div style="display: flex; gap: 6px;">
+						<button class="crm-page-btn" title="Duplicate Session">
+							@components.IconCopy()
+						</button>
+						<button class="crm-page-btn" title="Delete Session" style="color: #ff7675;">
+							@components.IconTrash2()
+						</button>
+						<button class="crm-page-btn" onclick="closeSessionModal()" title="Close">
+							@components.IconX()
+						</button>
+					</div>
+				</div>
+
+				<div class="session-modal-body">
+
+					<div>
+						<label class="session-field-label">Project Name <span class="required-star">*</span></label>
+						<input type="text" id="modal-project-name" class="session-input" value="Kavya Rajendran Wedding" placeholder="Enter or select project name..."/>
+					</div>
+
+					<div class="session-form-grid-3">
+						<div>
+							<label class="session-field-label">Date</label>
+							<input type="date" id="modal-date" class="session-input" value="2026-11-11"/>
+						</div>
+						<div>
+							<label class="session-field-label">Time</label>
+							<div style="display: flex; gap: 6px; align-items: center;">
+								<input type="time" id="modal-start-time" class="session-input" value="18:00"/>
+								<span style="color: var(--text-dim);">-</span>
+								<input type="time" id="modal-end-time" class="session-input" value="22:00"/>
+							</div>
+						</div>
+						<div>
+							<label class="session-field-label">Duration</label>
+							<input type="text" id="modal-duration" class="session-input" value="4h 0m" placeholder="4h 0m"/>
+						</div>
+					</div>
+
+					<div>
+						<label class="session-field-label">Location Name</label>
+						<input type="text" id="modal-location" class="session-input" value="The Leela Palace" placeholder="Venue or location name..."/>
+					</div>
+
+					<div>
+						<label class="session-field-label">Full Address</label>
+						<input type="text" id="modal-address" class="session-input" value="Adyar Seaface, MRC Nagar, Raja Annamalai Puram, Chennai, Tamil Nadu 600028" placeholder="Complete address for navigation..."/>
+					</div>
+
+					<div>
+						<label class="session-field-label">Assigned Crew Members</label>
+						<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+							<span class="session-crew-tag">
+								<span>Himanshu M. (Lead)</span>
+								<button class="crew-tag-remove">×</button>
+							</span>
+							<span class="session-crew-tag">
+								<span>Aniket K. (Second Shooter)</span>
+								<button class="crew-tag-remove">×</button>
+							</span>
+						</div>
+						<select class="session-input" style="width: auto;">
+							<option value="">+ Assign Crew Member...</option>
+							<option value="1">Dishita Vaswani (Photographer)</option>
+							<option value="2">Vanshita S. (Lighting Tech)</option>
+							<option value="3">Mahek N. (Cinematographer)</option>
+						</select>
+					</div>
+
+					<div>
+						<label class="session-field-label">Shoot Notes & Requirements</label>
+						<textarea id="modal-notes" class="session-textarea" rows="3" placeholder="Special shot list, client requests, lighting setup notes...">Bring 85mm f/1.4 for outdoor golden hour shots. Reception begins promptly at 7 PM. Low light setup required for ballroom banquet.</textarea>
+					</div>
+				</div>
+
+				<div class="session-modal-footer">
+					<button class="c-btn" style="background: var(--bg-surface-subtle); color: var(--text-main);" onclick="closeSessionModal()">Cancel</button>
+					<button class="c-btn c-btn-primary" onclick="saveSession()">Save Session</button>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			function openSessionModal(id) {
+				const modal = document.getElementById('session-modal');
+				if (modal) {
+					modal.style.display = 'flex';
+				}
+			}
+
+			function closeSessionModal() {
+				const modal = document.getElementById('session-modal');
+				if (modal) {
+					modal.style.display = 'none';
+				}
+			}
+
+			function saveSession() {
+				closeSessionModal();
+			}
+		</script>
+	}
+}

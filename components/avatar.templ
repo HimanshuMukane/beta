@@ -1,0 +1,33 @@
+package components
+
+type AvatarProps struct {
+	Src      string
+	Alt      string
+	Initials string
+	BgColor  string
+	Size     string // "sm", "md", "lg"
+	Class    string
+}
+
+templ Avatar(props AvatarProps) {
+	{{
+		sizeClass := "avatar-md"
+		if props.Size == "sm" {
+			sizeClass = "avatar-sm"
+		} else if props.Size == "lg" {
+			sizeClass = "avatar-lg"
+		}
+		bgStyle := ""
+		if props.BgColor != "" {
+			bgStyle = "background-color: " + props.BgColor + ";"
+		}
+	}}
+	<span class={ "crm-avatar", sizeClass, props.Class } style={ bgStyle }>
+		if props.Src != "" {
+			<img src={ props.Src } alt={ props.Alt } class="crm-avatar-img"/>
+		} else {
+			<span class="crm-avatar-fallback">{ props.Initials }</span>
+		}
+	</span>
+}
+

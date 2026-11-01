@@ -1,0 +1,139 @@
+package components
+
+type Align string
+
+const (
+	AlignStart Align = "start"
+	AlignEnd   Align = "end"
+)
+
+type MessageProps struct {
+	ID    string
+	Class string
+	Align Align
+}
+
+type GroupProps struct {
+	ID    string
+	Class string
+}
+
+type MessageAvatarProps struct {
+	ID    string
+	Class string
+}
+
+type ContentProps struct {
+	ID    string
+	Class string
+}
+
+type HeaderProps struct {
+	ID    string
+	Class string
+}
+
+type FooterProps struct {
+	ID    string
+	Class string
+}
+
+templ MessageGroup(props ...GroupProps) {
+	{{ var p GroupProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		data-slot="message-group"
+		class={ "cn-message-group", p.Class }
+	>
+		{ children... }
+	</div>
+}
+
+templ Message(props ...MessageProps) {
+	{{ var p MessageProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	if p.Align == "" {
+		{{ p.Align = AlignStart }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		data-slot="message"
+		data-align={ string(p.Align) }
+		class={ "cn-message", "group/message", p.Class }
+	>
+		{ children... }
+	</div>
+}
+
+templ MessageAvatarSlot(props ...MessageAvatarProps) {
+	{{ var p MessageAvatarProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		data-slot="message-avatar"
+		class={ "cn-message-avatar", p.Class }
+	>
+		{ children... }
+	</div>
+}
+
+templ MessageContent(props ...ContentProps) {
+	{{ var p ContentProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		data-slot="message-content"
+		class={ "cn-message-content", p.Class }
+	>
+		{ children... }
+	</div>
+}
+
+templ MessageHeader(props ...HeaderProps) {
+	{{ var p HeaderProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		data-slot="message-header"
+		class={ "cn-message-header", p.Class }
+	>
+		{ children... }
+	</div>
+}
+
+templ MessageFooter(props ...FooterProps) {
+	{{ var p FooterProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		data-slot="message-footer"
+		class={ "cn-message-footer", p.Class }
+	>
+		{ children... }
+	</div>
+}
