@@ -3,14 +3,24 @@ package routes
 import (
 	"net/http"
 
-	"chi-mysql-server/utils"
+	"github.com/go-chi/chi/v5"
+
+	"chi-mysql-server/handlers"
+	"core/middleware"
+	"core/utils"
 )
 
 func SetupRouter(pool *utils.DBPool, cfg utils.Config) http.Handler {
-	mux := http.NewServeMux()
+	r := chi.NewRouter()
 
-	RegisterFrontendRoutes(mux, cfg)
-	RegisterBackendRoutes(mux, pool, cfg)
+	r.MethodNotAllowed(func(w http.ResponseWriter, req *http.Request) {
+		handlers.NotFoundHandler(w, req)
+	})
+	r.NotFound(handlers.NotFoundHandler)
+	r.Use(middleware.DatabaseRoutingMiddleware(pool, cfg))
 
-	return Chain(mux, DatabaseRoutingMiddleware(pool, cfg))
+	RegisterFrontendRoutes(r, cfg)
+	RegisterBackendRoutes(r, pool, cfg)
+
+	return r
 }

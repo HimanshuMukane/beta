@@ -13,8 +13,8 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"chi-mysql-server/routes"
-	"chi-mysql-server/security"
-	"chi-mysql-server/utils"
+	"shared/security"
+	"core/utils"
 )
 
 const (
@@ -57,16 +57,14 @@ func setupLoginAPITest(t *testing.T) http.Handler {
 		}
 	})
 
-	for _, db := range []*sqlx.DB{pool.Primary, pool.Test} {
-		for _, file := range []string{"role.sql", "user.sql"} {
-			schema, err := os.ReadFile(filepath.Join("..", "sql", file))
-			if err != nil {
-				t.Fatalf("read %s: %v", file, err)
-			}
+	schema, err := os.ReadFile(filepath.Join("..", "..", "core", "db", "schema", "schema.sql"))
+	if err != nil {
+		t.Fatalf("read schema.sql: %v", err)
+	}
 
-			if _, err := db.Exec(string(schema)); err != nil {
-				t.Fatalf("apply %s: %v", file, err)
-			}
+	for _, db := range []*sqlx.DB{pool.Primary, pool.Test} {
+		if _, err := db.Exec(string(schema)); err != nil {
+			t.Fatalf("apply schema.sql: %v", err)
 		}
 	}
 

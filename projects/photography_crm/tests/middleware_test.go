@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"chi-mysql-server/routes"
-	"chi-mysql-server/utils"
+	"core/utils"
 )
 
 func setupTestPool(t *testing.T) (*utils.DBPool, func()) {

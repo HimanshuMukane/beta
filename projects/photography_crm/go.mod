@@ -11,7 +11,9 @@ require (
 
 require (
 	github.com/dustin/go-humanize v1.1.0 // indirect
+	github.com/go-chi/chi/v5 v5.5.0 // indirect
 	github.com/go-sql-driver/mysql v1.10.1 // indirect
+	github.com/goccy/go-json v0.12.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
@@ -23,5 +25,5 @@ require (
 
 require (
 	github.com/google/uuid v1.6.0
-	golang.org/x/crypto v0.58.0
+	github.com/julienschmidt/httprouter v1.3.0
 )

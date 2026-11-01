@@ -1,0 +1,31 @@
+package layouts
+
+templ AuthLayout(title string) {
+	<!DOCTYPE html>
+	<html lang="en" data-theme="dark">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<link rel="stylesheet" href="/static/css/globals.css"/>
+			<link rel="stylesheet" href="/static/css/style.css"/>
+			<link rel="stylesheet" href="/static/css/auth.css"/>
+			<script src="/static/js/auth.js"></script>
+		</head>
+		<body>
+			<div class="auth-container">
+				<!-- Left side image panel (blank for now, hidden on mobile/responsive) -->
+				<div class="auth-image-panel">
+					<!-- Blank placeholder for future photography artwork/banner -->
+				</div>
+
+				<!-- Right side form panel -->
+				<div class="auth-form-panel">
+					<div class="auth-form-box">
+						{ children... }
+					</div>
+				</div>
+			</div>
+		</body>
+	</html>
+}

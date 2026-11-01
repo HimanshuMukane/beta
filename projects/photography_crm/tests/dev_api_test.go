@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"chi-mysql-server/routes"
-	"chi-mysql-server/utils"
+	"core/utils"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -48,16 +48,14 @@ func setupDevAPITest(t *testing.T, appEnv string) (http.Handler, *utils.DBPool) 
 		}
 	})
 
-	for _, db := range []*sqlx.DB{pool.Primary, pool.Test} {
-		for _, file := range []string{"role.sql", "user.sql"} {
-			schema, err := os.ReadFile(filepath.Join("..", "sql", file))
-			if err != nil {
-				t.Fatalf("read %s: %v", file, err)
-			}
+	schema, err := os.ReadFile(filepath.Join("..", "..", "core", "db", "schema", "schema.sql"))
+	if err != nil {
+		t.Fatalf("read schema.sql: %v", err)
+	}
 
-			if _, err := db.Exec(string(schema)); err != nil {
-				t.Fatalf("apply %s: %v", file, err)
-			}
+	for _, db := range []*sqlx.DB{pool.Primary, pool.Test} {
+		if _, err := db.Exec(string(schema)); err != nil {
+			t.Fatalf("apply schema.sql: %v", err)
 		}
 	}
 

@@ -3,25 +3,24 @@ package routes
 import (
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+
 	"chi-mysql-server/handlers"
 	"chi-mysql-server/ui/static"
-	"chi-mysql-server/utils"
+	"core/middleware"
+	"core/utils"
 )
 
-func RegisterFrontendRoutes(mux *http.ServeMux, cfg utils.Config) {
-	fileServer(mux, "/static/", static.FS())
+func RegisterFrontendRoutes(r *chi.Mux, cfg utils.Config) {
+	fs := http.StripPrefix("/static/", http.FileServer(static.FS()))
+	r.Handle("/static/*", fs)
 
-	mux.Handle("GET /{$}", Chain(
-		http.HandlerFunc(handlers.HomeHandler),
-		RequireAuthPage(cfg),
-	))
-	mux.HandleFunc("GET /signin", handlers.SignInHandler)
-	mux.HandleFunc("GET /signup", handlers.SignUpHandler)
-	mux.HandleFunc("GET /forgot-password", handlers.ForgotPasswordHandler)
-	mux.HandleFunc("/", handlers.NotFoundHandler)
-}
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.RequireAuthPage(cfg))
+		r.Get("/", handlers.HomeHandler)
+	})
 
-func fileServer(mux *http.ServeMux, path string, root http.FileSystem) {
-	fs := http.StripPrefix(path, http.FileServer(root))
-	mux.Handle("GET "+path, fs)
+	r.Get("/signin", handlers.SignInHandler)
+	r.Get("/signup", handlers.SignUpHandler)
+	r.Get("/forgot-password", handlers.ForgotPasswordHandler)
 }

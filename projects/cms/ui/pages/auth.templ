@@ -1,0 +1,136 @@
+package pages
+
+import (
+	"components"
+	"cms/ui/layouts"
+)
+
+templ SignIn() {
+	@layouts.AuthLayout("Sign In - CMS") {
+		<div class="auth-header">
+			<h1 class="auth-title">Welcome back</h1>
+			<p class="auth-subtitle">Sign in to your CMS account</p>
+		</div>
+
+		<form class="auth-form" id="signin-form" method="POST" action="/signin">
+			<div id="auth-error" style="display: none; color: #ff6b6b; font-size: 13px; margin-bottom: 12px; padding: 8px 12px; background: rgba(255, 107, 107, 0.1); border-radius: 6px; border: 1px solid rgba(255, 107, 107, 0.2);"></div>
+			<div class="form-group">
+				<label class="form-label" for="email">Email</label>
+				<input class="form-input" id="email" name="email" type="email" placeholder="editor@example.com" required/>
+			</div>
+
+			<div class="form-group">
+				<div style="display: flex; justify-content: space-between; align-items: center;">
+					<label class="form-label" for="password">Password</label>
+					<a href="/forgot-password" class="auth-link" style="font-size: 11px;">Forgot password?</a>
+				</div>
+				<input class="form-input" id="password" name="password" type="password" placeholder="••••••••" required/>
+			</div>
+
+			@components.Button("Sign In", "c-btn-primary")
+		</form>
+
+		<script>
+			document.getElementById('signin-form').addEventListener('submit', async function(e) {
+				e.preventDefault();
+				const errorDiv = document.getElementById('auth-error');
+				errorDiv.style.display = 'none';
+				const email = document.getElementById('email').value.trim();
+				const password = document.getElementById('password').value;
+
+				try {
+					await window.CRMAuth.login(email, password);
+					window.location.href = '/';
+				} catch (err) {
+					errorDiv.textContent = err.message || 'Login failed';
+					errorDiv.style.display = 'block';
+				}
+			});
+		</script>
+
+		<div class="auth-footer">
+			Don't have an account? <a href="/signup" class="auth-link">Create an account</a>
+		</div>
+	}
+}
+
+templ SignUp() {
+	@layouts.AuthLayout("Sign Up - CMS") {
+		<div class="auth-header">
+			<h1 class="auth-title">Create an account</h1>
+			<p class="auth-subtitle">Set up your studio and start managing clients</p>
+		</div>
+
+		<form class="auth-form" id="signup-form" method="POST" action="/signup">
+			<div id="signup-error" style="display: none; color: #ff6b6b; font-size: 13px; margin-bottom: 12px; padding: 8px 12px; background: rgba(255, 107, 107, 0.1); border-radius: 6px; border: 1px solid rgba(255, 107, 107, 0.2);"></div>
+			<div style="display: flex; gap: 12px;">
+				<div class="form-group" style="flex: 1;">
+					<label class="form-label" for="first_name">First Name</label>
+					<input class="form-input" id="first_name" name="first_name" type="text" placeholder="John" required/>
+				</div>
+				<div class="form-group" style="flex: 1;">
+					<label class="form-label" for="last_name">Last Name</label>
+					<input class="form-input" id="last_name" name="last_name" type="text" placeholder="Doe" required/>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label class="form-label" for="email">Email</label>
+				<input class="form-input" id="email" name="email" type="email" placeholder="editor@example.com" required/>
+			</div>
+
+			<div class="form-group">
+				<label class="form-label" for="password">Password</label>
+				<input class="form-input" id="password" name="password" type="password" placeholder="Create a password (min 8 chars)" required/>
+			</div>
+
+			@components.Button("Create Account", "c-btn-primary")
+		</form>
+
+		<script>
+			document.getElementById('signup-form').addEventListener('submit', async function(e) {
+				e.preventDefault();
+				const errorDiv = document.getElementById('signup-error');
+				errorDiv.style.display = 'none';
+				const firstName = document.getElementById('first_name').value.trim();
+				const lastName = document.getElementById('last_name').value.trim();
+				const email = document.getElementById('email').value.trim();
+				const password = document.getElementById('password').value;
+
+				try {
+					await window.CRMAuth.signup(firstName, lastName, email, password);
+					window.location.href = '/';
+				} catch (err) {
+					errorDiv.textContent = err.message || 'Registration failed';
+					errorDiv.style.display = 'block';
+				}
+			});
+		</script>
+
+		<div class="auth-footer">
+			Already have an account? <a href="/signin" class="auth-link">Sign in</a>
+		</div>
+	}
+}
+
+templ ForgotPassword() {
+	@layouts.AuthLayout("Forgot Password - CMS") {
+		<div class="auth-header">
+			<h1 class="auth-title">Reset password</h1>
+			<p class="auth-subtitle">Enter your email and we'll send a recovery link</p>
+		</div>
+
+		<form class="auth-form" method="POST" action="/forgot-password">
+			<div class="form-group">
+				<label class="form-label" for="email">Email</label>
+				<input class="form-input" id="email" name="email" type="email" placeholder="editor@example.com" required/>
+			</div>
+
+			@components.Button("Send Reset Link", "c-btn-primary")
+		</form>
+
+		<div class="auth-footer">
+			Remember your password? <a href="/signin" class="auth-link">Back to sign in</a>
+		</div>
+	}
+}

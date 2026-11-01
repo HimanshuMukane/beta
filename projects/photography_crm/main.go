@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"chi-mysql-server/routes"
-	"chi-mysql-server/utils"
+	"core/utils"
 )
 
 func main() {
@@ -13,14 +13,15 @@ func main() {
 		panic(err)
 	}
 
-	pool, err := utils.InitDBPool()
+	cfg := utils.AppConfig
+	pool, err := utils.InitDBPool(cfg)
 	if err != nil {
 		panic(err)
 	}
 	defer pool.Close()
 
-	router := routes.SetupRouter(pool, utils.AppConfig)
-	serverPort := utils.AppConfig.ServerPort
+	router := routes.SetupRouter(pool, cfg)
+	serverPort := cfg.ServerPort
 
 	fmt.Println("http://localhost:" + serverPort)
 	if err := http.ListenAndServe(":"+serverPort, router); err != nil {

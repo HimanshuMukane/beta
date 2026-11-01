@@ -3,17 +3,20 @@ package routes
 import (
 	"net/http"
 
-	"chi-mysql-server/handlers"
-	"chi-mysql-server/utils"
+	"github.com/go-chi/chi/v5"
+
+	coreHandlers "core/handlers"
+	"core/middleware"
+	"core/utils"
 )
 
 func RegisterBackendRoutes(
-	mux *http.ServeMux,
+	r *chi.Mux,
 	pool *utils.DBPool,
 	cfg utils.Config,
 ) {
-	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
-		db := utils.DBFromContext(r.Context(), pool.Primary)
+	r.Get("/api/health", func(w http.ResponseWriter, req *http.Request) {
+		db := utils.DBFromContext(req.Context(), pool.Primary)
 		if db == nil {
 			utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{
 				"status": "unavailable",
@@ -22,7 +25,7 @@ func RegisterBackendRoutes(
 			return
 		}
 
-		if err := db.PingContext(r.Context()); err != nil {
+		if err := db.PingContext(req.Context()); err != nil {
 			http.Error(w, "Database unavailable", http.StatusServiceUnavailable)
 			return
 		}
@@ -39,16 +42,16 @@ func RegisterBackendRoutes(
 		})
 	})
 
-	mux.HandleFunc("POST /api/auth/login", handlers.LoginAPIHandler(cfg))
-	mux.HandleFunc("POST /api/auth/signup", handlers.SignupAPIHandler(cfg))
-	mux.HandleFunc("POST /api/auth/logout", handlers.LogoutAPIHandler(cfg))
+	r.Route("/api/auth", func(r chi.Router) {
+		r.Post("/login", coreHandlers.LoginAPIHandler(cfg))
+		r.Post("/signup", coreHandlers.SignupAPIHandler(cfg))
+		r.Post("/logout", coreHandlers.LogoutAPIHandler(cfg))
 
-	mux.Handle("GET /api/auth/me", Chain(
-		handlers.MeAPIHandler(),
-		RequireAuth(cfg),
-	))
+		r.With(middleware.RequireAuth(cfg)).Get("/me", coreHandlers.MeAPIHandler())
+	})
 
-	// Development only routes
-	mux.HandleFunc("POST /api/dev/roles", handlers.DevCreateRoleHandler(cfg))
-	mux.HandleFunc("POST /api/dev/users", handlers.DevCreateUserHandler(cfg))
+	r.Route("/api/dev", func(r chi.Router) {
+		r.Post("/roles", coreHandlers.DevCreateRoleHandler(cfg))
+		r.Post("/users", coreHandlers.DevCreateUserHandler(cfg))
+	})
 }

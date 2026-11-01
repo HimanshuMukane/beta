@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"chi-mysql-server/models"
-	"chi-mysql-server/routes"
-	"chi-mysql-server/security"
-	"chi-mysql-server/utils"
+	"core/middleware"
+	"core/models"
+	"shared/security"
+	"core/utils"
 
 	"github.com/google/uuid"
 )
@@ -170,11 +170,11 @@ func TestRequireRole(t *testing.T) {
 		SessionCookieName: "photography_session",
 	}
 
-	adminOnly := routes.Chain(
+	adminOnly := middleware.Chain(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		}),
-		routes.RequireRole("admin"),
+		middleware.RequireRole("admin"),
 	)
 
 	// User without role
