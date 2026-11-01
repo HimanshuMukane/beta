@@ -1,462 +1,489 @@
 package layouts
 
 import (
-"strings"
-"components"
+	"components"
+	"strings"
 )
 
 type BreadcrumbItem struct {
-    Label string
-    URL   string
+	Label string
+	URL   string
 }
 
 templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbItem) {
-    <!DOCTYPE html>
-        <html lang="en" data-theme="dark">
-            <head>
-                <meta charset="UTF-8"/>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                <title>{ title }</title>
-                    <link rel="stylesheet" href="/static/css/globals.css"/>
-                    <link rel="stylesheet" href="/static/css/style.css"/>
-                    <link rel="stylesheet" href="/static/css/dashboard.css"/>
-                    <link rel="stylesheet" href="/static/css/crm_shared.css"/>
-                    <link rel="stylesheet" href="/static/css/pages/sessions.css"/>
-                    <link rel="stylesheet" href="/static/css/pages/projects.css"/>
-                    <link rel="stylesheet" href="/static/css/pages/settings.css"/>
-                    <link rel="stylesheet" href="/static/css/pages/settings_extra.css"/>
-                    <script src="/static/js/auth.js"></script>
-                    </head>
-                    <body>
-                        <div class="app-root">
-                            <div class="app-body">
-
-                                    <aside id="sidebar" class="app-sidebar">
-                                        <div class="sidebar-top-section">
-
-                                                <div class="sidebar-brand-row">
-                                                    <a href="/" class="brand-info" style="text-decoration: none; color: inherit;">
-                                                        <div class="brand-orb" style="background: linear-gradient(135deg, #0077ff, #00cec9);"></div>
-                                                            <span class="brand-text">Aperture CRM <span class="brand-dots">···</span></span>
-                                                            </a>
-                                                        </div>
-
-                                                            <div class="sidebar-search-box" data-tooltip="Search anything..." data-shortcut="/">
-                                                                <span class="search-icon">
-                                                                    @components.IconSearch()
-                                                                </span>
-                                                                <input type="text" placeholder="Search studio..." id="sidebar-quick-search"/>
-                                                                <span class="sidebar-search-slash">/</span>
-                                                                </div>
-
-                                                                    if strings.HasPrefix(activeNav, "settings") {
-                                                                        <nav class="sidebar-nav-list">
-                                                                            <div style="padding: 6px 12px 10px 12px; display: flex; align-items: center; justify-content: space-between;">
-                                                                                <span style="font-size: 11px; font-weight: 700; color: var(--accent-active-text);">STUDIO SETTINGS</span>
-                                                                                    <a href="/" style="font-size: 11px; color: var(--text-dim); text-decoration: none;">← Exit</a>
-                                                                                    </div>
-
-                                                                                    <div class="sidebar-group-header">MASTER DATA</div>
-                                                                                        <a href="/settings/crew" class={ "nav-item", templ.KV("active", activeNav == "settings_crew" || activeNav == "settings_photographers") } data-tooltip="Crew & Team">
-                                                                                            <div class="nav-item-left">
-                                                                                                <span class="nav-icon">@components.IconUsers()</span>
-                                                                                                    <span class="nav-label">Crew</span>
-                                                                                                    </div>
-                                                                                                </a>
-                                                                                                <a href="/settings/sequence-ids" class={ "nav-item", templ.KV("active", activeNav == "settings_sequence_ids") } data-tooltip="Sequence IDs">
-                                                                                                    <div class="nav-item-left">
-                                                                                                        <span class="nav-icon">@components.IconSlidersHorizontal()</span>
-                                                                                                            <span class="nav-label">Sequence IDs</span>
-                                                                                                            </div>
-                                                                                                        </a>
-
-                                                                                                        <div class="sidebar-group-header">PRESETS CONFIGURATION</div>
-                                                                                                            <a href="/settings/services" class={ "nav-item", templ.KV("active", activeNav == "settings_services") } data-tooltip="Services">
-                                                                                                                <div class="nav-item-left">
-                                                                                                                    <span class="nav-icon">@components.IconZap()</span>
-                                                                                                                        <span class="nav-label">Services</span>
-                                                                                                                        </div>
-                                                                                                                    </a>
-                                                                                                                    <a href="/settings/packages" class={ "nav-item", templ.KV("active", activeNav == "settings_packages") } data-tooltip="Packages">
-                                                                                                                        <div class="nav-item-left">
-                                                                                                                            <span class="nav-icon">@components.IconPackage()</span>
-                                                                                                                                <span class="nav-label">Packages</span>
-                                                                                                                                </div>
-                                                                                                                            </a>
-                                                                                                                            <a href="/settings/order-presets" class={ "nav-item", templ.KV("active", activeNav == "settings_order_presets") } data-tooltip="Order Presets">
-                                                                                                                                <div class="nav-item-left">
-                                                                                                                                    <span class="nav-icon">@components.IconReceipt()</span>
-                                                                                                                                        <span class="nav-label">Order Presets</span>
-                                                                                                                                        </div>
-                                                                                                                                    </a>
-                                                                                                                                    <a href="/settings/deliverable-presets" class={ "nav-item", templ.KV("active", activeNav == "settings_deliverable_presets") } data-tooltip="Deliverable Presets">
-                                                                                                                                        <div class="nav-item-left">
-                                                                                                                                            <span class="nav-icon">@components.IconCamera()</span>
-                                                                                                                                                <span class="nav-label">Deliverable Presets</span>
-                                                                                                                                                </div>
-                                                                                                                                            </a>
-
-                                                                                                                                            <div class="sidebar-group-header">TEMPLATES & FORMS</div>
-                                                                                                                                                <a href="/settings/forms" class={ "nav-item", templ.KV("active", activeNav == "settings_forms") } data-tooltip="Forms Builder">
-                                                                                                                                                    <div class="nav-item-left">
-                                                                                                                                                        <span class="nav-icon">@components.IconFileText()</span>
-                                                                                                                                                            <span class="nav-label">Forms</span>
-                                                                                                                                                            </div>
-                                                                                                                                                        </a>
-                                                                                                                                                        <a href="/settings/quotations" class={ "nav-item", templ.KV("active", activeNav == "settings_quotations") } data-tooltip="Quotation Templates">
-                                                                                                                                                            <div class="nav-item-left">
-                                                                                                                                                                <span class="nav-icon">@components.IconReceipt()</span>
-                                                                                                                                                                    <span class="nav-label">Quotations</span>
-                                                                                                                                                                    </div>
-                                                                                                                                                                </a>
-                                                                                                                                                                <a href="/settings/invoices" class={ "nav-item", templ.KV("active", activeNav == "settings_invoices") } data-tooltip="Invoice Templates">
-                                                                                                                                                                    <div class="nav-item-left">
-                                                                                                                                                                        <span class="nav-icon">@components.IconCreditCard()</span>
-                                                                                                                                                                            <span class="nav-label">Invoices</span>
-                                                                                                                                                                            </div>
-                                                                                                                                                                        </a>
-                                                                                                                                                                        <a href="/settings/contracts" class={ "nav-item", templ.KV("active", activeNav == "settings_contracts") } data-tooltip="Contract Templates">
-                                                                                                                                                                            <div class="nav-item-left">
-                                                                                                                                                                                <span class="nav-icon">@components.IconFileText()</span>
-                                                                                                                                                                                    <span class="nav-label">Contracts</span>
-                                                                                                                                                                                    </div>
-                                                                                                                                                                                </a>
-                                                                                                                                                                                <a href="/settings/feedback" class={ "nav-item", templ.KV("active", activeNav == "settings_feedback") } data-tooltip="Feedback Templates">
-                                                                                                                                                                                    <div class="nav-item-left">
-                                                                                                                                                                                        <span class="nav-icon">@components.IconSparkles()</span>
-                                                                                                                                                                                            <span class="nav-label">Feedback</span>
-                                                                                                                                                                                            </div>
-                                                                                                                                                                                        </a>
-
-                                                                                                                                                                                        <div class="sidebar-group-header">SYSTEM & AUTOMATION</div>
-                                                                                                                                                                                            <a href="/settings/workflow" class={ "nav-item", templ.KV("active", activeNav == "settings_workflow") } data-tooltip="Workflow Engine">
-                                                                                                                                                                                                <div class="nav-item-left">
-                                                                                                                                                                                                    <span class="nav-icon">@components.IconSlidersHorizontal()</span>
-                                                                                                                                                                                                        <span class="nav-label">Workflow</span>
-                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                    </a>
-                                                                                                                                                                                                    <a href="/settings/integrations" class={ "nav-item", templ.KV("active", activeNav == "settings_integrations") } data-tooltip="Integrations">
-                                                                                                                                                                                                        <div class="nav-item-left">
-                                                                                                                                                                                                            <span class="nav-icon">@components.IconZap()</span>
-                                                                                                                                                                                                                <span class="nav-label">Integrations</span>
-                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                            </a>
-                                                                                                                                                                                                            <a href="/settings/business" class={ "nav-item", templ.KV("active", activeNav == "settings_business") } data-tooltip="Business Info">
-                                                                                                                                                                                                                <div class="nav-item-left">
-                                                                                                                                                                                                                    <span class="nav-icon">@components.IconSettings()</span>
-                                                                                                                                                                                                                        <span class="nav-label">Business Info</span>
-                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                    </a>
-
-                                                                                                                                                                                                                            <div style="margin-top: 16px; padding: 0 12px;">
-                                                                                                                                                                                                                                <a href="/" class="c-btn" style="width: 100%; font-size: 11px; background: var(--bg-surface-subtle); color: var(--text-main); text-decoration: none;">
-                                                                                                                                                                                                                                    ← Back to Dashboard
-                                                                                                                                                                                                                                </a>
-                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                        </nav>
-                                                                                                                                                                                                                    } else {
-
-                                                                                                                                                                                                                            <nav class="sidebar-nav-list">
-
-                                                                                                                                                                                                                                    <div class="sidebar-group-header">WORKSPACE</div>
-
-                                                                                                                                                                                                                                        <a href="/" class={ "nav-item", templ.KV("active", activeNav == "dashboard") } data-tooltip="Dashboard" data-shortcut="⌘ D">
-                                                                                                                                                                                                                                            <div class="nav-item-left">
-                                                                                                                                                                                                                                                <span class="nav-icon">@components.IconDashboard()</span>
-                                                                                                                                                                                                                                                    <span class="nav-label">Dashboard</span>
-                                                                                                                                                                                                                                                    </div>
-                                                                                                                                                                                                                                                </a>
-
-                                                                                                                                                                                                                                                <a href="/leads" class={ "nav-item", templ.KV("active", activeNav == "leads" || activeNav == "lead_details") } data-tooltip="Leads" data-shortcut="⌘ L">
-                                                                                                                                                                                                                                                    <div class="nav-item-left">
-                                                                                                                                                                                                                                                        <span class="nav-icon">@components.IconTarget()</span>
-                                                                                                                                                                                                                                                            <span class="nav-label">Leads</span>
-                                                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                                                            <span class="nav-badge-pill">12</span>
-                                                                                                                                                                                                                                                            </a>
-
-                                                                                                                                                                                                                                                            <div class="nav-collapsible-group">
-                                                                                                                                                                                                                                                                <a href="/inbox" class={ "nav-item", templ.KV("active", activeNav == "inbox") } data-tooltip="Inbox" data-shortcut="⌘ M">
-                                                                                                                                                                                                                                                                    <div class="nav-item-left">
-                                                                                                                                                                                                                                                                        <span class="nav-icon">@components.IconMessageSquare()</span>
-                                                                                                                                                                                                                                                                            <span class="nav-label">Inbox</span>
-                                                                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                                                                            <span class="nav-badge-pill" style="background: rgba(124, 93, 250, 0.2); color: var(--accent-active-text);">5</span>
-                                                                                                                                                                                                                                                                            </a>
-                                                                                                                                                                                                                                                                            <div class="nav-subitems">
-                                                                                                                                                                                                                                                                                <a href="/inbox?filter=all" class="subnav-link">All Messages</a>
-                                                                                                                                                                                                                                                                                    <a href="/inbox?filter=whatsapp" class="subnav-link">WhatsApp</a>
-                                                                                                                                                                                                                                                                                        <a href="/inbox?filter=instagram" class="subnav-link">Instagram</a>
-                                                                                                                                                                                                                                                                                            <a href="/inbox?filter=messenger" class="subnav-link">Messenger</a>
-                                                                                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                                                                                        </div>
-
-                                                                                                                                                                                                                                                                                        <div class="nav-collapsible-group">
-                                                                                                                                                                                                                                                                                            <a href="/followups" class={ "nav-item", templ.KV("active", activeNav == "followups") } data-tooltip="Follow-ups" data-shortcut="⌘ F">
-                                                                                                                                                                                                                                                                                                <div class="nav-item-left">
-                                                                                                                                                                                                                                                                                                    <span class="nav-icon">@components.IconClock()</span>
-                                                                                                                                                                                                                                                                                                        <span class="nav-label">Follow-ups</span>
-                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                        <span class="nav-badge-pill" style="background: rgba(255, 107, 107, 0.2); color: #ff6b6b;">3</span>
-                                                                                                                                                                                                                                                                                                        </a>
-                                                                                                                                                                                                                                                                                                        <div class="nav-subitems">
-                                                                                                                                                                                                                                                                                                            <a href="/followups?filter=all" class="subnav-link">All Follow-ups</a>
-                                                                                                                                                                                                                                                                                                                <a href="/followups?filter=my" class="subnav-link">My Follow-ups</a>
-                                                                                                                                                                                                                                                                                                                    <a href="/followups?filter=today" class="subnav-link">Due Today</a>
-                                                                                                                                                                                                                                                                                                                        <a href="/followups?filter=overdue" class="subnav-link">Overdue</a>
-                                                                                                                                                                                                                                                                                                                            <a href="/followups?filter=upcoming" class="subnav-link">Upcoming</a>
-                                                                                                                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                                                                                                                        </div>
-
-                                                                                                                                                                                                                                                                                                                            <div class="sidebar-group-header">STUDIO OPERATIONS</div>
-
-                                                                                                                                                                                                                                                                                                                                <a href="/clients" class={ "nav-item", templ.KV("active", activeNav == "clients" || activeNav == "client_details") } data-tooltip="Clients" data-shortcut="⌘ C">
-                                                                                                                                                                                                                                                                                                                                    <div class="nav-item-left">
-                                                                                                                                                                                                                                                                                                                                        <span class="nav-icon">@components.IconUsers()</span>
-                                                                                                                                                                                                                                                                                                                                            <span class="nav-label">Clients</span>
-                                                                                                                                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                                                                                                                                        </a>
-
-                                                                                                                                                                                                                                                                                                                                        <a href="/orders" class={ "nav-item", templ.KV("active", activeNav == "orders" || activeNav == "order_details") } data-tooltip="Orders" data-shortcut="⌘ O">
-                                                                                                                                                                                                                                                                                                                                            <div class="nav-item-left">
-                                                                                                                                                                                                                                                                                                                                                <span class="nav-icon">@components.IconReceipt()</span>
-                                                                                                                                                                                                                                                                                                                                                    <span class="nav-label">Orders</span>
-                                                                                                                                                                                                                                                                                                                                                    </div>
-                                                                                                                                                                                                                                                                                                                                                </a>
-
-                                                                                                                                                                                                                                                                                                                                                <a href="/projects" class={ "nav-item", templ.KV("active", activeNav == "projects" || activeNav == "project_details") } data-tooltip="Projects" data-shortcut="⌘ P">
-                                                                                                                                                                                                                                                                                                                                                    <div class="nav-item-left">
-                                                                                                                                                                                                                                                                                                                                                        <span class="nav-icon">@components.IconFolder()</span>
-                                                                                                                                                                                                                                                                                                                                                            <span class="nav-label">Projects</span>
-                                                                                                                                                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                                                                                                                                                        </a>
-
-                                                                                                                                                                                                                                                                                                                                                        <div class="nav-collapsible-group">
-                                                                                                                                                                                                                                                                                                                                                            <a href="/sessions" class={ "nav-item", templ.KV("active", activeNav == "sessions") } data-tooltip="Sessions" data-shortcut="⌘ S">
-                                                                                                                                                                                                                                                                                                                                                                <div class="nav-item-left">
-                                                                                                                                                                                                                                                                                                                                                                    <span class="nav-icon">@components.IconCamera()</span>
-                                                                                                                                                                                                                                                                                                                                                                        <span class="nav-label">Sessions</span>
-                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                    </a>
-                                                                                                                                                                                                                                                                                                                                                                    <div class="nav-subitems">
-                                                                                                                                                                                                                                                                                                                                                                        <a href="/sessions?tab=upcoming" class="subnav-link">Upcoming</a>
-                                                                                                                                                                                                                                                                                                                                                                            <a href="/sessions?tab=past" class="subnav-link">Past</a>
-                                                                                                                                                                                                                                                                                                                                                                                <a href="/sessions?tab=tbd" class="subnav-link">TBD</a>
-                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                            </div>
-
-                                                                                                                                                                                                                                                                                                                                                                            <a href="/calendar" class={ "nav-item", templ.KV("active", activeNav == "calendar") } data-tooltip="Calendar">
-                                                                                                                                                                                                                                                                                                                                                                                <div class="nav-item-left">
-                                                                                                                                                                                                                                                                                                                                                                                    <span class="nav-icon">@components.IconCalendar()</span>
-                                                                                                                                                                                                                                                                                                                                                                                        <span class="nav-label">Calendar</span>
-                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                    </a>
-
-                                                                                                                                                                                                                                                                                                                                                                                    <a href="/contracts" class={ "nav-item", templ.KV("active", activeNav == "contracts") } data-tooltip="Contracts">
-                                                                                                                                                                                                                                                                                                                                                                                        <div class="nav-item-left">
-                                                                                                                                                                                                                                                                                                                                                                                            <span class="nav-icon">@components.IconFileText()</span>
-                                                                                                                                                                                                                                                                                                                                                                                                <span class="nav-label">Contracts</span>
-                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                                            </a>
-
-                                                                                                                                                                                                                                                                                                                                                                                            <a href="/deliverables" class={ "nav-item", templ.KV("active", activeNav == "deliverables") } data-tooltip="Deliverables">
-                                                                                                                                                                                                                                                                                                                                                                                                <div class="nav-item-left">
-                                                                                                                                                                                                                                                                                                                                                                                                    <span class="nav-icon">@components.IconPackage()</span>
-                                                                                                                                                                                                                                                                                                                                                                                                        <span class="nav-label">Deliverables</span>
-                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                                    </a>
-
-                                                                                                                                                                                                                                                                                                                                                                                                        <div class="sidebar-group-header">FINANCE</div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                            <div class="nav-collapsible-group">
-                                                                                                                                                                                                                                                                                                                                                                                                                <a href="/billing" class={ "nav-item", templ.KV("active", strings.HasPrefix(activeNav, "billing")) } data-tooltip="Billing">
-                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="nav-item-left">
-                                                                                                                                                                                                                                                                                                                                                                                                                        <span class="nav-icon">@components.IconCreditCard()</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                            <span class="nav-label">Billing</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                        </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="nav-subitems">
-                                                                                                                                                                                                                                                                                                                                                                                                                            <a href="/billing" class="subnav-link">Overview</a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                <a href="/billing/payments" class="subnav-link">Payments</a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                    <a href="/billing/invoices" class="subnav-link">Invoices</a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                        <a href="/billing/expenses" class="subnav-link">Expenses</a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                            <a href="/billing/refunds" class="subnav-link">Refunds</a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                <a href="/billing/cancelled" class="subnav-link">Cancelled</a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="sidebar-group-header">INSIGHTS</div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    <a href="/reports" class={ "nav-item", templ.KV("active", activeNav == "reports") } data-tooltip="Reports" data-shortcut="⌘ R">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="nav-item-left">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            <span class="nav-icon">@components.IconTrendingUp()</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                <span class="nav-label">Reports</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            </a>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="sidebar-group-header">ADMINISTRATION</div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <a href="/settings" class={ "nav-item", templ.KV("active", strings.HasPrefix(activeNav, "settings")) } data-tooltip="Settings" data-shortcut="⌘ ,">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="nav-item-left">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <span class="nav-icon">@components.IconSettings()</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <span class="nav-label">Settings</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </nav>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="sidebar-profile-footer" data-tooltip="Himanshu Mukane" data-shortcut="STUDIO">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="profile-left">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <div class="profile-avatar" style="background: #27272a; color: #fff; font-weight: bold; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 1px solid #3f3f46;">HM</div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div style="display: flex; flex-direction: column; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <span class="profile-name">Himanshu M.</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <span style="font-size: 10px; color: var(--text-muted);">Lead Photographer</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <span class="badge-pro" style="background: rgba(124, 93, 250, 0.2); color: var(--accent-active-text);">PRO</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <a href="/signin" title="Sign out" style="color: var(--text-dim); text-decoration: none; font-size: 14px;">↪</a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </aside>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <main class="main-viewport">
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <nav class="top-nav-bar">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="top-nav-left">
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <button id="sidebar-toggle-btn" class="nav-toggle-btn" title="Toggle Sidebar">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @components.IconSidebar()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </button>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <button class="ws-switcher-pill">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <span class="ws-pill-badge">H</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <span class="ws-pill-text">Himanshu Mukane's Workspace</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @components.IconChevronDown()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="top-nav-right">
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if strings.HasPrefix(activeNav, "settings") {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <a href="/" class="crm-page-btn" style="text-decoration: none; display: flex; align-items: center; gap: 6px; background: var(--bg-surface-subtle); color: var(--text-main);">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @components.IconDashboard()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <span>Back to CRM</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                } else {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <a href="/settings" class="crm-page-btn" style="text-decoration: none; display: flex; align-items: center; gap: 6px; background: var(--bg-surface-subtle); color: var(--text-main);" title="Switch to Settings View">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @components.IconSettings()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <span>Studio Settings</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="split">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <a href="/leads?action=new" class="split-btn-action">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @components.IconPlus()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <span>New</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <button class="split-btn-trigger" popovertarget="quick-create-menu" aria-label="Open quick create options">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <span class="chev">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @components.IconChevronDown()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <div id="quick-create-menu" class="menu" popover>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <a href="/leads?action=new" class="menu-item">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @components.IconUsers()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <span>New Lead</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <a href="/clients?action=new" class="menu-item">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @components.IconUsers()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <span>New Client</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <a href="/orders?action=new" class="menu-item">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @components.IconTable()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <span>New Order</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <a href="/projects?action=new" class="menu-item">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @components.IconFolder()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <span>New Project</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <a href="/sessions?action=new" class="menu-item">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @components.IconCalendar()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <span>Book Session</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <a href="/settings/crew?action=new" class="menu-item">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @components.IconSettings()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <span>Add Crew Member</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <button class="super-action-icon-btn" title="Notifications">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @components.IconBell()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <span class="action-badge-dot"></span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </button>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="super-search-box">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <span class="super-search-svg">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @components.IconSearch()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <input type="text" placeholder="Search..." class="super-search-input" style="background: transparent; border: none; outline: none; color: inherit; font-size: 12px; width: 100px;"/>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <kbd class="super-search-kbd">⌘ K</kbd>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="super-avatar-wrap">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <div class="super-avatar">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <span>HM</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <span class="avatar-status-dot"></span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @components.IconChevronDown()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </nav>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <div class="subnav-bar">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="subnav-left">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="breadcrumb-trail">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <span class="breadcrumb-space-icon" style="display: inline-flex; align-items: center; gap: 5px; color: var(--accent-active-text);">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @components.IconLayout(16, "")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <strong>Especo's Space</strong>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            for _, b := range breadcrumbs {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <span style="color: var(--text-dim);">/</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if b.URL != "" {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <a href={ templ.SafeURL(b.URL) } style="text-decoration: none; color: inherit;">{ b.Label }</a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        } else {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <span class="breadcrumb-item-active">{ b.Label }</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="subnav-actions">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <button id="theme-btn" class="breadcrumb-action-btn" title="Toggle Theme">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @components.IconSun()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <span>Theme</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <a href="/calendar" class="breadcrumb-action-btn" style="text-decoration: none; color: inherit;">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @components.IconCalendar()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <span>Calendar</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <a href="/settings" class="breadcrumb-action-btn" style="text-decoration: none; color: inherit;">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @components.IconSettings()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <span>Settings</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </a>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <div class="page-content-viewport crm-main-content">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                { children... }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </main>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div id="sidebar-tooltip" class="custom-sidebar-tooltip">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <span id="tooltip-text">Dashboard</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div id="tooltip-shortcut-container" class="tooltip-kbd-group"></div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <script>
+	<!DOCTYPE html>
+	<html lang="en" data-theme="dark">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<link rel="stylesheet" href="/static/css/globals.css"/>
+			<link rel="stylesheet" href="/static/css/style.css"/>
+			<link rel="stylesheet" href="/static/css/dashboard.css"/>
+			<link rel="stylesheet" href="/static/css/crm_shared.css"/>
+			<link rel="stylesheet" href="/static/css/pages/sessions.css"/>
+			<link rel="stylesheet" href="/static/css/pages/projects.css"/>
+			<link rel="stylesheet" href="/static/css/pages/settings.css"/>
+			<link rel="stylesheet" href="/static/css/pages/settings_extra.css"/>
+			<script src="/static/js/auth.js"></script>
+		</head>
+		<body>
+			<div class="app-root">
+				<div class="app-body">
+					<aside id="sidebar" class="app-sidebar">
+						<div class="sidebar-top-section">
+							<div class="sidebar-brand-row">
+								<a href="/" class="brand-info" style="text-decoration: none; color: inherit;">
+									<div class="brand-orb" style="background: linear-gradient(135deg, #0077ff, #00cec9);"></div>
+									<span class="brand-text">Aperture CRM <span class="brand-dots">···</span></span>
+								</a>
+							</div>
+							<div class="sidebar-search-box" data-tooltip="Search anything..." data-shortcut="/">
+								<span class="search-icon">
+									@components.IconSearch()
+								</span>
+								<input type="text" placeholder="Search studio..." id="sidebar-quick-search"/>
+								<span class="sidebar-search-slash">/</span>
+							</div>
+							if strings.HasPrefix(activeNav, "settings") {
+								<nav class="sidebar-nav-list">
+									<div style="padding: 6px 12px 10px 12px; display: flex; align-items: center; justify-content: space-between;">
+										<span style="font-size: 11px; font-weight: 700; color: var(--accent-active-text);">STUDIO SETTINGS</span>
+										<a href="/" style="font-size: 11px; color: var(--text-dim); text-decoration: none;">← Exit</a>
+									</div>
+									<div class="sidebar-group-header">MASTER DATA</div>
+									<a href="/settings/crew" class={ "nav-item", templ.KV("active", activeNav == "settings_crew" || activeNav == "settings_photographers") } data-tooltip="Crew & Team">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconUsers()
+											</span>
+											<span class="nav-label">Crew</span>
+										</div>
+									</a>
+									<a href="/settings/sequence-ids" class={ "nav-item", templ.KV("active", activeNav == "settings_sequence_ids") } data-tooltip="Sequence IDs">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconSlidersHorizontal()
+											</span>
+											<span class="nav-label">Sequence IDs</span>
+										</div>
+									</a>
+									<div class="sidebar-group-header">PRESETS CONFIGURATION</div>
+									<a href="/settings/services" class={ "nav-item", templ.KV("active", activeNav == "settings_services") } data-tooltip="Services">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconZap()
+											</span>
+											<span class="nav-label">Services</span>
+										</div>
+									</a>
+									<a href="/settings/packages" class={ "nav-item", templ.KV("active", activeNav == "settings_packages") } data-tooltip="Packages">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconPackage()
+											</span>
+											<span class="nav-label">Packages</span>
+										</div>
+									</a>
+									<a href="/settings/order-presets" class={ "nav-item", templ.KV("active", activeNav == "settings_order_presets") } data-tooltip="Order Presets">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconReceipt()
+											</span>
+											<span class="nav-label">Order Presets</span>
+										</div>
+									</a>
+									<a href="/settings/deliverable-presets" class={ "nav-item", templ.KV("active", activeNav == "settings_deliverable_presets") } data-tooltip="Deliverable Presets">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconCamera()
+											</span>
+											<span class="nav-label">Deliverable Presets</span>
+										</div>
+									</a>
+									<div class="sidebar-group-header">TEMPLATES & FORMS</div>
+									<a href="/settings/forms" class={ "nav-item", templ.KV("active", activeNav == "settings_forms") } data-tooltip="Forms Builder">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconFileText()
+											</span>
+											<span class="nav-label">Forms</span>
+										</div>
+									</a>
+									<a href="/settings/quotations" class={ "nav-item", templ.KV("active", activeNav == "settings_quotations") } data-tooltip="Quotation Templates">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconReceipt()
+											</span>
+											<span class="nav-label">Quotations</span>
+										</div>
+									</a>
+									<a href="/settings/invoices" class={ "nav-item", templ.KV("active", activeNav == "settings_invoices") } data-tooltip="Invoice Templates">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconCreditCard()
+											</span>
+											<span class="nav-label">Invoices</span>
+										</div>
+									</a>
+									<a href="/settings/contracts" class={ "nav-item", templ.KV("active", activeNav == "settings_contracts") } data-tooltip="Contract Templates">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconFileText()
+											</span>
+											<span class="nav-label">Contracts</span>
+										</div>
+									</a>
+									<a href="/settings/feedback" class={ "nav-item", templ.KV("active", activeNav == "settings_feedback") } data-tooltip="Feedback Templates">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconSparkles()
+											</span>
+											<span class="nav-label">Feedback</span>
+										</div>
+									</a>
+									<div class="sidebar-group-header">SYSTEM & AUTOMATION</div>
+									<a href="/settings/workflow" class={ "nav-item", templ.KV("active", activeNav == "settings_workflow") } data-tooltip="Workflow Engine">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconSlidersHorizontal()
+											</span>
+											<span class="nav-label">Workflow</span>
+										</div>
+									</a>
+									<a href="/settings/integrations" class={ "nav-item", templ.KV("active", activeNav == "settings_integrations") } data-tooltip="Integrations">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconZap()
+											</span>
+											<span class="nav-label">Integrations</span>
+										</div>
+									</a>
+									<a href="/settings/business" class={ "nav-item", templ.KV("active", activeNav == "settings_business") } data-tooltip="Business Info">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconSettings()
+											</span>
+											<span class="nav-label">Business Info</span>
+										</div>
+									</a>
+									<div style="margin-top: 16px; padding: 0 12px;">
+										<a href="/" class="c-btn" style="width: 100%; font-size: 11px; background: var(--bg-surface-subtle); color: var(--text-main); text-decoration: none;">
+											← Back to Dashboard
+										</a>
+									</div>
+								</nav>
+							} else {
+								<nav class="sidebar-nav-list">
+									<div class="sidebar-group-header">WORKSPACE</div>
+									<a href="/" class={ "nav-item", templ.KV("active", activeNav == "dashboard") } data-tooltip="Dashboard" data-shortcut="⌘ D">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconDashboard()
+											</span>
+											<span class="nav-label">Dashboard</span>
+										</div>
+									</a>
+									<a href="/leads" class={ "nav-item", templ.KV("active", activeNav == "leads" || activeNav == "lead_details") } data-tooltip="Leads" data-shortcut="⌘ L">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconTarget()
+											</span>
+											<span class="nav-label">Leads</span>
+										</div>
+										<span class="nav-badge-pill">12</span>
+									</a>
+									<div class={ "nav-collapsible-group", templ.KV("is-open", activeNav == "inbox") }>
+										<a href="/inbox" class={ "nav-item", templ.KV("active", activeNav == "inbox") } data-tooltip="Inbox" data-shortcut="⌘ M">
+											<div class="nav-item-left">
+												<span class="nav-icon">
+													@components.IconMessageSquare()
+												</span>
+												<span class="nav-label">Inbox</span>
+											</div>
+											<span class="nav-badge-pill" style="background: rgba(124, 93, 250, 0.2); color: var(--accent-active-text);">5</span>
+											<span class="subnav-chevron">@components.IconChevronRight()
+</span>
+										</a>
+										<div class="nav-subitems">
+											<div class="nav-subitems-inner">
+												<a href="/inbox?filter=all" class="subnav-link">All Messages</a>
+												<a href="/inbox?filter=whatsapp" class="subnav-link">WhatsApp</a>
+												<a href="/inbox?filter=instagram" class="subnav-link">Instagram</a>
+												<a href="/inbox?filter=messenger" class="subnav-link">Messenger</a>
+											</div>
+										</div>
+									</div>
+									<div class={ "nav-collapsible-group", templ.KV("is-open", activeNav == "followups") }>
+										<a href="/followups" class={ "nav-item", templ.KV("active", activeNav == "followups") } data-tooltip="Follow-ups" data-shortcut="⌘ F">
+											<div class="nav-item-left">
+												<span class="nav-icon">
+													@components.IconClock()
+												</span>
+												<span class="nav-label">Follow-ups</span>
+											</div>
+											<span class="nav-badge-pill" style="background: rgba(255, 107, 107, 0.2); color: #ff6b6b;">3</span>
+											<span class="subnav-chevron">@components.IconChevronRight()
+</span>
+										</a>
+										<div class="nav-subitems">
+											<div class="nav-subitems-inner">
+												<a href="/followups?filter=all" class="subnav-link">All Follow-ups</a>
+												<a href="/followups?filter=my" class="subnav-link">My Follow-ups</a>
+												<a href="/followups?filter=today" class="subnav-link">Due Today</a>
+												<a href="/followups?filter=overdue" class="subnav-link">Overdue</a>
+												<a href="/followups?filter=upcoming" class="subnav-link">Upcoming</a>
+											</div>
+										</div>
+									</div>
+									<div class="sidebar-group-header">STUDIO OPERATIONS</div>
+									<a href="/clients" class={ "nav-item", templ.KV("active", activeNav == "clients" || activeNav == "client_details") } data-tooltip="Clients" data-shortcut="⌘ C">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconUsers()
+											</span>
+											<span class="nav-label">Clients</span>
+										</div>
+									</a>
+									<a href="/orders" class={ "nav-item", templ.KV("active", activeNav == "orders" || activeNav == "order_details") } data-tooltip="Orders" data-shortcut="⌘ O">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconReceipt()
+											</span>
+											<span class="nav-label">Orders</span>
+										</div>
+									</a>
+									<a href="/projects" class={ "nav-item", templ.KV("active", activeNav == "projects" || activeNav == "project_details") } data-tooltip="Projects" data-shortcut="⌘ P">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconFolder()
+											</span>
+											<span class="nav-label">Projects</span>
+										</div>
+									</a>
+									<div class={ "nav-collapsible-group", templ.KV("is-open", activeNav == "sessions") }>
+										<a href="/sessions" class={ "nav-item", templ.KV("active", activeNav == "sessions") } data-tooltip="Sessions" data-shortcut="⌘ S">
+											<div class="nav-item-left">
+												<span class="nav-icon">
+													@components.IconCamera()
+												</span>
+												<span class="nav-label">Sessions</span>
+											</div>
+											<span class="subnav-chevron">@components.IconChevronRight()
+</span>
+										</a>
+										<div class="nav-subitems">
+											<div class="nav-subitems-inner">
+												<a href="/sessions?tab=upcoming" class="subnav-link">Upcoming</a>
+												<a href="/sessions?tab=past" class="subnav-link">Past</a>
+												<a href="/sessions?tab=tbd" class="subnav-link">TBD</a>
+											</div>
+										</div>
+									</div>
+									<a href="/calendar" class={ "nav-item", templ.KV("active", activeNav == "calendar") } data-tooltip="Calendar">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconCalendar()
+											</span>
+											<span class="nav-label">Calendar</span>
+										</div>
+									</a>
+									<a href="/contracts" class={ "nav-item", templ.KV("active", activeNav == "contracts") } data-tooltip="Contracts">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconFileText()
+											</span>
+											<span class="nav-label">Contracts</span>
+										</div>
+									</a>
+									<a href="/deliverables" class={ "nav-item", templ.KV("active", activeNav == "deliverables") } data-tooltip="Deliverables">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconPackage()
+											</span>
+											<span class="nav-label">Deliverables</span>
+										</div>
+									</a>
+									<div class="sidebar-group-header">FINANCE</div>
+									<div class={ "nav-collapsible-group", templ.KV("is-open", strings.HasPrefix(activeNav, "billing")) }>
+										<a href="/billing" class={ "nav-item", templ.KV("active", strings.HasPrefix(activeNav, "billing")) } data-tooltip="Billing">
+											<div class="nav-item-left">
+												<span class="nav-icon">
+													@components.IconCreditCard()
+												</span>
+												<span class="nav-label">Billing</span>
+											</div>
+											<span class="subnav-chevron">@components.IconChevronRight()
+</span>
+										</a>
+										<div class="nav-subitems">
+											<div class="nav-subitems-inner">
+												<a href="/billing" class="subnav-link">Overview</a>
+												<a href="/billing/payments" class="subnav-link">Payments</a>
+												<a href="/billing/invoices" class="subnav-link">Invoices</a>
+												<a href="/billing/expenses" class="subnav-link">Expenses</a>
+												<a href="/billing/refunds" class="subnav-link">Refunds</a>
+												<a href="/billing/cancelled" class="subnav-link">Cancelled</a>
+											</div>
+										</div>
+									</div>
+									<div class="sidebar-group-header">INSIGHTS</div>
+									<a href="/reports" class={ "nav-item", templ.KV("active", activeNav == "reports") } data-tooltip="Reports" data-shortcut="⌘ R">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconTrendingUp()
+											</span>
+											<span class="nav-label">Reports</span>
+										</div>
+									</a>
+									<div class="sidebar-group-header">ADMINISTRATION</div>
+									<a href="/settings" class={ "nav-item", templ.KV("active", strings.HasPrefix(activeNav, "settings")) } data-tooltip="Settings" data-shortcut="⌘ ,">
+										<div class="nav-item-left">
+											<span class="nav-icon">
+												@components.IconSettings()
+											</span>
+											<span class="nav-label">Settings</span>
+										</div>
+									</a>
+								</nav>
+							}
+						</div>
+						<div class="sidebar-profile-footer" data-tooltip="Himanshu Mukane" data-shortcut="STUDIO">
+							<div class="profile-left">
+								<div class="profile-avatar" style="background: #27272a; color: #fff; font-weight: bold; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 1px solid #3f3f46;">HM</div>
+								<div style="display: flex; flex-direction: column; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+									<span class="profile-name">Himanshu M.</span>
+									<span style="font-size: 10px; color: var(--text-muted);">Lead Photographer</span>
+								</div>
+								<span class="badge-pro" style="background: rgba(124, 93, 250, 0.2); color: var(--accent-active-text);">PRO</span>
+							</div>
+							<a href="/signin" title="Sign out" style="color: var(--text-dim); text-decoration: none; font-size: 14px;">↪</a>
+						</div>
+					</aside>
+					<main class="main-viewport">
+						<nav class="top-nav-bar">
+							<div class="top-nav-left">
+								<button id="sidebar-toggle-btn" class="nav-toggle-btn" title="Toggle Sidebar">
+									@components.IconSidebar()
+								</button>
+								<button class="ws-switcher-pill">
+									<span class="ws-pill-badge">H</span>
+									<span class="ws-pill-text">Himanshu Mukane's Workspace</span>
+									@components.IconChevronDown()
+								</button>
+							</div>
+							<div class="top-nav-right">
+								if strings.HasPrefix(activeNav, "settings") {
+									<a href="/" class="crm-page-btn" style="text-decoration: none; display: flex; align-items: center; gap: 6px; background: var(--bg-surface-subtle); color: var(--text-main);">
+										@components.IconDashboard()
+										<span>Back to CRM</span>
+									</a>
+								} else {
+									<a href="/settings" class="crm-page-btn" style="text-decoration: none; display: flex; align-items: center; gap: 6px; background: var(--bg-surface-subtle); color: var(--text-main);" title="Switch to Settings View">
+										@components.IconSettings()
+										<span>Studio Settings</span>
+									</a>
+								}
+								<div class="split">
+									<a href="/leads?action=new" class="split-btn-action">
+										@components.IconPlus()
+										<span>New</span>
+									</a>
+									<button class="split-btn-trigger" popovertarget="quick-create-menu" aria-label="Open quick create options">
+										<span class="chev">
+											@components.IconChevronDown()
+										</span>
+									</button>
+								</div>
+								<div id="quick-create-menu" class="menu" popover>
+									<a href="/leads?action=new" class="menu-item">
+										@components.IconUsers()
+										<span>New Lead</span>
+									</a>
+									<a href="/clients?action=new" class="menu-item">
+										@components.IconUsers()
+										<span>New Client</span>
+									</a>
+									<a href="/orders?action=new" class="menu-item">
+										@components.IconTable()
+										<span>New Order</span>
+									</a>
+									<a href="/projects?action=new" class="menu-item">
+										@components.IconFolder()
+										<span>New Project</span>
+									</a>
+									<a href="/sessions?action=new" class="menu-item">
+										@components.IconCalendar()
+										<span>Book Session</span>
+									</a>
+									<a href="/settings/crew?action=new" class="menu-item">
+										@components.IconSettings()
+										<span>Add Crew Member</span>
+									</a>
+								</div>
+								<button class="super-action-icon-btn" title="Notifications">
+									@components.IconBell()
+									<span class="action-badge-dot"></span>
+								</button>
+								<div class="super-search-box">
+									<span class="super-search-svg">
+										@components.IconSearch()
+									</span>
+									<input type="text" placeholder="Search..." class="super-search-input" style="background: transparent; border: none; outline: none; color: inherit; font-size: 12px; width: 100px;"/>
+									<kbd class="super-search-kbd">⌘ K</kbd>
+								</div>
+								<div class="super-avatar-wrap">
+									<div class="super-avatar">
+										<span>HM</span>
+										<span class="avatar-status-dot"></span>
+									</div>
+									@components.IconChevronDown()
+								</div>
+							</div>
+						</nav>
+						<div class="subnav-bar">
+							<div class="subnav-left">
+								<div class="breadcrumb-trail">
+									<span class="breadcrumb-space-icon" style="display: inline-flex; align-items: center; gap: 5px; color: var(--accent-active-text);">
+										@components.IconLayout(16, "")
+										<strong>Especo's Space</strong>
+									</span>
+									for _, b := range breadcrumbs {
+										<span style="color: var(--text-dim);">/</span>
+										if b.URL != "" {
+											<a href={ templ.SafeURL(b.URL) } style="text-decoration: none; color: inherit;">{ b.Label }</a>
+										} else {
+											<span class="breadcrumb-item-active">{ b.Label }</span>
+										}
+									}
+								</div>
+							</div>
+							<div class="subnav-actions">
+								<button id="theme-btn" class="breadcrumb-action-btn" title="Toggle Theme">
+									@components.IconSun()
+									<span>Theme</span>
+								</button>
+								<a href="/calendar" class="breadcrumb-action-btn" style="text-decoration: none; color: inherit;">
+									@components.IconCalendar()
+									<span>Calendar</span>
+								</a>
+								<a href="/settings" class="breadcrumb-action-btn" style="text-decoration: none; color: inherit;">
+									@components.IconSettings()
+									<span>Settings</span>
+								</a>
+							</div>
+						</div>
+						<div class="page-content-viewport crm-main-content">
+							{ children... }
+						</div>
+					</main>
+				</div>
+				<div id="sidebar-tooltip" class="custom-sidebar-tooltip">
+					<span id="tooltip-text">Dashboard</span>
+					<div id="tooltip-shortcut-container" class="tooltip-kbd-group"></div>
+				</div>
+			</div>
+			<script>
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 (function() {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     const themeBtn = document.getElementById('theme-btn');
@@ -507,14 +534,14 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 									}
 								} else {
 									e.preventDefault();
-									const isClosed = group.classList.contains('is-closed');
-									if (isClosed) {
-										collapsibleGroups.forEach(g => {
-											if (g !== group) g.classList.add('is-closed');
-										});
-										group.classList.remove('is-closed');
+									const isOpen = group.classList.contains('is-open');
+									if (isOpen) {
+										group.classList.remove('is-open');
 									} else {
-										group.classList.add('is-closed');
+										collapsibleGroups.forEach(g => {
+											if (g !== group) g.classList.remove('is-open');
+										});
+										group.classList.add('is-open');
 									}
 								}
 							});
@@ -527,6 +554,6 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 						});
 					})();
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             </script>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </body>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </html>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+		</body>
+	</html>
+}

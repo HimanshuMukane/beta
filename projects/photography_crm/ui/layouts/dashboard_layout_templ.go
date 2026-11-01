@@ -46,7 +46,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 19, Col: 30}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 19, Col: 17}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -550,16 +550,16 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</span> <span class=\"nav-label\">Leads</span></div><span class=\"nav-badge-pill\">12</span></a><div class=\"nav-collapsible-group\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</span> <span class=\"nav-label\">Leads</span></div><span class=\"nav-badge-pill\">12</span></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var35 = []any{"nav-item", templ.KV("active", activeNav == "inbox")}
+			var templ_7745c5c3_Var35 = []any{"nav-collapsible-group", templ.KV("is-open", activeNav == "inbox")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var35...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<a href=\"/inbox\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<div class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -572,24 +572,16 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\" data-tooltip=\"Inbox\" data-shortcut=\"⌘ M\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconMessageSquare().Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "</span> <span class=\"nav-label\">Inbox</span></div><span class=\"nav-badge-pill\" style=\"background: rgba(124, 93, 250, 0.2); color: var(--accent-active-text);\">5</span></a><div class=\"nav-subitems\"><a href=\"/inbox?filter=all\" class=\"subnav-link\">All Messages</a> <a href=\"/inbox?filter=whatsapp\" class=\"subnav-link\">WhatsApp</a> <a href=\"/inbox?filter=instagram\" class=\"subnav-link\">Instagram</a> <a href=\"/inbox?filter=messenger\" class=\"subnav-link\">Messenger</a></div></div><div class=\"nav-collapsible-group\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var37 = []any{"nav-item", templ.KV("active", activeNav == "followups")}
+			var templ_7745c5c3_Var37 = []any{"nav-item", templ.KV("active", activeNav == "inbox")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var37...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "<a href=\"/followups\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<a href=\"/inbox\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -602,24 +594,32 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "\" data-tooltip=\"Follow-ups\" data-shortcut=\"⌘ F\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "\" data-tooltip=\"Inbox\" data-shortcut=\"⌘ M\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconClock().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.IconMessageSquare().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "</span> <span class=\"nav-label\">Follow-ups</span></div><span class=\"nav-badge-pill\" style=\"background: rgba(255, 107, 107, 0.2); color: #ff6b6b;\">3</span></a><div class=\"nav-subitems\"><a href=\"/followups?filter=all\" class=\"subnav-link\">All Follow-ups</a> <a href=\"/followups?filter=my\" class=\"subnav-link\">My Follow-ups</a> <a href=\"/followups?filter=today\" class=\"subnav-link\">Due Today</a> <a href=\"/followups?filter=overdue\" class=\"subnav-link\">Overdue</a> <a href=\"/followups?filter=upcoming\" class=\"subnav-link\">Upcoming</a></div></div><div class=\"sidebar-group-header\">STUDIO OPERATIONS</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "</span> <span class=\"nav-label\">Inbox</span></div><span class=\"nav-badge-pill\" style=\"background: rgba(124, 93, 250, 0.2); color: var(--accent-active-text);\">5</span> <span class=\"subnav-chevron\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var39 = []any{"nav-item", templ.KV("active", activeNav == "clients" || activeNav == "client_details")}
+			templ_7745c5c3_Err = components.IconChevronRight().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "</span></a><div class=\"nav-subitems\"><div class=\"nav-subitems-inner\"><a href=\"/inbox?filter=all\" class=\"subnav-link\">All Messages</a> <a href=\"/inbox?filter=whatsapp\" class=\"subnav-link\">WhatsApp</a> <a href=\"/inbox?filter=instagram\" class=\"subnav-link\">Instagram</a> <a href=\"/inbox?filter=messenger\" class=\"subnav-link\">Messenger</a></div></div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var39 = []any{"nav-collapsible-group", templ.KV("is-open", activeNav == "followups")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var39...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "<a href=\"/clients\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "<div class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -632,24 +632,16 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "\" data-tooltip=\"Clients\" data-shortcut=\"⌘ C\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconUsers().Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "</span> <span class=\"nav-label\">Clients</span></div></a> ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var41 = []any{"nav-item", templ.KV("active", activeNav == "orders" || activeNav == "order_details")}
+			var templ_7745c5c3_Var41 = []any{"nav-item", templ.KV("active", activeNav == "followups")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var41...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "<a href=\"/orders\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "<a href=\"/followups\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -662,24 +654,32 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\" data-tooltip=\"Orders\" data-shortcut=\"⌘ O\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "\" data-tooltip=\"Follow-ups\" data-shortcut=\"⌘ F\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconReceipt().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.IconClock().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "</span> <span class=\"nav-label\">Orders</span></div></a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "</span> <span class=\"nav-label\">Follow-ups</span></div><span class=\"nav-badge-pill\" style=\"background: rgba(255, 107, 107, 0.2); color: #ff6b6b;\">3</span> <span class=\"subnav-chevron\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var43 = []any{"nav-item", templ.KV("active", activeNav == "projects" || activeNav == "project_details")}
+			templ_7745c5c3_Err = components.IconChevronRight().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "</span></a><div class=\"nav-subitems\"><div class=\"nav-subitems-inner\"><a href=\"/followups?filter=all\" class=\"subnav-link\">All Follow-ups</a> <a href=\"/followups?filter=my\" class=\"subnav-link\">My Follow-ups</a> <a href=\"/followups?filter=today\" class=\"subnav-link\">Due Today</a> <a href=\"/followups?filter=overdue\" class=\"subnav-link\">Overdue</a> <a href=\"/followups?filter=upcoming\" class=\"subnav-link\">Upcoming</a></div></div></div><div class=\"sidebar-group-header\">STUDIO OPERATIONS</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var43 = []any{"nav-item", templ.KV("active", activeNav == "clients" || activeNav == "client_details")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var43...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "<a href=\"/projects\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "<a href=\"/clients\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -692,24 +692,24 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "\" data-tooltip=\"Projects\" data-shortcut=\"⌘ P\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "\" data-tooltip=\"Clients\" data-shortcut=\"⌘ C\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconFolder().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.IconUsers().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</span> <span class=\"nav-label\">Projects</span></div></a><div class=\"nav-collapsible-group\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</span> <span class=\"nav-label\">Clients</span></div></a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var45 = []any{"nav-item", templ.KV("active", activeNav == "sessions")}
+			var templ_7745c5c3_Var45 = []any{"nav-item", templ.KV("active", activeNav == "orders" || activeNav == "order_details")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var45...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "<a href=\"/sessions\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "<a href=\"/orders\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -722,24 +722,24 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "\" data-tooltip=\"Sessions\" data-shortcut=\"⌘ S\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "\" data-tooltip=\"Orders\" data-shortcut=\"⌘ O\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconCamera().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.IconReceipt().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "</span> <span class=\"nav-label\">Sessions</span></div></a><div class=\"nav-subitems\"><a href=\"/sessions?tab=upcoming\" class=\"subnav-link\">Upcoming</a> <a href=\"/sessions?tab=past\" class=\"subnav-link\">Past</a> <a href=\"/sessions?tab=tbd\" class=\"subnav-link\">TBD</a></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "</span> <span class=\"nav-label\">Orders</span></div></a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var47 = []any{"nav-item", templ.KV("active", activeNav == "calendar")}
+			var templ_7745c5c3_Var47 = []any{"nav-item", templ.KV("active", activeNav == "projects" || activeNav == "project_details")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var47...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<a href=\"/calendar\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<a href=\"/projects\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -752,24 +752,24 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "\" data-tooltip=\"Calendar\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "\" data-tooltip=\"Projects\" data-shortcut=\"⌘ P\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconCalendar().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.IconFolder().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "</span> <span class=\"nav-label\">Calendar</span></div></a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "</span> <span class=\"nav-label\">Projects</span></div></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var49 = []any{"nav-item", templ.KV("active", activeNav == "contracts")}
+			var templ_7745c5c3_Var49 = []any{"nav-collapsible-group", templ.KV("is-open", activeNav == "sessions")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var49...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "<a href=\"/contracts\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "<div class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -782,24 +782,16 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "\" data-tooltip=\"Contracts\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconFileText().Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "</span> <span class=\"nav-label\">Contracts</span></div></a> ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var51 = []any{"nav-item", templ.KV("active", activeNav == "deliverables")}
+			var templ_7745c5c3_Var51 = []any{"nav-item", templ.KV("active", activeNav == "sessions")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var51...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "<a href=\"/deliverables\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "<a href=\"/sessions\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -812,24 +804,32 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "\" data-tooltip=\"Deliverables\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "\" data-tooltip=\"Sessions\" data-shortcut=\"⌘ S\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconPackage().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.IconCamera().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</span> <span class=\"nav-label\">Deliverables</span></div></a><div class=\"sidebar-group-header\">FINANCE</div><div class=\"nav-collapsible-group\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</span> <span class=\"nav-label\">Sessions</span></div><span class=\"subnav-chevron\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var53 = []any{"nav-item", templ.KV("active", strings.HasPrefix(activeNav, "billing"))}
+			templ_7745c5c3_Err = components.IconChevronRight().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</span></a><div class=\"nav-subitems\"><div class=\"nav-subitems-inner\"><a href=\"/sessions?tab=upcoming\" class=\"subnav-link\">Upcoming</a> <a href=\"/sessions?tab=past\" class=\"subnav-link\">Past</a> <a href=\"/sessions?tab=tbd\" class=\"subnav-link\">TBD</a></div></div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var53 = []any{"nav-item", templ.KV("active", activeNav == "calendar")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var53...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "<a href=\"/billing\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "<a href=\"/calendar\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -842,24 +842,24 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "\" data-tooltip=\"Billing\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "\" data-tooltip=\"Calendar\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconCreditCard().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.IconCalendar().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</span> <span class=\"nav-label\">Billing</span></div></a><div class=\"nav-subitems\"><a href=\"/billing\" class=\"subnav-link\">Overview</a> <a href=\"/billing/payments\" class=\"subnav-link\">Payments</a> <a href=\"/billing/invoices\" class=\"subnav-link\">Invoices</a> <a href=\"/billing/expenses\" class=\"subnav-link\">Expenses</a> <a href=\"/billing/refunds\" class=\"subnav-link\">Refunds</a> <a href=\"/billing/cancelled\" class=\"subnav-link\">Cancelled</a></div></div><div class=\"sidebar-group-header\">INSIGHTS</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</span> <span class=\"nav-label\">Calendar</span></div></a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var55 = []any{"nav-item", templ.KV("active", activeNav == "reports")}
+			var templ_7745c5c3_Var55 = []any{"nav-item", templ.KV("active", activeNav == "contracts")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var55...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "<a href=\"/reports\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "<a href=\"/contracts\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -872,24 +872,24 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "\" data-tooltip=\"Reports\" data-shortcut=\"⌘ R\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "\" data-tooltip=\"Contracts\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconTrendingUp().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.IconFileText().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "</span> <span class=\"nav-label\">Reports</span></div></a><div class=\"sidebar-group-header\">ADMINISTRATION</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "</span> <span class=\"nav-label\">Contracts</span></div></a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var57 = []any{"nav-item", templ.KV("active", strings.HasPrefix(activeNav, "settings"))}
+			var templ_7745c5c3_Var57 = []any{"nav-item", templ.KV("active", activeNav == "deliverables")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var57...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<a href=\"/settings\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<a href=\"/deliverables\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -902,7 +902,127 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "\" data-tooltip=\"Settings\" data-shortcut=\"⌘ ,\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "\" data-tooltip=\"Deliverables\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconPackage().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "</span> <span class=\"nav-label\">Deliverables</span></div></a><div class=\"sidebar-group-header\">FINANCE</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var59 = []any{"nav-collapsible-group", templ.KV("is-open", strings.HasPrefix(activeNav, "billing"))}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var59...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<div class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var60 string
+			templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var59).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var60)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var61 = []any{"nav-item", templ.KV("active", strings.HasPrefix(activeNav, "billing"))}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var61...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "<a href=\"/billing\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var62 string
+			templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var61).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var62)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "\" data-tooltip=\"Billing\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconCreditCard().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "</span> <span class=\"nav-label\">Billing</span></div><span class=\"subnav-chevron\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconChevronRight().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "</span></a><div class=\"nav-subitems\"><div class=\"nav-subitems-inner\"><a href=\"/billing\" class=\"subnav-link\">Overview</a> <a href=\"/billing/payments\" class=\"subnav-link\">Payments</a> <a href=\"/billing/invoices\" class=\"subnav-link\">Invoices</a> <a href=\"/billing/expenses\" class=\"subnav-link\">Expenses</a> <a href=\"/billing/refunds\" class=\"subnav-link\">Refunds</a> <a href=\"/billing/cancelled\" class=\"subnav-link\">Cancelled</a></div></div></div><div class=\"sidebar-group-header\">INSIGHTS</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var63 = []any{"nav-item", templ.KV("active", activeNav == "reports")}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var63...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<a href=\"/reports\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var64 string
+			templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var63).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var64)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "\" data-tooltip=\"Reports\" data-shortcut=\"⌘ R\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.IconTrendingUp().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "</span> <span class=\"nav-label\">Reports</span></div></a><div class=\"sidebar-group-header\">ADMINISTRATION</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var65 = []any{"nav-item", templ.KV("active", strings.HasPrefix(activeNav, "settings"))}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var65...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "<a href=\"/settings\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var66 string
+			templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var65).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var66)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "\" data-tooltip=\"Settings\" data-shortcut=\"⌘ ,\"><div class=\"nav-item-left\"><span class=\"nav-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -910,12 +1030,12 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "</span> <span class=\"nav-label\">Settings</span></div></a></nav>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "</span> <span class=\"nav-label\">Settings</span></div></a></nav>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</div><div class=\"sidebar-profile-footer\" data-tooltip=\"Himanshu Mukane\" data-shortcut=\"STUDIO\"><div class=\"profile-left\"><div class=\"profile-avatar\" style=\"background: #27272a; color: #fff; font-weight: bold; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 1px solid #3f3f46;\">HM</div><div style=\"display: flex; flex-direction: column; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\"><span class=\"profile-name\">Himanshu M.</span> <span style=\"font-size: 10px; color: var(--text-muted);\">Lead Photographer</span></div><span class=\"badge-pro\" style=\"background: rgba(124, 93, 250, 0.2); color: var(--accent-active-text);\">PRO</span></div><a href=\"/signin\" title=\"Sign out\" style=\"color: var(--text-dim); text-decoration: none; font-size: 14px;\">↪</a></div></aside><main class=\"main-viewport\"><nav class=\"top-nav-bar\"><div class=\"top-nav-left\"><button id=\"sidebar-toggle-btn\" class=\"nav-toggle-btn\" title=\"Toggle Sidebar\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "</div><div class=\"sidebar-profile-footer\" data-tooltip=\"Himanshu Mukane\" data-shortcut=\"STUDIO\"><div class=\"profile-left\"><div class=\"profile-avatar\" style=\"background: #27272a; color: #fff; font-weight: bold; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 1px solid #3f3f46;\">HM</div><div style=\"display: flex; flex-direction: column; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\"><span class=\"profile-name\">Himanshu M.</span> <span style=\"font-size: 10px; color: var(--text-muted);\">Lead Photographer</span></div><span class=\"badge-pro\" style=\"background: rgba(124, 93, 250, 0.2); color: var(--accent-active-text);\">PRO</span></div><a href=\"/signin\" title=\"Sign out\" style=\"color: var(--text-dim); text-decoration: none; font-size: 14px;\">↪</a></div></aside><main class=\"main-viewport\"><nav class=\"top-nav-bar\"><div class=\"top-nav-left\"><button id=\"sidebar-toggle-btn\" class=\"nav-toggle-btn\" title=\"Toggle Sidebar\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -923,7 +1043,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</button> <button class=\"ws-switcher-pill\"><span class=\"ws-pill-badge\">H</span> <span class=\"ws-pill-text\">Himanshu Mukane's Workspace</span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "</button> <button class=\"ws-switcher-pill\"><span class=\"ws-pill-badge\">H</span> <span class=\"ws-pill-text\">Himanshu Mukane's Workspace</span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -931,12 +1051,12 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "</button></div><div class=\"top-nav-right\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "</button></div><div class=\"top-nav-right\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if strings.HasPrefix(activeNav, "settings") {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<a href=\"/\" class=\"crm-page-btn\" style=\"text-decoration: none; display: flex; align-items: center; gap: 6px; background: var(--bg-surface-subtle); color: var(--text-main);\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "<a href=\"/\" class=\"crm-page-btn\" style=\"text-decoration: none; display: flex; align-items: center; gap: 6px; background: var(--bg-surface-subtle); color: var(--text-main);\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -944,12 +1064,12 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<span>Back to CRM</span></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<span>Back to CRM</span></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "<a href=\"/settings\" class=\"crm-page-btn\" style=\"text-decoration: none; display: flex; align-items: center; gap: 6px; background: var(--bg-surface-subtle); color: var(--text-main);\" title=\"Switch to Settings View\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "<a href=\"/settings\" class=\"crm-page-btn\" style=\"text-decoration: none; display: flex; align-items: center; gap: 6px; background: var(--bg-surface-subtle); color: var(--text-main);\" title=\"Switch to Settings View\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -957,12 +1077,12 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<span>Studio Settings</span></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "<span>Studio Settings</span></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<div class=\"split\"><a href=\"/leads?action=new\" class=\"split-btn-action\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "<div class=\"split\"><a href=\"/leads?action=new\" class=\"split-btn-action\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -970,7 +1090,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<span>New</span></a> <button class=\"split-btn-trigger\" popovertarget=\"quick-create-menu\" aria-label=\"Open quick create options\"><span class=\"chev\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "<span>New</span></a> <button class=\"split-btn-trigger\" popovertarget=\"quick-create-menu\" aria-label=\"Open quick create options\"><span class=\"chev\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -978,7 +1098,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "</span></button></div><div id=\"quick-create-menu\" class=\"menu\" popover><a href=\"/leads?action=new\" class=\"menu-item\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "</span></button></div><div id=\"quick-create-menu\" class=\"menu\" popover><a href=\"/leads?action=new\" class=\"menu-item\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -986,7 +1106,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "<span>New Lead</span></a> <a href=\"/clients?action=new\" class=\"menu-item\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "<span>New Lead</span></a> <a href=\"/clients?action=new\" class=\"menu-item\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -994,7 +1114,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "<span>New Client</span></a> <a href=\"/orders?action=new\" class=\"menu-item\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<span>New Client</span></a> <a href=\"/orders?action=new\" class=\"menu-item\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1002,7 +1122,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "<span>New Order</span></a> <a href=\"/projects?action=new\" class=\"menu-item\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<span>New Order</span></a> <a href=\"/projects?action=new\" class=\"menu-item\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1010,7 +1130,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<span>New Project</span></a> <a href=\"/sessions?action=new\" class=\"menu-item\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "<span>New Project</span></a> <a href=\"/sessions?action=new\" class=\"menu-item\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1018,7 +1138,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "<span>Book Session</span></a> <a href=\"/settings/crew?action=new\" class=\"menu-item\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "<span>Book Session</span></a> <a href=\"/settings/crew?action=new\" class=\"menu-item\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1026,7 +1146,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "<span>Add Crew Member</span></a></div><button class=\"super-action-icon-btn\" title=\"Notifications\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<span>Add Crew Member</span></a></div><button class=\"super-action-icon-btn\" title=\"Notifications\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1034,7 +1154,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<span class=\"action-badge-dot\"></span></button><div class=\"super-search-box\"><span class=\"super-search-svg\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<span class=\"action-badge-dot\"></span></button><div class=\"super-search-box\"><span class=\"super-search-svg\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1042,7 +1162,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "</span> <input type=\"text\" placeholder=\"Search...\" class=\"super-search-input\" style=\"background: transparent; border: none; outline: none; color: inherit; font-size: 12px; width: 100px;\"> <kbd class=\"super-search-kbd\">⌘ K</kbd></div><div class=\"super-avatar-wrap\"><div class=\"super-avatar\"><span>HM</span> <span class=\"avatar-status-dot\"></span></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "</span> <input type=\"text\" placeholder=\"Search...\" class=\"super-search-input\" style=\"background: transparent; border: none; outline: none; color: inherit; font-size: 12px; width: 100px;\"> <kbd class=\"super-search-kbd\">⌘ K</kbd></div><div class=\"super-avatar-wrap\"><div class=\"super-avatar\"><span>HM</span> <span class=\"avatar-status-dot\"></span></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1050,7 +1170,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "</div></div></nav><div class=\"subnav-bar\"><div class=\"subnav-left\"><div class=\"breadcrumb-trail\"><span class=\"breadcrumb-space-icon\" style=\"display: inline-flex; align-items: center; gap: 5px; color: var(--accent-active-text);\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "</div></div></nav><div class=\"subnav-bar\"><div class=\"subnav-left\"><div class=\"breadcrumb-trail\"><span class=\"breadcrumb-space-icon\" style=\"display: inline-flex; align-items: center; gap: 5px; color: var(--accent-active-text);\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1058,67 +1178,67 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "<strong>Especo's Space</strong></span> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "<strong>Especo's Space</strong></span> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, b := range breadcrumbs {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "<span style=\"color: var(--text-dim);\">/</span> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "<span style=\"color: var(--text-dim);\">/</span> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if b.URL != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "<a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "<a href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var59 templ.SafeURL
-				templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(b.URL))
+				var templ_7745c5c3_Var67 templ.SafeURL
+				templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(b.URL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 423, Col: 630}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 454, Col: 41}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "\" style=\"text-decoration: none; color: inherit;\">")
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var60 string
-				templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(b.Label)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 423, Col: 689}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "\" style=\"text-decoration: none; color: inherit;\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "</a>")
+				var templ_7745c5c3_Var68 string
+				templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(b.Label)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 454, Col: 100}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<span class=\"breadcrumb-item-active\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "<span class=\"breadcrumb-item-active\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var61 string
-				templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(b.Label)
+				var templ_7745c5c3_Var69 string
+				templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(b.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 425, Col: 650}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `ui/layouts/dashboard_layout.templ`, Line: 456, Col: 57}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "</div></div><div class=\"subnav-actions\"><button id=\"theme-btn\" class=\"breadcrumb-action-btn\" title=\"Toggle Theme\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "</div></div><div class=\"subnav-actions\"><button id=\"theme-btn\" class=\"breadcrumb-action-btn\" title=\"Toggle Theme\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1126,7 +1246,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<span>Theme</span></button> <a href=\"/calendar\" class=\"breadcrumb-action-btn\" style=\"text-decoration: none; color: inherit;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "<span>Theme</span></button> <a href=\"/calendar\" class=\"breadcrumb-action-btn\" style=\"text-decoration: none; color: inherit;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1134,7 +1254,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<span>Calendar</span></a> <a href=\"/settings\" class=\"breadcrumb-action-btn\" style=\"text-decoration: none; color: inherit;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "<span>Calendar</span></a> <a href=\"/settings\" class=\"breadcrumb-action-btn\" style=\"text-decoration: none; color: inherit;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1142,7 +1262,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "<span>Settings</span></a></div></div><div class=\"page-content-viewport crm-main-content\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "<span>Settings</span></a></div></div><div class=\"page-content-viewport crm-main-content\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1150,7 +1270,7 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "</div></main></div><div id=\"sidebar-tooltip\" class=\"custom-sidebar-tooltip\"><span id=\"tooltip-text\">Dashboard</span><div id=\"tooltip-shortcut-container\" class=\"tooltip-kbd-group\"></div></div></div><script>\n\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                (function() {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    const themeBtn = document.getElementById('theme-btn');\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if (themeBtn) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        themeBtn.addEventListener('click', function() {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const html = document.documentElement;\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const current = html.getAttribute('data-theme');\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const next = current === 'light' ? 'dark' : 'light';\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            html.setAttribute('data-theme', next);\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            localStorage.setItem('theme', next);\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        });\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    const savedTheme = localStorage.getItem('theme');\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if (savedTheme) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        document.documentElement.setAttribute('data-theme', savedTheme);\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                })();\n\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                \t\t\t\t\t(function() {\n\t\t\t\t\t\tconst sidebar = document.getElementById('sidebar');\n\t\t\t\t\t\tconst toggleBtn = document.getElementById('sidebar-toggle-btn');\n\t\t\t\t\t\tif (toggleBtn && sidebar) {\n\t\t\t\t\t\t\ttoggleBtn.addEventListener('click', function() {\n\t\t\t\t\t\t\t\tsidebar.classList.toggle('is-collapsed');\n\t\t\t\t\t\t\t\tdocument.querySelectorAll('.nav-subitems.is-open').forEach(el => el.classList.remove('is-open'));\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t}\n\n\t\t\t\t\t\tconst collapsibleGroups = document.querySelectorAll('.nav-collapsible-group');\n\t\t\t\t\t\tcollapsibleGroups.forEach(group => {\n\t\t\t\t\t\t\tconst parentLink = group.querySelector('.nav-item');\n\t\t\t\t\t\t\tconst subitems = group.querySelector('.nav-subitems');\n\t\t\t\t\t\t\tif (!parentLink || !subitems) return;\n\n\t\t\t\t\t\t\tparentLink.addEventListener('click', function(e) {\n\t\t\t\t\t\t\t\tconst isCollapsed = sidebar && sidebar.classList.contains('is-collapsed');\n\t\t\t\t\t\t\t\tif (isCollapsed) {\n\t\t\t\t\t\t\t\t\te.preventDefault();\n\t\t\t\t\t\t\t\t\te.stopPropagation();\n\n\t\t\t\t\t\t\t\t\tconst wasOpen = subitems.classList.contains('is-open');\n\t\t\t\t\t\t\t\t\tdocument.querySelectorAll('.nav-subitems.is-open').forEach(el => el.classList.remove('is-open'));\n\n\t\t\t\t\t\t\t\t\tif (!wasOpen) {\n\t\t\t\t\t\t\t\t\t\tconst rect = parentLink.getBoundingClientRect();\n\t\t\t\t\t\t\t\t\t\tsubitems.style.top = Math.max(8, rect.top) + 'px';\n\t\t\t\t\t\t\t\t\t\tsubitems.classList.add('is-open');\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\te.preventDefault();\n\t\t\t\t\t\t\t\t\tconst isClosed = group.classList.contains('is-closed');\n\t\t\t\t\t\t\t\t\tif (isClosed) {\n\t\t\t\t\t\t\t\t\t\tcollapsibleGroups.forEach(g => {\n\t\t\t\t\t\t\t\t\t\t\tif (g !== group) g.classList.add('is-closed');\n\t\t\t\t\t\t\t\t\t\t});\n\t\t\t\t\t\t\t\t\t\tgroup.classList.remove('is-closed');\n\t\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\t\tgroup.classList.add('is-closed');\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t});\n\n\t\t\t\t\t\tdocument.addEventListener('click', function(e) {\n\t\t\t\t\t\t\tif (!e.target.closest('.nav-collapsible-group')) {\n\t\t\t\t\t\t\t\tdocument.querySelectorAll('.nav-subitems.is-open').forEach(el => el.classList.remove('is-open'));\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t});\n\t\t\t\t\t})();\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </script></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "</div></main></div><div id=\"sidebar-tooltip\" class=\"custom-sidebar-tooltip\"><span id=\"tooltip-text\">Dashboard</span><div id=\"tooltip-shortcut-container\" class=\"tooltip-kbd-group\"></div></div></div><script>\n\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                (function() {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    const themeBtn = document.getElementById('theme-btn');\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if (themeBtn) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        themeBtn.addEventListener('click', function() {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const html = document.documentElement;\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const current = html.getAttribute('data-theme');\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const next = current === 'light' ? 'dark' : 'light';\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            html.setAttribute('data-theme', next);\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            localStorage.setItem('theme', next);\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        });\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    const savedTheme = localStorage.getItem('theme');\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if (savedTheme) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        document.documentElement.setAttribute('data-theme', savedTheme);\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                })();\n\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                \t\t\t\t\t(function() {\n\t\t\t\t\t\tconst sidebar = document.getElementById('sidebar');\n\t\t\t\t\t\tconst toggleBtn = document.getElementById('sidebar-toggle-btn');\n\t\t\t\t\t\tif (toggleBtn && sidebar) {\n\t\t\t\t\t\t\ttoggleBtn.addEventListener('click', function() {\n\t\t\t\t\t\t\t\tsidebar.classList.toggle('is-collapsed');\n\t\t\t\t\t\t\t\tdocument.querySelectorAll('.nav-subitems.is-open').forEach(el => el.classList.remove('is-open'));\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t}\n\n\t\t\t\t\t\tconst collapsibleGroups = document.querySelectorAll('.nav-collapsible-group');\n\t\t\t\t\t\tcollapsibleGroups.forEach(group => {\n\t\t\t\t\t\t\tconst parentLink = group.querySelector('.nav-item');\n\t\t\t\t\t\t\tconst subitems = group.querySelector('.nav-subitems');\n\t\t\t\t\t\t\tif (!parentLink || !subitems) return;\n\n\t\t\t\t\t\t\tparentLink.addEventListener('click', function(e) {\n\t\t\t\t\t\t\t\tconst isCollapsed = sidebar && sidebar.classList.contains('is-collapsed');\n\t\t\t\t\t\t\t\tif (isCollapsed) {\n\t\t\t\t\t\t\t\t\te.preventDefault();\n\t\t\t\t\t\t\t\t\te.stopPropagation();\n\n\t\t\t\t\t\t\t\t\tconst wasOpen = subitems.classList.contains('is-open');\n\t\t\t\t\t\t\t\t\tdocument.querySelectorAll('.nav-subitems.is-open').forEach(el => el.classList.remove('is-open'));\n\n\t\t\t\t\t\t\t\t\tif (!wasOpen) {\n\t\t\t\t\t\t\t\t\t\tconst rect = parentLink.getBoundingClientRect();\n\t\t\t\t\t\t\t\t\t\tsubitems.style.top = Math.max(8, rect.top) + 'px';\n\t\t\t\t\t\t\t\t\t\tsubitems.classList.add('is-open');\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\te.preventDefault();\n\t\t\t\t\t\t\t\t\tconst isOpen = group.classList.contains('is-open');\n\t\t\t\t\t\t\t\t\tif (isOpen) {\n\t\t\t\t\t\t\t\t\t\tgroup.classList.remove('is-open');\n\t\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\t\tcollapsibleGroups.forEach(g => {\n\t\t\t\t\t\t\t\t\t\t\tif (g !== group) g.classList.remove('is-open');\n\t\t\t\t\t\t\t\t\t\t});\n\t\t\t\t\t\t\t\t\t\tgroup.classList.add('is-open');\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t});\n\n\t\t\t\t\t\tdocument.addEventListener('click', function(e) {\n\t\t\t\t\t\t\tif (!e.target.closest('.nav-collapsible-group')) {\n\t\t\t\t\t\t\t\tdocument.querySelectorAll('.nav-subitems.is-open').forEach(el => el.classList.remove('is-open'));\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t});\n\t\t\t\t\t})();\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </script></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

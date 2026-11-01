@@ -561,15 +561,36 @@
   position: relative;
 }
 
+.nav-collapsible-group .subnav-chevron {
+  margin-left: auto;
+  opacity: 0.6;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-collapsible-group .subnav-chevron svg {
+  width: 14px;
+  height: 14px;
+}
+
+.nav-collapsible-group.is-open .subnav-chevron {
+  transform: rotate(90deg);
+  opacity: 1;
+}
+
 .nav-subitems {
   display: grid;
-  grid-template-rows: 1fr;
+  grid-template-rows: 0fr;
   padding-left: 28px;
-  margin-bottom: 4px;
+  margin-bottom: 0;
   overflow: hidden;
-  transition: grid-template-rows 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+  transition: grid-template-rows 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    margin-bottom 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  opacity: 1;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .nav-subitems-inner {
@@ -577,13 +598,14 @@
   flex-direction: column;
   gap: 2px;
   min-height: 0;
+  overflow: hidden;
 }
 
-.nav-collapsible-group.is-closed .nav-subitems {
-  grid-template-rows: 0fr;
-  opacity: 0;
-  pointer-events: none;
-  margin-bottom: 0;
+.nav-collapsible-group.is-open .nav-subitems {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+  margin-bottom: 4px;
 }
 
 .app-sidebar.is-collapsed .nav-item {
