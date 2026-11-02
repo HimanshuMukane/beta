@@ -108,7 +108,7 @@ kbd,
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
 }
 
-input:focus-visible,
+input:not(.spotlight-field):focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 .form-input:focus-visible {
@@ -117,7 +117,7 @@ textarea:focus-visible,
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2), 0 0 0 4px rgba(255, 255, 255, 0.05) !important;
 }
 
-[data-theme="light"] input:focus-visible,
+[data-theme="light"] input:not(.spotlight-field):focus-visible,
 [data-theme="light"] select:focus-visible,
 [data-theme="light"] textarea:focus-visible,
 [data-theme="light"] .form-input:focus-visible {
