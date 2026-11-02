@@ -38,11 +38,11 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 									<span class="brand-text">Aperture CRM <span class="brand-dots">···</span></span>
 								</a>
 							</div>
-							<div class="sidebar-search-box" data-tooltip="Search anything..." data-shortcut="/">
+							<div class="sidebar-search-box spotlight-trigger-btn" data-tooltip="Search anything..." data-shortcut="/">
 								<span class="search-icon">
 									@components.IconSearch()
 								</span>
-								<input type="text" placeholder="Search studio..." id="sidebar-quick-search"/>
+								<input type="text" placeholder="Search studio..." id="sidebar-quick-search" readonly/>
 								<span class="sidebar-search-slash">/</span>
 							</div>
 							if strings.HasPrefix(activeNav, "settings") {
@@ -202,8 +202,9 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 												<span class="nav-label">Inbox</span>
 											</div>
 											<span class="nav-badge-pill" style="background: rgba(124, 93, 250, 0.2); color: var(--accent-active-text);">5</span>
-											<span class="subnav-chevron">@components.IconChevronRight()
-</span>
+											<span class="subnav-chevron">
+												@components.IconChevronRight()
+											</span>
 										</a>
 										<div class="nav-subitems">
 											<div class="nav-subitems-inner">
@@ -223,8 +224,9 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 												<span class="nav-label">Follow-ups</span>
 											</div>
 											<span class="nav-badge-pill" style="background: rgba(255, 107, 107, 0.2); color: #ff6b6b;">3</span>
-											<span class="subnav-chevron">@components.IconChevronRight()
-</span>
+											<span class="subnav-chevron">
+												@components.IconChevronRight()
+											</span>
 										</a>
 										<div class="nav-subitems">
 											<div class="nav-subitems-inner">
@@ -269,8 +271,9 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 												</span>
 												<span class="nav-label">Sessions</span>
 											</div>
-											<span class="subnav-chevron">@components.IconChevronRight()
-</span>
+											<span class="subnav-chevron">
+												@components.IconChevronRight()
+											</span>
 										</a>
 										<div class="nav-subitems">
 											<div class="nav-subitems-inner">
@@ -313,8 +316,9 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 												</span>
 												<span class="nav-label">Billing</span>
 											</div>
-											<span class="subnav-chevron">@components.IconChevronRight()
-</span>
+											<span class="subnav-chevron">
+												@components.IconChevronRight()
+											</span>
 										</a>
 										<div class="nav-subitems">
 											<div class="nav-subitems-inner">
@@ -425,11 +429,11 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 									@components.IconBell()
 									<span class="action-badge-dot"></span>
 								</button>
-								<div class="super-search-box">
+								<div class="super-search-box spotlight-trigger-btn" role="button" tabindex="0">
 									<span class="super-search-svg">
 										@components.IconSearch()
 									</span>
-									<input type="text" placeholder="Search..." class="super-search-input" style="background: transparent; border: none; outline: none; color: inherit; font-size: 12px; width: 100px;"/>
+									<span class="super-search-label" style="font-size: 12px; color: var(--text-dim); margin-right: 6px;">Search studio...</span>
 									<kbd class="super-search-kbd">⌘ K</kbd>
 								</div>
 								<div class="super-avatar-wrap">
@@ -482,6 +486,7 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 					<span id="tooltip-text">Dashboard</span>
 					<div id="tooltip-shortcut-container" class="tooltip-kbd-group"></div>
 				</div>
+				@components.SpotlightSearch()
 			</div>
 			<script>
 
@@ -550,6 +555,163 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 						document.addEventListener('click', function(e) {
 							if (!e.target.closest('.nav-collapsible-group')) {
 								document.querySelectorAll('.nav-subitems.is-open').forEach(el => el.classList.remove('is-open'));
+							}
+						});
+					})();
+
+					(function() {
+						const root = document.getElementById('spotlight-search-root');
+						const box = document.getElementById('spotlight-box');
+						const input = document.getElementById('spotlight-input');
+						const clearBtn = document.getElementById('spotlight-clear-btn');
+						const itemsContainer = document.getElementById('spotlight-items');
+						if (!root || !box || !input) return;
+
+						function openSpotlight() {
+							root.style.display = 'flex';
+							input.value = '';
+							updateState();
+							setTimeout(() => {
+								input.focus();
+							}, 50);
+						}
+
+						function closeSpotlight() {
+							root.style.display = 'none';
+							box.classList.remove('is-shrunk', 'is-expanded');
+						}
+
+						function updateState() {
+							const hasValue = input.value.trim().length > 0;
+							if (hasValue) {
+								box.classList.remove('is-shrunk');
+								box.classList.add('is-expanded');
+								clearBtn.classList.add('is-active');
+								filterItems(input.value.trim().toLowerCase());
+							} else {
+								box.classList.remove('is-expanded');
+								clearBtn.classList.remove('is-active');
+								resetItems();
+							}
+						}
+
+						function filterItems(query) {
+							if (!itemsContainer) return;
+							const items = itemsContainer.querySelectorAll('.spotlight-item');
+							let first = true;
+							items.forEach(item => {
+								const title = (item.getAttribute('data-title') || '').toLowerCase();
+								const cat = (item.getAttribute('data-category') || '').toLowerCase();
+								const desc = item.textContent.toLowerCase();
+								if (title.includes(query) || cat.includes(query) || desc.includes(query)) {
+									item.style.display = 'flex';
+									if (first) {
+										item.classList.add('is-selected');
+										first = false;
+									} else {
+										item.classList.remove('is-selected');
+									}
+								} else {
+									item.style.display = 'none';
+									item.classList.remove('is-selected');
+								}
+							});
+						}
+
+						function resetItems() {
+							if (!itemsContainer) return;
+							const items = itemsContainer.querySelectorAll('.spotlight-item');
+							items.forEach((item, idx) => {
+								item.style.display = 'flex';
+								if (idx === 0) item.classList.add('is-selected');
+								else item.classList.remove('is-selected');
+							});
+						}
+
+						let mouseMoveTimeout;
+						window.addEventListener('mousemove', function(e) {
+							if (root.style.display !== 'flex') return;
+							if (input.value.trim().length === 0) {
+								box.classList.add('is-shrunk');
+								clearTimeout(mouseMoveTimeout);
+								mouseMoveTimeout = setTimeout(() => {}, 500);
+							}
+						});
+
+						input.addEventListener('focus', function() {
+							if (input.value.trim().length === 0) {
+								box.classList.remove('is-shrunk');
+							}
+						});
+
+						input.addEventListener('input', function() {
+							updateState();
+						});
+
+						clearBtn.addEventListener('click', function() {
+							input.value = '';
+							updateState();
+							input.focus();
+						});
+
+						document.querySelectorAll('.spotlight-trigger-btn').forEach(btn => {
+							btn.addEventListener('click', function(e) {
+								e.preventDefault();
+								e.stopPropagation();
+								openSpotlight();
+							});
+						});
+
+						document.addEventListener('keydown', function(e) {
+							if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+								e.preventDefault();
+								if (root.style.display === 'flex') {
+									closeSpotlight();
+								} else {
+									openSpotlight();
+								}
+								return;
+							}
+							if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+								e.preventDefault();
+								openSpotlight();
+								return;
+							}
+							if (root.style.display !== 'flex') return;
+
+							if (e.key === 'Escape') {
+								e.preventDefault();
+								closeSpotlight();
+							} else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+								e.preventDefault();
+								const visibleItems = Array.from(itemsContainer.querySelectorAll('.spotlight-item')).filter(el => el.style.display !== 'none');
+								if (visibleItems.length === 0) return;
+								let currentIndex = visibleItems.findIndex(el => el.classList.contains('is-selected'));
+								if (e.key === 'ArrowDown') {
+									currentIndex = (currentIndex + 1) % visibleItems.length;
+								} else {
+									currentIndex = (currentIndex - 1 + visibleItems.length) % visibleItems.length;
+								}
+								visibleItems.forEach((el, idx) => {
+									if (idx === currentIndex) {
+										el.classList.add('is-selected');
+										el.scrollIntoView({ block: 'nearest' });
+									} else {
+										el.classList.remove('is-selected');
+									}
+								});
+							} else if (e.key === 'Enter') {
+								const selected = itemsContainer.querySelector('.spotlight-item.is-selected');
+								if (selected) {
+									e.preventDefault();
+									selected.click();
+								}
+							}
+						});
+
+						root.addEventListener('click', function(e) {
+							if (!box.contains(e.target)) {
+								closeSpotlight();
 							}
 						});
 					})();

@@ -355,19 +355,36 @@
   padding: 6px 10px;
   gap: 8px;
   color: var(--text-dim);
-  cursor: text;
+  cursor: pointer;
   transition: all 0.2s ease-in-out;
 }
 
+.sidebar-search-box:focus-within {
+  border-color: var(--accent-color, #7c5dfa);
+  box-shadow: 0 0 0 1px var(--accent-color, #7c5dfa);
+}
+
 .sidebar-search-box input {
-  background: none;
+  background: transparent;
   border: none;
   outline: none;
+  box-shadow: none;
+  -webkit-appearance: none;
+  appearance: none;
   color: var(--text-main);
   font-size: 12.5px;
   flex: 1;
   min-width: 0;
+  padding: 0;
+  margin: 0;
   transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-search-box input:focus,
+.sidebar-search-box input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border: none;
 }
 
 .sidebar-search-box input::placeholder {
