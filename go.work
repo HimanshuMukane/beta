@@ -2,6 +2,7 @@ go 1.26.6
 
 use (
 	./cmd/runner
+	./cmd/seed
 	./components
 	./projects/cms
 	./projects/core

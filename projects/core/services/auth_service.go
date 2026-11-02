@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"core/cache"
 	"core/models"
 	"core/repositories"
 	"shared/security"
@@ -21,11 +20,10 @@ var (
 )
 
 type AuthService struct {
-	users     *repositories.UserRepository
-	roles     *repositories.RoleRepository
-	secret    []byte
-	ttl       time.Duration
-	userCache *cache.MemoryCache[*models.User]
+	users  *repositories.UserRepository
+	roles  *repositories.RoleRepository
+	secret []byte
+	ttl    time.Duration
 }
 
 type LoginResult struct {
@@ -63,10 +61,9 @@ func NewAuthService(
 	}
 
 	return &AuthService{
-		users:     users,
-		secret:    []byte(secret),
-		ttl:       sessionTTL,
-		userCache: cache.NewMemoryCache[*models.User](),
+		users:  users,
+		secret: []byte(secret),
+		ttl:    sessionTTL,
 	}, nil
 }
 
@@ -194,7 +191,6 @@ func (s *AuthService) Login(
 	expiresAt = time.Unix(expiresAt.Unix(), 0)
 
 	user.PasswordHash = ""
-	s.userCache.Set(user.ID.String(), user, s.ttl)
 
 	return &LoginResult{
 		User:         user,
@@ -224,16 +220,11 @@ func (s *AuthService) ValidateSession(ctx context.Context, token string) (*model
 		return nil, err
 	}
 
-	if cachedUser, ok := s.userCache.Get(userID.String()); ok {
-		return cachedUser, nil
-	}
-
 	user, err := s.users.GetUserByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	user.PasswordHash = ""
-	s.userCache.Set(userID.String(), user, s.ttl)
 	return user, nil
 }

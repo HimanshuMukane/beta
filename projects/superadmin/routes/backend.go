@@ -49,9 +49,4 @@ func RegisterBackendRoutes(
 
 		r.With(middleware.RequireAuth(cfg)).Get("/me", coreHandlers.MeAPIHandler())
 	})
-
-	r.Route("/api/dev", func(r chi.Router) {
-		r.Post("/roles", coreHandlers.DevCreateRoleHandler(cfg))
-		r.Post("/users", coreHandlers.DevCreateUserHandler(cfg))
-	})
 }
