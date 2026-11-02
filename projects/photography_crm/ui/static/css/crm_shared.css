@@ -1100,7 +1100,7 @@
   background: var(--status-bugs-bg);
   color: var(--status-bugs-text);
   border-color: rgba(239, 68, 68, 0.25);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 14px -3px rgba(239, 68, 68, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .crm-badge-green,
@@ -1108,14 +1108,14 @@
   background: var(--status-done-bg);
   color: var(--status-done-text);
   border-color: rgba(16, 185, 129, 0.25);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 14px -3px rgba(16, 185, 129, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .crm-badge-blue {
   background: var(--status-inprogress-bg);
   color: var(--status-inprogress-text);
   border-color: rgba(59, 130, 246, 0.25);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 14px -3px rgba(59, 130, 246, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .crm-badge-yellow,
@@ -1123,14 +1123,14 @@
   background: var(--status-final-bg);
   color: var(--status-final-text);
   border-color: rgba(245, 158, 11, 0.25);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 14px -3px rgba(245, 158, 11, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .crm-badge-purple {
   background: var(--status-testing-bg);
   color: var(--status-testing-text);
   border-color: rgba(168, 85, 247, 0.25);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 14px -3px rgba(168, 85, 247, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .crm-badge-gray {
