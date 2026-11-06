@@ -9,7 +9,6 @@ import (
 	"core/repositories"
 	"core/services"
 	"core/utils"
-	"core/validation"
 )
 
 type LoginRequest struct {
@@ -93,8 +92,16 @@ func SignupAPIHandler(config utils.Config, defaultRole ...string) http.HandlerFu
 			return
 		}
 
-		if err := validation.ValidateStruct(input); err != nil {
-			utils.WriteError(responseWriter, http.StatusBadRequest, validation.FormatValidationError(err))
+		if strings.TrimSpace(input.FirstName) == "" || strings.TrimSpace(input.LastName) == "" {
+			utils.WriteError(responseWriter, http.StatusBadRequest, "First name and last name are required")
+			return
+		}
+		if !strings.Contains(input.Email, "@") {
+			utils.WriteError(responseWriter, http.StatusBadRequest, "Valid email is required")
+			return
+		}
+		if len(input.Password) < 8 {
+			utils.WriteError(responseWriter, http.StatusBadRequest, "Password must be at least 8 characters")
 			return
 		}
 
