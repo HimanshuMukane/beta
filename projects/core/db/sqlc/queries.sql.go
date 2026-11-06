@@ -8,17 +8,65 @@ package sqlc
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"time"
+
+	"github.com/google/uuid"
 )
 
+const claimDueFollowups = `-- name: ClaimDueFollowups :many
+SELECT id, tenant_id, lead_id, client_id, assigned_user_id, title, due_date, completed_at, status, created_at, updated_at
+FROM crm.followups
+WHERE status = 'pending' AND due_date <= now()
+ORDER BY due_date ASC
+LIMIT $1
+FOR UPDATE SKIP LOCKED
+`
+
+func (q *Queries) ClaimDueFollowups(ctx context.Context, limit int32) ([]CrmFollowup, error) {
+	rows, err := q.db.QueryContext(ctx, claimDueFollowups, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CrmFollowup{}
+	for rows.Next() {
+		var i CrmFollowup
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.LeadID,
+			&i.ClientID,
+			&i.AssignedUserID,
+			&i.Title,
+			&i.DueDate,
+			&i.CompletedAt,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const completeFollowup = `-- name: CompleteFollowup :exec
-UPDATE followups
-SET status = 'completed', completed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-WHERE id = ? AND tenant_id = ?
+UPDATE crm.followups
+SET status = 'completed', completed_at = now(), updated_at = now()
+WHERE id = $1 AND tenant_id = $2
 `
 
 type CompleteFollowupParams struct {
-	ID       string `json:"id"`
-	TenantID string `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
 }
 
 func (q *Queries) CompleteFollowup(ctx context.Context, arg CompleteFollowupParams) error {
@@ -27,7 +75,7 @@ func (q *Queries) CompleteFollowup(ctx context.Context, arg CompleteFollowupPara
 }
 
 const createClient = `-- name: CreateClient :exec
-INSERT INTO clients (
+INSERT INTO crm.clients (
     id,
     tenant_id,
     first_name,
@@ -39,20 +87,20 @@ INSERT INTO clients (
     converted_from_lead_id,
     notes
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 `
 
 type CreateClientParams struct {
-	ID                  string         `json:"id"`
-	TenantID            string         `json:"tenant_id"`
-	FirstName           string         `json:"first_name"`
-	LastName            string         `json:"last_name"`
-	Email               string         `json:"email"`
-	Phone               string         `json:"phone"`
-	Address             string         `json:"address"`
-	LeadSource          string         `json:"lead_source"`
-	ConvertedFromLeadID sql.NullString `json:"converted_from_lead_id"`
-	Notes               string         `json:"notes"`
+	ID                  uuid.UUID     `json:"id"`
+	TenantID            uuid.UUID     `json:"tenant_id"`
+	FirstName           string        `json:"first_name"`
+	LastName            string        `json:"last_name"`
+	Email               string        `json:"email"`
+	Phone               string        `json:"phone"`
+	Address             string        `json:"address"`
+	LeadSource          string        `json:"lead_source"`
+	ConvertedFromLeadID uuid.NullUUID `json:"converted_from_lead_id"`
+	Notes               string        `json:"notes"`
 }
 
 func (q *Queries) CreateClient(ctx context.Context, arg CreateClientParams) error {
@@ -72,7 +120,7 @@ func (q *Queries) CreateClient(ctx context.Context, arg CreateClientParams) erro
 }
 
 const createFollowup = `-- name: CreateFollowup :exec
-INSERT INTO followups (
+INSERT INTO crm.followups (
     id,
     tenant_id,
     lead_id,
@@ -82,18 +130,18 @@ INSERT INTO followups (
     due_date,
     status
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 `
 
 type CreateFollowupParams struct {
-	ID             string         `json:"id"`
-	TenantID       string         `json:"tenant_id"`
-	LeadID         sql.NullString `json:"lead_id"`
-	ClientID       sql.NullString `json:"client_id"`
-	AssignedUserID sql.NullString `json:"assigned_user_id"`
-	Title          string         `json:"title"`
-	DueDate        string         `json:"due_date"`
-	Status         string         `json:"status"`
+	ID             uuid.UUID     `json:"id"`
+	TenantID       uuid.UUID     `json:"tenant_id"`
+	LeadID         uuid.NullUUID `json:"lead_id"`
+	ClientID       uuid.NullUUID `json:"client_id"`
+	AssignedUserID uuid.NullUUID `json:"assigned_user_id"`
+	Title          string        `json:"title"`
+	DueDate        time.Time     `json:"due_date"`
+	Status         string        `json:"status"`
 }
 
 func (q *Queries) CreateFollowup(ctx context.Context, arg CreateFollowupParams) error {
@@ -111,7 +159,7 @@ func (q *Queries) CreateFollowup(ctx context.Context, arg CreateFollowupParams) 
 }
 
 const createLead = `-- name: CreateLead :exec
-INSERT INTO leads (
+INSERT INTO crm.leads (
     id,
     tenant_id,
     workflow_id,
@@ -129,26 +177,26 @@ INSERT INTO leads (
     notes,
     status
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 `
 
 type CreateLeadParams struct {
-	ID                  string         `json:"id"`
-	TenantID            string         `json:"tenant_id"`
-	WorkflowID          string         `json:"workflow_id"`
-	StageID             string         `json:"stage_id"`
-	Title               string         `json:"title"`
-	ContactName         string         `json:"contact_name"`
-	ContactEmail        string         `json:"contact_email"`
-	ContactPhone        string         `json:"contact_phone"`
-	Source              string         `json:"source"`
-	PhotographyService  string         `json:"photography_service"`
-	EstimatedValueMinor int64          `json:"estimated_value_minor"`
-	AssignedUserID      sql.NullString `json:"assigned_user_id"`
-	RequestedDate       string         `json:"requested_date"`
-	Location            string         `json:"location"`
-	Notes               string         `json:"notes"`
-	Status              string         `json:"status"`
+	ID                  uuid.UUID     `json:"id"`
+	TenantID            uuid.UUID     `json:"tenant_id"`
+	WorkflowID          uuid.UUID     `json:"workflow_id"`
+	StageID             uuid.UUID     `json:"stage_id"`
+	Title               string        `json:"title"`
+	ContactName         string        `json:"contact_name"`
+	ContactEmail        string        `json:"contact_email"`
+	ContactPhone        string        `json:"contact_phone"`
+	Source              string        `json:"source"`
+	PhotographyService  string        `json:"photography_service"`
+	EstimatedValueMinor int64         `json:"estimated_value_minor"`
+	AssignedUserID      uuid.NullUUID `json:"assigned_user_id"`
+	RequestedDate       string        `json:"requested_date"`
+	Location            string        `json:"location"`
+	Notes               string        `json:"notes"`
+	Status              string        `json:"status"`
 }
 
 func (q *Queries) CreateLead(ctx context.Context, arg CreateLeadParams) error {
@@ -174,19 +222,19 @@ func (q *Queries) CreateLead(ctx context.Context, arg CreateLeadParams) error {
 }
 
 const createLeadStage = `-- name: CreateLeadStage :exec
-INSERT INTO lead_stages (id, tenant_id, workflow_id, name, color, stage_order, is_won, is_lost)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO crm.lead_stages (id, tenant_id, workflow_id, name, color, stage_order, is_won, is_lost)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 `
 
 type CreateLeadStageParams struct {
-	ID         string `json:"id"`
-	TenantID   string `json:"tenant_id"`
-	WorkflowID string `json:"workflow_id"`
-	Name       string `json:"name"`
-	Color      string `json:"color"`
-	StageOrder int64  `json:"stage_order"`
-	IsWon      int64  `json:"is_won"`
-	IsLost     int64  `json:"is_lost"`
+	ID         uuid.UUID `json:"id"`
+	TenantID   uuid.UUID `json:"tenant_id"`
+	WorkflowID uuid.UUID `json:"workflow_id"`
+	Name       string    `json:"name"`
+	Color      string    `json:"color"`
+	StageOrder int32     `json:"stage_order"`
+	IsWon      bool      `json:"is_won"`
+	IsLost     bool      `json:"is_lost"`
 }
 
 func (q *Queries) CreateLeadStage(ctx context.Context, arg CreateLeadStageParams) error {
@@ -204,15 +252,15 @@ func (q *Queries) CreateLeadStage(ctx context.Context, arg CreateLeadStageParams
 }
 
 const createLeadWorkflow = `-- name: CreateLeadWorkflow :exec
-INSERT INTO lead_workflows (id, tenant_id, name, is_default)
-VALUES (?, ?, ?, ?)
+INSERT INTO crm.lead_workflows (id, tenant_id, name, is_default)
+VALUES ($1, $2, $3, $4)
 `
 
 type CreateLeadWorkflowParams struct {
-	ID        string `json:"id"`
-	TenantID  string `json:"tenant_id"`
-	Name      string `json:"name"`
-	IsDefault int64  `json:"is_default"`
+	ID        uuid.UUID `json:"id"`
+	TenantID  uuid.UUID `json:"tenant_id"`
+	Name      string    `json:"name"`
+	IsDefault bool      `json:"is_default"`
 }
 
 func (q *Queries) CreateLeadWorkflow(ctx context.Context, arg CreateLeadWorkflowParams) error {
@@ -226,22 +274,22 @@ func (q *Queries) CreateLeadWorkflow(ctx context.Context, arg CreateLeadWorkflow
 }
 
 const createMembership = `-- name: CreateMembership :exec
-INSERT INTO memberships (
+INSERT INTO identity.memberships (
     id,
     tenant_id,
     user_id,
     role,
     status
 )
-VALUES (?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type CreateMembershipParams struct {
-	ID       string `json:"id"`
-	TenantID string `json:"tenant_id"`
-	UserID   string `json:"user_id"`
-	Role     string `json:"role"`
-	Status   string `json:"status"`
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+	UserID   uuid.UUID `json:"user_id"`
+	Role     string    `json:"role"`
+	Status   string    `json:"status"`
 }
 
 func (q *Queries) CreateMembership(ctx context.Context, arg CreateMembershipParams) error {
@@ -256,17 +304,17 @@ func (q *Queries) CreateMembership(ctx context.Context, arg CreateMembershipPara
 }
 
 const createPackage = `-- name: CreatePackage :exec
-INSERT INTO packages (id, tenant_id, name, description, price_minor, is_active)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO crm.packages (id, tenant_id, name, description, price_minor, is_active)
+VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type CreatePackageParams struct {
-	ID          string `json:"id"`
-	TenantID    string `json:"tenant_id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	PriceMinor  int64  `json:"price_minor"`
-	IsActive    int64  `json:"is_active"`
+	ID          uuid.UUID `json:"id"`
+	TenantID    uuid.UUID `json:"tenant_id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	PriceMinor  int64     `json:"price_minor"`
+	IsActive    bool      `json:"is_active"`
 }
 
 func (q *Queries) CreatePackage(ctx context.Context, arg CreatePackageParams) error {
@@ -282,22 +330,22 @@ func (q *Queries) CreatePackage(ctx context.Context, arg CreatePackageParams) er
 }
 
 const createPlatformAdmin = `-- name: CreatePlatformAdmin :exec
-INSERT INTO platform_admins (
+INSERT INTO platform.platform_admins (
     id,
     name,
     email,
     password_hash,
     role
 )
-VALUES (?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type CreatePlatformAdminParams struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"password_hash"`
-	Role         string `json:"role"`
+	ID           uuid.UUID `json:"id"`
+	Name         string    `json:"name"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"password_hash"`
+	Role         string    `json:"role"`
 }
 
 func (q *Queries) CreatePlatformAdmin(ctx context.Context, arg CreatePlatformAdminParams) error {
@@ -312,7 +360,7 @@ func (q *Queries) CreatePlatformAdmin(ctx context.Context, arg CreatePlatformAdm
 }
 
 const createProject = `-- name: CreateProject :exec
-INSERT INTO projects (
+INSERT INTO crm.projects (
     id,
     tenant_id,
     client_id,
@@ -326,22 +374,22 @@ INSERT INTO projects (
     address,
     manager_id
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 `
 
 type CreateProjectParams struct {
-	ID          string         `json:"id"`
-	TenantID    string         `json:"tenant_id"`
-	ClientID    string         `json:"client_id"`
-	LeadID      sql.NullString `json:"lead_id"`
-	Title       string         `json:"title"`
-	ProjectType string         `json:"project_type"`
-	Status      string         `json:"status"`
-	Stage       string         `json:"stage"`
-	IsConfirmed int64          `json:"is_confirmed"`
-	ConfirmedAt sql.NullString `json:"confirmed_at"`
-	Address     string         `json:"address"`
-	ManagerID   sql.NullString `json:"manager_id"`
+	ID          uuid.UUID     `json:"id"`
+	TenantID    uuid.UUID     `json:"tenant_id"`
+	ClientID    uuid.UUID     `json:"client_id"`
+	LeadID      uuid.NullUUID `json:"lead_id"`
+	Title       string        `json:"title"`
+	ProjectType string        `json:"project_type"`
+	Status      string        `json:"status"`
+	Stage       string        `json:"stage"`
+	IsConfirmed bool          `json:"is_confirmed"`
+	ConfirmedAt sql.NullTime  `json:"confirmed_at"`
+	Address     string        `json:"address"`
+	ManagerID   uuid.NullUUID `json:"manager_id"`
 }
 
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) error {
@@ -363,7 +411,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) er
 }
 
 const createProjectSegment = `-- name: CreateProjectSegment :exec
-INSERT INTO project_segments (
+INSERT INTO crm.project_segments (
     id,
     tenant_id,
     project_id,
@@ -373,18 +421,18 @@ INSERT INTO project_segments (
     end_date,
     segment_order
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 `
 
 type CreateProjectSegmentParams struct {
-	ID           string `json:"id"`
-	TenantID     string `json:"tenant_id"`
-	ProjectID    string `json:"project_id"`
-	SegmentType  string `json:"segment_type"`
-	Name         string `json:"name"`
-	StartDate    string `json:"start_date"`
-	EndDate      string `json:"end_date"`
-	SegmentOrder int64  `json:"segment_order"`
+	ID           uuid.UUID `json:"id"`
+	TenantID     uuid.UUID `json:"tenant_id"`
+	ProjectID    uuid.UUID `json:"project_id"`
+	SegmentType  string    `json:"segment_type"`
+	Name         string    `json:"name"`
+	StartDate    time.Time `json:"start_date"`
+	EndDate      time.Time `json:"end_date"`
+	SegmentOrder int32     `json:"segment_order"`
 }
 
 func (q *Queries) CreateProjectSegment(ctx context.Context, arg CreateProjectSegmentParams) error {
@@ -402,7 +450,7 @@ func (q *Queries) CreateProjectSegment(ctx context.Context, arg CreateProjectSeg
 }
 
 const createQuotation = `-- name: CreateQuotation :exec
-INSERT INTO quotations (
+INSERT INTO crm.quotations (
     id,
     tenant_id,
     project_id,
@@ -413,23 +461,23 @@ INSERT INTO quotations (
     tax_minor,
     total_minor,
     status,
-    snapshot_json
+    snapshot
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 `
 
 type CreateQuotationParams struct {
-	ID            string `json:"id"`
-	TenantID      string `json:"tenant_id"`
-	ProjectID     string `json:"project_id"`
-	QuoteNumber   string `json:"quote_number"`
-	PackageName   string `json:"package_name"`
-	SubtotalMinor int64  `json:"subtotal_minor"`
-	DiscountMinor int64  `json:"discount_minor"`
-	TaxMinor      int64  `json:"tax_minor"`
-	TotalMinor    int64  `json:"total_minor"`
-	Status        string `json:"status"`
-	SnapshotJson  string `json:"snapshot_json"`
+	ID            uuid.UUID       `json:"id"`
+	TenantID      uuid.UUID       `json:"tenant_id"`
+	ProjectID     uuid.UUID       `json:"project_id"`
+	QuoteNumber   string          `json:"quote_number"`
+	PackageName   string          `json:"package_name"`
+	SubtotalMinor int64           `json:"subtotal_minor"`
+	DiscountMinor int64           `json:"discount_minor"`
+	TaxMinor      int64           `json:"tax_minor"`
+	TotalMinor    int64           `json:"total_minor"`
+	Status        string          `json:"status"`
+	Snapshot      json.RawMessage `json:"snapshot"`
 }
 
 func (q *Queries) CreateQuotation(ctx context.Context, arg CreateQuotationParams) error {
@@ -444,19 +492,19 @@ func (q *Queries) CreateQuotation(ctx context.Context, arg CreateQuotationParams
 		arg.TaxMinor,
 		arg.TotalMinor,
 		arg.Status,
-		arg.SnapshotJson,
+		arg.Snapshot,
 	)
 	return err
 }
 
 const createRole = `-- name: CreateRole :exec
-INSERT INTO roles (id, name)
-VALUES (?, ?)
+INSERT INTO identity.roles (id, name)
+VALUES ($1, $2)
 `
 
 type CreateRoleParams struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
 }
 
 func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) error {
@@ -465,16 +513,16 @@ func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) error {
 }
 
 const createService = `-- name: CreateService :exec
-INSERT INTO services (id, tenant_id, name, description, price_minor)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO crm.services (id, tenant_id, name, description, price_minor)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type CreateServiceParams struct {
-	ID          string `json:"id"`
-	TenantID    string `json:"tenant_id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	PriceMinor  int64  `json:"price_minor"`
+	ID          uuid.UUID `json:"id"`
+	TenantID    uuid.UUID `json:"tenant_id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	PriceMinor  int64     `json:"price_minor"`
 }
 
 func (q *Queries) CreateService(ctx context.Context, arg CreateServiceParams) error {
@@ -489,7 +537,7 @@ func (q *Queries) CreateService(ctx context.Context, arg CreateServiceParams) er
 }
 
 const createSession = `-- name: CreateSession :exec
-INSERT INTO sessions (
+INSERT INTO crm.sessions (
     id,
     tenant_id,
     project_id,
@@ -502,21 +550,21 @@ INSERT INTO sessions (
     photographer_id,
     status
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 `
 
 type CreateSessionParams struct {
-	ID             string         `json:"id"`
-	TenantID       string         `json:"tenant_id"`
-	ProjectID      string         `json:"project_id"`
-	SegmentID      sql.NullString `json:"segment_id"`
-	Title          string         `json:"title"`
-	SessionType    string         `json:"session_type"`
-	StartTime      string         `json:"start_time"`
-	EndTime        string         `json:"end_time"`
-	Location       string         `json:"location"`
-	PhotographerID sql.NullString `json:"photographer_id"`
-	Status         string         `json:"status"`
+	ID             uuid.UUID     `json:"id"`
+	TenantID       uuid.UUID     `json:"tenant_id"`
+	ProjectID      uuid.UUID     `json:"project_id"`
+	SegmentID      uuid.NullUUID `json:"segment_id"`
+	Title          string        `json:"title"`
+	SessionType    string        `json:"session_type"`
+	StartTime      time.Time     `json:"start_time"`
+	EndTime        time.Time     `json:"end_time"`
+	Location       string        `json:"location"`
+	PhotographerID uuid.NullUUID `json:"photographer_id"`
+	Status         string        `json:"status"`
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) error {
@@ -537,7 +585,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 }
 
 const createTenant = `-- name: CreateTenant :exec
-INSERT INTO tenants (
+INSERT INTO crm.tenants (
     id,
     name,
     slug,
@@ -547,18 +595,18 @@ INSERT INTO tenants (
     currency,
     timezone
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 `
 
 type CreateTenantParams struct {
-	ID                 string `json:"id"`
-	Name               string `json:"name"`
-	Slug               string `json:"slug"`
-	BusinessType       string `json:"business_type"`
-	Status             string `json:"status"`
-	SubscriptionStatus string `json:"subscription_status"`
-	Currency           string `json:"currency"`
-	Timezone           string `json:"timezone"`
+	ID                 uuid.UUID `json:"id"`
+	Name               string    `json:"name"`
+	Slug               string    `json:"slug"`
+	BusinessType       string    `json:"business_type"`
+	Status             string    `json:"status"`
+	SubscriptionStatus string    `json:"subscription_status"`
+	Currency           string    `json:"currency"`
+	Timezone           string    `json:"timezone"`
 }
 
 func (q *Queries) CreateTenant(ctx context.Context, arg CreateTenantParams) error {
@@ -576,7 +624,7 @@ func (q *Queries) CreateTenant(ctx context.Context, arg CreateTenantParams) erro
 }
 
 const createTenantRegistrationRequest = `-- name: CreateTenantRegistrationRequest :exec
-INSERT INTO tenant_registration_requests (
+INSERT INTO platform.tenant_registration_requests (
     id,
     business_name,
     business_type,
@@ -588,20 +636,20 @@ INSERT INTO tenant_registration_requests (
     notes,
     status
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 `
 
 type CreateTenantRegistrationRequestParams struct {
-	ID             string `json:"id"`
-	BusinessName   string `json:"business_name"`
-	BusinessType   string `json:"business_type"`
-	OwnerFirstName string `json:"owner_first_name"`
-	OwnerLastName  string `json:"owner_last_name"`
-	OwnerEmail     string `json:"owner_email"`
-	PasswordHash   string `json:"password_hash"`
-	Phone          string `json:"phone"`
-	Notes          string `json:"notes"`
-	Status         string `json:"status"`
+	ID             uuid.UUID `json:"id"`
+	BusinessName   string    `json:"business_name"`
+	BusinessType   string    `json:"business_type"`
+	OwnerFirstName string    `json:"owner_first_name"`
+	OwnerLastName  string    `json:"owner_last_name"`
+	OwnerEmail     string    `json:"owner_email"`
+	PasswordHash   string    `json:"password_hash"`
+	Phone          string    `json:"phone"`
+	Notes          string    `json:"notes"`
+	Status         string    `json:"status"`
 }
 
 func (q *Queries) CreateTenantRegistrationRequest(ctx context.Context, arg CreateTenantRegistrationRequestParams) error {
@@ -621,24 +669,26 @@ func (q *Queries) CreateTenantRegistrationRequest(ctx context.Context, arg Creat
 }
 
 const createUser = `-- name: CreateUser :exec
-INSERT INTO users (
+INSERT INTO identity.users (
     id,
     first_name,
     last_name,
     email,
     password_hash,
+    auth_provider_id,
     role_id
 )
-VALUES (?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type CreateUserParams struct {
-	ID           string `json:"id"`
-	FirstName    string `json:"first_name"`
-	LastName     string `json:"last_name"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"password_hash"`
-	RoleID       string `json:"role_id"`
+	ID             uuid.UUID      `json:"id"`
+	FirstName      string         `json:"first_name"`
+	LastName       string         `json:"last_name"`
+	Email          string         `json:"email"`
+	PasswordHash   string         `json:"password_hash"`
+	AuthProviderID sql.NullString `json:"auth_provider_id"`
+	RoleID         uuid.NullUUID  `json:"role_id"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
@@ -648,6 +698,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 		arg.LastName,
 		arg.Email,
 		arg.PasswordHash,
+		arg.AuthProviderID,
 		arg.RoleID,
 	)
 	return err
@@ -655,19 +706,19 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 
 const getClientByID = `-- name: GetClientByID :one
 SELECT id, tenant_id, first_name, last_name, email, phone, address, lead_source, converted_from_lead_id, notes, created_at, updated_at, deleted_at
-FROM clients
-WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+FROM crm.clients
+WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
 LIMIT 1
 `
 
 type GetClientByIDParams struct {
-	ID       string `json:"id"`
-	TenantID string `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
 }
 
-func (q *Queries) GetClientByID(ctx context.Context, arg GetClientByIDParams) (Client, error) {
+func (q *Queries) GetClientByID(ctx context.Context, arg GetClientByIDParams) (CrmClient, error) {
 	row := q.db.QueryRowContext(ctx, getClientByID, arg.ID, arg.TenantID)
-	var i Client
+	var i CrmClient
 	err := row.Scan(
 		&i.ID,
 		&i.TenantID,
@@ -688,19 +739,19 @@ func (q *Queries) GetClientByID(ctx context.Context, arg GetClientByIDParams) (C
 
 const getLeadByID = `-- name: GetLeadByID :one
 SELECT id, tenant_id, workflow_id, stage_id, title, contact_name, contact_email, contact_phone, source, photography_service, estimated_value_minor, assigned_user_id, requested_date, location, notes, status, created_at, updated_at, deleted_at
-FROM leads
-WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+FROM crm.leads
+WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
 LIMIT 1
 `
 
 type GetLeadByIDParams struct {
-	ID       string `json:"id"`
-	TenantID string `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
 }
 
-func (q *Queries) GetLeadByID(ctx context.Context, arg GetLeadByIDParams) (Lead, error) {
+func (q *Queries) GetLeadByID(ctx context.Context, arg GetLeadByIDParams) (CrmLead, error) {
 	row := q.db.QueryRowContext(ctx, getLeadByID, arg.ID, arg.TenantID)
-	var i Lead
+	var i CrmLead
 	err := row.Scan(
 		&i.ID,
 		&i.TenantID,
@@ -727,19 +778,19 @@ func (q *Queries) GetLeadByID(ctx context.Context, arg GetLeadByIDParams) (Lead,
 
 const getMembership = `-- name: GetMembership :one
 SELECT id, tenant_id, user_id, role, status, created_at, updated_at, deleted_at
-FROM memberships
-WHERE tenant_id = ? AND user_id = ? AND deleted_at IS NULL
+FROM identity.memberships
+WHERE tenant_id = $1 AND user_id = $2 AND deleted_at IS NULL
 LIMIT 1
 `
 
 type GetMembershipParams struct {
-	TenantID string `json:"tenant_id"`
-	UserID   string `json:"user_id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+	UserID   uuid.UUID `json:"user_id"`
 }
 
-func (q *Queries) GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error) {
+func (q *Queries) GetMembership(ctx context.Context, arg GetMembershipParams) (IdentityMembership, error) {
 	row := q.db.QueryRowContext(ctx, getMembership, arg.TenantID, arg.UserID)
-	var i Membership
+	var i IdentityMembership
 	err := row.Scan(
 		&i.ID,
 		&i.TenantID,
@@ -755,14 +806,14 @@ func (q *Queries) GetMembership(ctx context.Context, arg GetMembershipParams) (M
 
 const getPlatformAdminByEmail = `-- name: GetPlatformAdminByEmail :one
 SELECT id, name, email, password_hash, role, created_at, updated_at, deleted_at
-FROM platform_admins
-WHERE email = ? AND deleted_at IS NULL
+FROM platform.platform_admins
+WHERE email = $1 AND deleted_at IS NULL
 LIMIT 1
 `
 
-func (q *Queries) GetPlatformAdminByEmail(ctx context.Context, email string) (PlatformAdmin, error) {
+func (q *Queries) GetPlatformAdminByEmail(ctx context.Context, email string) (PlatformPlatformAdmin, error) {
 	row := q.db.QueryRowContext(ctx, getPlatformAdminByEmail, email)
-	var i PlatformAdmin
+	var i PlatformPlatformAdmin
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -778,19 +829,55 @@ func (q *Queries) GetPlatformAdminByEmail(ctx context.Context, email string) (Pl
 
 const getProjectByID = `-- name: GetProjectByID :one
 SELECT id, tenant_id, client_id, lead_id, title, project_type, status, stage, is_confirmed, confirmed_at, address, manager_id, created_at, updated_at, deleted_at
-FROM projects
-WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+FROM crm.projects
+WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
 LIMIT 1
 `
 
 type GetProjectByIDParams struct {
-	ID       string `json:"id"`
-	TenantID string `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
 }
 
-func (q *Queries) GetProjectByID(ctx context.Context, arg GetProjectByIDParams) (Project, error) {
+func (q *Queries) GetProjectByID(ctx context.Context, arg GetProjectByIDParams) (CrmProject, error) {
 	row := q.db.QueryRowContext(ctx, getProjectByID, arg.ID, arg.TenantID)
-	var i Project
+	var i CrmProject
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ClientID,
+		&i.LeadID,
+		&i.Title,
+		&i.ProjectType,
+		&i.Status,
+		&i.Stage,
+		&i.IsConfirmed,
+		&i.ConfirmedAt,
+		&i.Address,
+		&i.ManagerID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getProjectByIDForUpdate = `-- name: GetProjectByIDForUpdate :one
+SELECT id, tenant_id, client_id, lead_id, title, project_type, status, stage, is_confirmed, confirmed_at, address, manager_id, created_at, updated_at, deleted_at
+FROM crm.projects
+WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
+LIMIT 1
+FOR UPDATE
+`
+
+type GetProjectByIDForUpdateParams struct {
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+}
+
+func (q *Queries) GetProjectByIDForUpdate(ctx context.Context, arg GetProjectByIDForUpdateParams) (CrmProject, error) {
+	row := q.db.QueryRowContext(ctx, getProjectByIDForUpdate, arg.ID, arg.TenantID)
+	var i CrmProject
 	err := row.Scan(
 		&i.ID,
 		&i.TenantID,
@@ -812,20 +899,20 @@ func (q *Queries) GetProjectByID(ctx context.Context, arg GetProjectByIDParams) 
 }
 
 const getQuotationByID = `-- name: GetQuotationByID :one
-SELECT id, tenant_id, project_id, quote_number, package_name, subtotal_minor, discount_minor, tax_minor, total_minor, status, snapshot_json, created_at, updated_at
-FROM quotations
-WHERE id = ? AND tenant_id = ?
+SELECT id, tenant_id, project_id, quote_number, package_name, subtotal_minor, discount_minor, tax_minor, total_minor, status, snapshot, created_at, updated_at
+FROM crm.quotations
+WHERE id = $1 AND tenant_id = $2
 LIMIT 1
 `
 
 type GetQuotationByIDParams struct {
-	ID       string `json:"id"`
-	TenantID string `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
 }
 
-func (q *Queries) GetQuotationByID(ctx context.Context, arg GetQuotationByIDParams) (Quotation, error) {
+func (q *Queries) GetQuotationByID(ctx context.Context, arg GetQuotationByIDParams) (CrmQuotation, error) {
 	row := q.db.QueryRowContext(ctx, getQuotationByID, arg.ID, arg.TenantID)
-	var i Quotation
+	var i CrmQuotation
 	err := row.Scan(
 		&i.ID,
 		&i.TenantID,
@@ -837,7 +924,7 @@ func (q *Queries) GetQuotationByID(ctx context.Context, arg GetQuotationByIDPara
 		&i.TaxMinor,
 		&i.TotalMinor,
 		&i.Status,
-		&i.SnapshotJson,
+		&i.Snapshot,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -846,14 +933,14 @@ func (q *Queries) GetQuotationByID(ctx context.Context, arg GetQuotationByIDPara
 
 const getRegistrationRequestByID = `-- name: GetRegistrationRequestByID :one
 SELECT id, business_name, business_type, owner_first_name, owner_last_name, owner_email, password_hash, phone, notes, status, reviewed_by, reviewed_at, created_at, updated_at
-FROM tenant_registration_requests
-WHERE id = ?
+FROM platform.tenant_registration_requests
+WHERE id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetRegistrationRequestByID(ctx context.Context, id string) (TenantRegistrationRequest, error) {
+func (q *Queries) GetRegistrationRequestByID(ctx context.Context, id uuid.UUID) (PlatformTenantRegistrationRequest, error) {
 	row := q.db.QueryRowContext(ctx, getRegistrationRequestByID, id)
-	var i TenantRegistrationRequest
+	var i PlatformTenantRegistrationRequest
 	err := row.Scan(
 		&i.ID,
 		&i.BusinessName,
@@ -875,14 +962,14 @@ func (q *Queries) GetRegistrationRequestByID(ctx context.Context, id string) (Te
 
 const getRoleByID = `-- name: GetRoleByID :one
 SELECT id, name, created_at, updated_at, deleted_at
-FROM roles
-WHERE id = ? AND deleted_at IS NULL
+FROM identity.roles
+WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1
 `
 
-func (q *Queries) GetRoleByID(ctx context.Context, id string) (Role, error) {
+func (q *Queries) GetRoleByID(ctx context.Context, id uuid.UUID) (IdentityRole, error) {
 	row := q.db.QueryRowContext(ctx, getRoleByID, id)
-	var i Role
+	var i IdentityRole
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -895,14 +982,14 @@ func (q *Queries) GetRoleByID(ctx context.Context, id string) (Role, error) {
 
 const getRoleByName = `-- name: GetRoleByName :one
 SELECT id, name, created_at, updated_at, deleted_at
-FROM roles
-WHERE name = ? AND deleted_at IS NULL
+FROM identity.roles
+WHERE name = $1 AND deleted_at IS NULL
 LIMIT 1
 `
 
-func (q *Queries) GetRoleByName(ctx context.Context, name string) (Role, error) {
+func (q *Queries) GetRoleByName(ctx context.Context, name string) (IdentityRole, error) {
 	row := q.db.QueryRowContext(ctx, getRoleByName, name)
-	var i Role
+	var i IdentityRole
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -915,14 +1002,14 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (Role, error) 
 
 const getTenantByID = `-- name: GetTenantByID :one
 SELECT id, name, slug, business_type, status, subscription_status, currency, timezone, created_at, updated_at, deleted_at
-FROM tenants
-WHERE id = ? AND deleted_at IS NULL
+FROM crm.tenants
+WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1
 `
 
-func (q *Queries) GetTenantByID(ctx context.Context, id string) (Tenant, error) {
+func (q *Queries) GetTenantByID(ctx context.Context, id uuid.UUID) (CrmTenant, error) {
 	row := q.db.QueryRowContext(ctx, getTenantByID, id)
-	var i Tenant
+	var i CrmTenant
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -941,14 +1028,14 @@ func (q *Queries) GetTenantByID(ctx context.Context, id string) (Tenant, error) 
 
 const getTenantBySlug = `-- name: GetTenantBySlug :one
 SELECT id, name, slug, business_type, status, subscription_status, currency, timezone, created_at, updated_at, deleted_at
-FROM tenants
-WHERE slug = ? AND deleted_at IS NULL
+FROM crm.tenants
+WHERE slug = $1 AND deleted_at IS NULL
 LIMIT 1
 `
 
-func (q *Queries) GetTenantBySlug(ctx context.Context, slug string) (Tenant, error) {
+func (q *Queries) GetTenantBySlug(ctx context.Context, slug string) (CrmTenant, error) {
 	row := q.db.QueryRowContext(ctx, getTenantBySlug, slug)
-	var i Tenant
+	var i CrmTenant
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -972,30 +1059,31 @@ SELECT
     u.last_name,
     u.email,
     u.password_hash,
+    u.auth_provider_id,
     u.role_id,
     u.created_at,
     u.updated_at,
     u.deleted_at,
     r.name AS role_name
-FROM users AS u
-INNER JOIN roles AS r ON r.id = u.role_id
-WHERE u.email = ?
+FROM identity.users AS u
+LEFT JOIN identity.roles AS r ON r.id = u.role_id
+WHERE u.email = $1
   AND u.deleted_at IS NULL
-  AND r.deleted_at IS NULL
 LIMIT 1
 `
 
 type GetUserByEmailRow struct {
-	ID           string         `json:"id"`
-	FirstName    string         `json:"first_name"`
-	LastName     string         `json:"last_name"`
-	Email        string         `json:"email"`
-	PasswordHash string         `json:"password_hash"`
-	RoleID       string         `json:"role_id"`
-	CreatedAt    string         `json:"created_at"`
-	UpdatedAt    string         `json:"updated_at"`
-	DeletedAt    sql.NullString `json:"deleted_at"`
-	RoleName     string         `json:"role_name"`
+	ID             uuid.UUID      `json:"id"`
+	FirstName      string         `json:"first_name"`
+	LastName       string         `json:"last_name"`
+	Email          string         `json:"email"`
+	PasswordHash   string         `json:"password_hash"`
+	AuthProviderID sql.NullString `json:"auth_provider_id"`
+	RoleID         uuid.NullUUID  `json:"role_id"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      sql.NullTime   `json:"deleted_at"`
+	RoleName       sql.NullString `json:"role_name"`
 }
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
@@ -1007,6 +1095,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 		&i.LastName,
 		&i.Email,
 		&i.PasswordHash,
+		&i.AuthProviderID,
 		&i.RoleID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -1023,33 +1112,34 @@ SELECT
     u.last_name,
     u.email,
     u.password_hash,
+    u.auth_provider_id,
     u.role_id,
     u.created_at,
     u.updated_at,
     u.deleted_at,
     r.name AS role_name
-FROM users AS u
-INNER JOIN roles AS r ON r.id = u.role_id
-WHERE u.id = ?
+FROM identity.users AS u
+LEFT JOIN identity.roles AS r ON r.id = u.role_id
+WHERE u.id = $1
   AND u.deleted_at IS NULL
-  AND r.deleted_at IS NULL
 LIMIT 1
 `
 
 type GetUserByIDRow struct {
-	ID           string         `json:"id"`
-	FirstName    string         `json:"first_name"`
-	LastName     string         `json:"last_name"`
-	Email        string         `json:"email"`
-	PasswordHash string         `json:"password_hash"`
-	RoleID       string         `json:"role_id"`
-	CreatedAt    string         `json:"created_at"`
-	UpdatedAt    string         `json:"updated_at"`
-	DeletedAt    sql.NullString `json:"deleted_at"`
-	RoleName     string         `json:"role_name"`
+	ID             uuid.UUID      `json:"id"`
+	FirstName      string         `json:"first_name"`
+	LastName       string         `json:"last_name"`
+	Email          string         `json:"email"`
+	PasswordHash   string         `json:"password_hash"`
+	AuthProviderID sql.NullString `json:"auth_provider_id"`
+	RoleID         uuid.NullUUID  `json:"role_id"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      sql.NullTime   `json:"deleted_at"`
+	RoleName       sql.NullString `json:"role_name"`
 }
 
-func (q *Queries) GetUserByID(ctx context.Context, id string) (GetUserByIDRow, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (GetUserByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByID, id)
 	var i GetUserByIDRow
 	err := row.Scan(
@@ -1058,6 +1148,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (GetUserByIDRow, e
 		&i.LastName,
 		&i.Email,
 		&i.PasswordHash,
+		&i.AuthProviderID,
 		&i.RoleID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -1069,20 +1160,20 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (GetUserByIDRow, e
 
 const listClients = `-- name: ListClients :many
 SELECT id, tenant_id, first_name, last_name, email, phone, address, lead_source, converted_from_lead_id, notes, created_at, updated_at, deleted_at
-FROM clients
-WHERE tenant_id = ? AND deleted_at IS NULL
+FROM crm.clients
+WHERE tenant_id = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
 `
 
-func (q *Queries) ListClients(ctx context.Context, tenantID string) ([]Client, error) {
+func (q *Queries) ListClients(ctx context.Context, tenantID uuid.UUID) ([]CrmClient, error) {
 	rows, err := q.db.QueryContext(ctx, listClients, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Client{}
+	items := []CrmClient{}
 	for rows.Next() {
-		var i Client
+		var i CrmClient
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -1113,20 +1204,20 @@ func (q *Queries) ListClients(ctx context.Context, tenantID string) ([]Client, e
 
 const listFollowups = `-- name: ListFollowups :many
 SELECT id, tenant_id, lead_id, client_id, assigned_user_id, title, due_date, completed_at, status, created_at, updated_at
-FROM followups
-WHERE tenant_id = ?
+FROM crm.followups
+WHERE tenant_id = $1
 ORDER BY due_date ASC
 `
 
-func (q *Queries) ListFollowups(ctx context.Context, tenantID string) ([]Followup, error) {
+func (q *Queries) ListFollowups(ctx context.Context, tenantID uuid.UUID) ([]CrmFollowup, error) {
 	rows, err := q.db.QueryContext(ctx, listFollowups, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Followup{}
+	items := []CrmFollowup{}
 	for rows.Next() {
-		var i Followup
+		var i CrmFollowup
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -1155,25 +1246,25 @@ func (q *Queries) ListFollowups(ctx context.Context, tenantID string) ([]Followu
 
 const listLeadStages = `-- name: ListLeadStages :many
 SELECT id, tenant_id, workflow_id, name, color, stage_order, is_won, is_lost, created_at
-FROM lead_stages
-WHERE tenant_id = ? AND workflow_id = ?
+FROM crm.lead_stages
+WHERE tenant_id = $1 AND workflow_id = $2
 ORDER BY stage_order ASC
 `
 
 type ListLeadStagesParams struct {
-	TenantID   string `json:"tenant_id"`
-	WorkflowID string `json:"workflow_id"`
+	TenantID   uuid.UUID `json:"tenant_id"`
+	WorkflowID uuid.UUID `json:"workflow_id"`
 }
 
-func (q *Queries) ListLeadStages(ctx context.Context, arg ListLeadStagesParams) ([]LeadStage, error) {
+func (q *Queries) ListLeadStages(ctx context.Context, arg ListLeadStagesParams) ([]CrmLeadStage, error) {
 	rows, err := q.db.QueryContext(ctx, listLeadStages, arg.TenantID, arg.WorkflowID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []LeadStage{}
+	items := []CrmLeadStage{}
 	for rows.Next() {
-		var i LeadStage
+		var i CrmLeadStage
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -1200,20 +1291,20 @@ func (q *Queries) ListLeadStages(ctx context.Context, arg ListLeadStagesParams) 
 
 const listLeadWorkflows = `-- name: ListLeadWorkflows :many
 SELECT id, tenant_id, name, is_default, created_at, updated_at
-FROM lead_workflows
-WHERE tenant_id = ?
+FROM crm.lead_workflows
+WHERE tenant_id = $1
 ORDER BY is_default DESC, name ASC
 `
 
-func (q *Queries) ListLeadWorkflows(ctx context.Context, tenantID string) ([]LeadWorkflow, error) {
+func (q *Queries) ListLeadWorkflows(ctx context.Context, tenantID uuid.UUID) ([]CrmLeadWorkflow, error) {
 	rows, err := q.db.QueryContext(ctx, listLeadWorkflows, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []LeadWorkflow{}
+	items := []CrmLeadWorkflow{}
 	for rows.Next() {
-		var i LeadWorkflow
+		var i CrmLeadWorkflow
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -1237,20 +1328,20 @@ func (q *Queries) ListLeadWorkflows(ctx context.Context, tenantID string) ([]Lea
 
 const listLeads = `-- name: ListLeads :many
 SELECT id, tenant_id, workflow_id, stage_id, title, contact_name, contact_email, contact_phone, source, photography_service, estimated_value_minor, assigned_user_id, requested_date, location, notes, status, created_at, updated_at, deleted_at
-FROM leads
-WHERE tenant_id = ? AND deleted_at IS NULL
+FROM crm.leads
+WHERE tenant_id = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
 `
 
-func (q *Queries) ListLeads(ctx context.Context, tenantID string) ([]Lead, error) {
+func (q *Queries) ListLeads(ctx context.Context, tenantID uuid.UUID) ([]CrmLead, error) {
 	rows, err := q.db.QueryContext(ctx, listLeads, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Lead{}
+	items := []CrmLead{}
 	for rows.Next() {
-		var i Lead
+		var i CrmLead
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -1287,20 +1378,20 @@ func (q *Queries) ListLeads(ctx context.Context, tenantID string) ([]Lead, error
 
 const listPackages = `-- name: ListPackages :many
 SELECT id, tenant_id, name, description, price_minor, is_active, created_at, updated_at
-FROM packages
-WHERE tenant_id = ? AND is_active = 1
+FROM crm.packages
+WHERE tenant_id = $1 AND is_active = TRUE
 ORDER BY created_at DESC
 `
 
-func (q *Queries) ListPackages(ctx context.Context, tenantID string) ([]Package, error) {
+func (q *Queries) ListPackages(ctx context.Context, tenantID uuid.UUID) ([]CrmPackage, error) {
 	rows, err := q.db.QueryContext(ctx, listPackages, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Package{}
+	items := []CrmPackage{}
 	for rows.Next() {
-		var i Package
+		var i CrmPackage
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -1326,20 +1417,20 @@ func (q *Queries) ListPackages(ctx context.Context, tenantID string) ([]Package,
 
 const listPendingRegistrationRequests = `-- name: ListPendingRegistrationRequests :many
 SELECT id, business_name, business_type, owner_first_name, owner_last_name, owner_email, password_hash, phone, notes, status, reviewed_by, reviewed_at, created_at, updated_at
-FROM tenant_registration_requests
+FROM platform.tenant_registration_requests
 WHERE status = 'pending'
 ORDER BY created_at DESC
 `
 
-func (q *Queries) ListPendingRegistrationRequests(ctx context.Context) ([]TenantRegistrationRequest, error) {
+func (q *Queries) ListPendingRegistrationRequests(ctx context.Context) ([]PlatformTenantRegistrationRequest, error) {
 	rows, err := q.db.QueryContext(ctx, listPendingRegistrationRequests)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []TenantRegistrationRequest{}
+	items := []PlatformTenantRegistrationRequest{}
 	for rows.Next() {
-		var i TenantRegistrationRequest
+		var i PlatformTenantRegistrationRequest
 		if err := rows.Scan(
 			&i.ID,
 			&i.BusinessName,
@@ -1371,25 +1462,25 @@ func (q *Queries) ListPendingRegistrationRequests(ctx context.Context) ([]Tenant
 
 const listProjectSegments = `-- name: ListProjectSegments :many
 SELECT id, tenant_id, project_id, segment_type, name, start_date, end_date, segment_order, created_at
-FROM project_segments
-WHERE tenant_id = ? AND project_id = ?
+FROM crm.project_segments
+WHERE tenant_id = $1 AND project_id = $2
 ORDER BY segment_order ASC
 `
 
 type ListProjectSegmentsParams struct {
-	TenantID  string `json:"tenant_id"`
-	ProjectID string `json:"project_id"`
+	TenantID  uuid.UUID `json:"tenant_id"`
+	ProjectID uuid.UUID `json:"project_id"`
 }
 
-func (q *Queries) ListProjectSegments(ctx context.Context, arg ListProjectSegmentsParams) ([]ProjectSegment, error) {
+func (q *Queries) ListProjectSegments(ctx context.Context, arg ListProjectSegmentsParams) ([]CrmProjectSegment, error) {
 	rows, err := q.db.QueryContext(ctx, listProjectSegments, arg.TenantID, arg.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ProjectSegment{}
+	items := []CrmProjectSegment{}
 	for rows.Next() {
-		var i ProjectSegment
+		var i CrmProjectSegment
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -1416,20 +1507,20 @@ func (q *Queries) ListProjectSegments(ctx context.Context, arg ListProjectSegmen
 
 const listProjects = `-- name: ListProjects :many
 SELECT id, tenant_id, client_id, lead_id, title, project_type, status, stage, is_confirmed, confirmed_at, address, manager_id, created_at, updated_at, deleted_at
-FROM projects
-WHERE tenant_id = ? AND deleted_at IS NULL
+FROM crm.projects
+WHERE tenant_id = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
 `
 
-func (q *Queries) ListProjects(ctx context.Context, tenantID string) ([]Project, error) {
+func (q *Queries) ListProjects(ctx context.Context, tenantID uuid.UUID) ([]CrmProject, error) {
 	rows, err := q.db.QueryContext(ctx, listProjects, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Project{}
+	items := []CrmProject{}
 	for rows.Next() {
-		var i Project
+		var i CrmProject
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -1461,26 +1552,26 @@ func (q *Queries) ListProjects(ctx context.Context, tenantID string) ([]Project,
 }
 
 const listQuotationsByProject = `-- name: ListQuotationsByProject :many
-SELECT id, tenant_id, project_id, quote_number, package_name, subtotal_minor, discount_minor, tax_minor, total_minor, status, snapshot_json, created_at, updated_at
-FROM quotations
-WHERE tenant_id = ? AND project_id = ?
+SELECT id, tenant_id, project_id, quote_number, package_name, subtotal_minor, discount_minor, tax_minor, total_minor, status, snapshot, created_at, updated_at
+FROM crm.quotations
+WHERE tenant_id = $1 AND project_id = $2
 ORDER BY created_at DESC
 `
 
 type ListQuotationsByProjectParams struct {
-	TenantID  string `json:"tenant_id"`
-	ProjectID string `json:"project_id"`
+	TenantID  uuid.UUID `json:"tenant_id"`
+	ProjectID uuid.UUID `json:"project_id"`
 }
 
-func (q *Queries) ListQuotationsByProject(ctx context.Context, arg ListQuotationsByProjectParams) ([]Quotation, error) {
+func (q *Queries) ListQuotationsByProject(ctx context.Context, arg ListQuotationsByProjectParams) ([]CrmQuotation, error) {
 	rows, err := q.db.QueryContext(ctx, listQuotationsByProject, arg.TenantID, arg.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Quotation{}
+	items := []CrmQuotation{}
 	for rows.Next() {
-		var i Quotation
+		var i CrmQuotation
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -1492,7 +1583,7 @@ func (q *Queries) ListQuotationsByProject(ctx context.Context, arg ListQuotation
 			&i.TaxMinor,
 			&i.TotalMinor,
 			&i.Status,
-			&i.SnapshotJson,
+			&i.Snapshot,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -1511,20 +1602,20 @@ func (q *Queries) ListQuotationsByProject(ctx context.Context, arg ListQuotation
 
 const listServices = `-- name: ListServices :many
 SELECT id, tenant_id, name, description, price_minor, created_at, updated_at
-FROM services
-WHERE tenant_id = ?
+FROM crm.services
+WHERE tenant_id = $1
 ORDER BY created_at DESC
 `
 
-func (q *Queries) ListServices(ctx context.Context, tenantID string) ([]Service, error) {
+func (q *Queries) ListServices(ctx context.Context, tenantID uuid.UUID) ([]CrmService, error) {
 	rows, err := q.db.QueryContext(ctx, listServices, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Service{}
+	items := []CrmService{}
 	for rows.Next() {
-		var i Service
+		var i CrmService
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -1549,20 +1640,20 @@ func (q *Queries) ListServices(ctx context.Context, tenantID string) ([]Service,
 
 const listSessions = `-- name: ListSessions :many
 SELECT id, tenant_id, project_id, segment_id, title, session_type, start_time, end_time, location, photographer_id, status, created_at, updated_at
-FROM sessions
-WHERE tenant_id = ?
+FROM crm.sessions
+WHERE tenant_id = $1
 ORDER BY start_time ASC
 `
 
-func (q *Queries) ListSessions(ctx context.Context, tenantID string) ([]Session, error) {
+func (q *Queries) ListSessions(ctx context.Context, tenantID uuid.UUID) ([]CrmSession, error) {
 	rows, err := q.db.QueryContext(ctx, listSessions, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Session{}
+	items := []CrmSession{}
 	for rows.Next() {
-		var i Session
+		var i CrmSession
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -1593,20 +1684,20 @@ func (q *Queries) ListSessions(ctx context.Context, tenantID string) ([]Session,
 
 const listTenants = `-- name: ListTenants :many
 SELECT id, name, slug, business_type, status, subscription_status, currency, timezone, created_at, updated_at, deleted_at
-FROM tenants
+FROM crm.tenants
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC
 `
 
-func (q *Queries) ListTenants(ctx context.Context) ([]Tenant, error) {
+func (q *Queries) ListTenants(ctx context.Context) ([]CrmTenant, error) {
 	rows, err := q.db.QueryContext(ctx, listTenants)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Tenant{}
+	items := []CrmTenant{}
 	for rows.Next() {
-		var i Tenant
+		var i CrmTenant
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -1647,30 +1738,30 @@ SELECT
     t.business_type AS tenant_business_type,
     t.status AS tenant_status,
     t.subscription_status AS tenant_subscription_status
-FROM memberships AS m
-INNER JOIN tenants AS t ON t.id = m.tenant_id
-WHERE m.user_id = ?
+FROM identity.memberships AS m
+INNER JOIN crm.tenants AS t ON t.id = m.tenant_id
+WHERE m.user_id = $1
   AND m.deleted_at IS NULL
   AND t.deleted_at IS NULL
 ORDER BY m.created_at ASC
 `
 
 type ListUserMembershipsRow struct {
-	ID                       string `json:"id"`
-	TenantID                 string `json:"tenant_id"`
-	UserID                   string `json:"user_id"`
-	Role                     string `json:"role"`
-	Status                   string `json:"status"`
-	CreatedAt                string `json:"created_at"`
-	UpdatedAt                string `json:"updated_at"`
-	TenantName               string `json:"tenant_name"`
-	TenantSlug               string `json:"tenant_slug"`
-	TenantBusinessType       string `json:"tenant_business_type"`
-	TenantStatus             string `json:"tenant_status"`
-	TenantSubscriptionStatus string `json:"tenant_subscription_status"`
+	ID                       uuid.UUID `json:"id"`
+	TenantID                 uuid.UUID `json:"tenant_id"`
+	UserID                   uuid.UUID `json:"user_id"`
+	Role                     string    `json:"role"`
+	Status                   string    `json:"status"`
+	CreatedAt                time.Time `json:"created_at"`
+	UpdatedAt                time.Time `json:"updated_at"`
+	TenantName               string    `json:"tenant_name"`
+	TenantSlug               string    `json:"tenant_slug"`
+	TenantBusinessType       string    `json:"tenant_business_type"`
+	TenantStatus             string    `json:"tenant_status"`
+	TenantSubscriptionStatus string    `json:"tenant_subscription_status"`
 }
 
-func (q *Queries) ListUserMemberships(ctx context.Context, userID string) ([]ListUserMembershipsRow, error) {
+func (q *Queries) ListUserMemberships(ctx context.Context, userID uuid.UUID) ([]ListUserMembershipsRow, error) {
 	rows, err := q.db.QueryContext(ctx, listUserMemberships, userID)
 	if err != nil {
 		return nil, err
@@ -1706,42 +1797,170 @@ func (q *Queries) ListUserMemberships(ctx context.Context, userID string) ([]Lis
 	return items, nil
 }
 
+const nextTenantCounter = `-- name: NextTenantCounter :one
+INSERT INTO crm.tenant_counters (
+    tenant_id,
+    counter_type,
+    last_value
+)
+VALUES ($1, $2, 1)
+ON CONFLICT (tenant_id, counter_type)
+DO UPDATE SET
+    last_value = crm.tenant_counters.last_value + 1,
+    updated_at = now()
+RETURNING last_value
+`
+
+type NextTenantCounterParams struct {
+	TenantID    uuid.UUID `json:"tenant_id"`
+	CounterType string    `json:"counter_type"`
+}
+
+func (q *Queries) NextTenantCounter(ctx context.Context, arg NextTenantCounterParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, nextTenantCounter, arg.TenantID, arg.CounterType)
+	var last_value int64
+	err := row.Scan(&last_value)
+	return last_value, err
+}
+
+const searchClientsFTS = `-- name: SearchClientsFTS :many
+SELECT id, tenant_id, first_name, last_name, email, phone, address, lead_source, converted_from_lead_id, notes, created_at, updated_at, deleted_at
+FROM crm.clients
+WHERE tenant_id = $1
+  AND deleted_at IS NULL
+  AND to_tsvector('simple', coalesce(first_name, '') || ' ' || coalesce(last_name, '') || ' ' || coalesce(email, '') || ' ' || coalesce(phone, '')) @@ websearch_to_tsquery('simple', $2)
+ORDER BY created_at DESC
+`
+
+type SearchClientsFTSParams struct {
+	TenantID           uuid.UUID `json:"tenant_id"`
+	WebsearchToTsquery string    `json:"websearch_to_tsquery"`
+}
+
+func (q *Queries) SearchClientsFTS(ctx context.Context, arg SearchClientsFTSParams) ([]CrmClient, error) {
+	rows, err := q.db.QueryContext(ctx, searchClientsFTS, arg.TenantID, arg.WebsearchToTsquery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CrmClient{}
+	for rows.Next() {
+		var i CrmClient
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Email,
+			&i.Phone,
+			&i.Address,
+			&i.LeadSource,
+			&i.ConvertedFromLeadID,
+			&i.Notes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchLeadsFTS = `-- name: SearchLeadsFTS :many
+SELECT id, tenant_id, workflow_id, stage_id, title, contact_name, contact_email, contact_phone, source, photography_service, estimated_value_minor, assigned_user_id, requested_date, location, notes, status, created_at, updated_at, deleted_at
+FROM crm.leads
+WHERE tenant_id = $1
+  AND deleted_at IS NULL
+  AND to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(contact_name, '') || ' ' || coalesce(notes, '')) @@ websearch_to_tsquery('simple', $2)
+ORDER BY created_at DESC
+`
+
+type SearchLeadsFTSParams struct {
+	TenantID           uuid.UUID `json:"tenant_id"`
+	WebsearchToTsquery string    `json:"websearch_to_tsquery"`
+}
+
+func (q *Queries) SearchLeadsFTS(ctx context.Context, arg SearchLeadsFTSParams) ([]CrmLead, error) {
+	rows, err := q.db.QueryContext(ctx, searchLeadsFTS, arg.TenantID, arg.WebsearchToTsquery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CrmLead{}
+	for rows.Next() {
+		var i CrmLead
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.WorkflowID,
+			&i.StageID,
+			&i.Title,
+			&i.ContactName,
+			&i.ContactEmail,
+			&i.ContactPhone,
+			&i.Source,
+			&i.PhotographyService,
+			&i.EstimatedValueMinor,
+			&i.AssignedUserID,
+			&i.RequestedDate,
+			&i.Location,
+			&i.Notes,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateLeadStage = `-- name: UpdateLeadStage :exec
-UPDATE leads
-SET stage_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+UPDATE crm.leads
+SET stage_id = $3, updated_at = now()
+WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
 `
 
 type UpdateLeadStageParams struct {
-	StageID  string `json:"stage_id"`
-	ID       string `json:"id"`
-	TenantID string `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+	StageID  uuid.UUID `json:"stage_id"`
 }
 
 func (q *Queries) UpdateLeadStage(ctx context.Context, arg UpdateLeadStageParams) error {
-	_, err := q.db.ExecContext(ctx, updateLeadStage, arg.StageID, arg.ID, arg.TenantID)
+	_, err := q.db.ExecContext(ctx, updateLeadStage, arg.ID, arg.TenantID, arg.StageID)
 	return err
 }
 
 const updateRegistrationRequestStatus = `-- name: UpdateRegistrationRequestStatus :exec
-UPDATE tenant_registration_requests
-SET status = ?, reviewed_by = ?, reviewed_at = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-WHERE id = ?
+UPDATE platform.tenant_registration_requests
+SET status = $2, reviewed_by = $3, reviewed_at = now(), updated_at = now()
+WHERE id = $1
 `
 
 type UpdateRegistrationRequestStatusParams struct {
-	Status     string         `json:"status"`
-	ReviewedBy sql.NullString `json:"reviewed_by"`
-	ReviewedAt sql.NullString `json:"reviewed_at"`
-	ID         string         `json:"id"`
+	ID         uuid.UUID     `json:"id"`
+	Status     string        `json:"status"`
+	ReviewedBy uuid.NullUUID `json:"reviewed_by"`
 }
 
 func (q *Queries) UpdateRegistrationRequestStatus(ctx context.Context, arg UpdateRegistrationRequestStatusParams) error {
-	_, err := q.db.ExecContext(ctx, updateRegistrationRequestStatus,
-		arg.Status,
-		arg.ReviewedBy,
-		arg.ReviewedAt,
-		arg.ID,
-	)
+	_, err := q.db.ExecContext(ctx, updateRegistrationRequestStatus, arg.ID, arg.Status, arg.ReviewedBy)
 	return err
 }

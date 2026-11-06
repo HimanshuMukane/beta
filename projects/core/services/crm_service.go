@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,8 +15,11 @@ import (
 )
 
 var (
-	ErrReadOnlySubscription    = errors.New("cannot perform write operations while subscription is expired")
-	ErrBookingConditionsNotMet = errors.New("booking confirmation conditions not satisfied")
+	ErrLeadNotFound            = repositories.ErrLeadNotFound
+	ErrClientNotFound          = repositories.ErrClientNotFound
+	ErrProjectNotFound         = repositories.ErrProjectNotFound
+	ErrQuotationNotFound       = repositories.ErrQuotationNotFound
+	ErrBookingConditionsNotMet = errors.New("booking confirmation conditions not met")
 )
 
 type CRMService struct {
@@ -33,8 +35,8 @@ func NewCRMService(db *sqlx.DB) *CRMService {
 }
 
 type ConvertLeadResult struct {
-	Client  *sqlc.Client
-	Project *sqlc.Project
+	Client  *sqlc.CrmClient
+	Project *sqlc.CrmProject
 }
 
 func (s *CRMService) ConvertLeadToClient(ctx context.Context, tenantID, leadID uuid.UUID) (*ConvertLeadResult, error) {
@@ -73,16 +75,15 @@ func (s *CRMService) ConvertLeadToClient(ctx context.Context, tenantID, leadID u
 	projectID, _ := uuid.NewV7()
 	q := sqlc.New(s.db.DB)
 	err = q.CreateProject(ctx, sqlc.CreateProjectParams{
-		ID:          projectID.String(),
-		TenantID:    tenantID.String(),
+		ID:          projectID,
+		TenantID:    tenantID,
 		ClientID:    client.ID,
-		LeadID:      sql.NullString{String: lead.ID, Valid: true},
+		LeadID:      uuid.NullUUID{UUID: lead.ID, Valid: true},
 		Title:       lead.Title,
 		ProjectType: lead.PhotographyService,
 		Status:      "New",
 		Stage:       "Booked",
-		IsConfirmed: 0,
-		ConfirmedAt: sql.NullString{},
+		IsConfirmed: false,
 		Address:     lead.Location,
 		ManagerID:   lead.AssignedUserID,
 	})
@@ -91,18 +92,18 @@ func (s *CRMService) ConvertLeadToClient(ctx context.Context, tenantID, leadID u
 	}
 
 	project, err := q.GetProjectByID(ctx, sqlc.GetProjectByIDParams{
-		ID:       projectID.String(),
-		TenantID: tenantID.String(),
+		ID:       projectID,
+		TenantID: tenantID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("fetch created project: %w", err)
 	}
 
-	stages, err := s.repo.ListLeadStages(ctx, tenantID, uuid.MustParse(lead.WorkflowID))
+	stages, err := s.repo.ListLeadStages(ctx, tenantID, lead.WorkflowID)
 	if err == nil {
 		for _, st := range stages {
-			if st.IsWon == 1 {
-				_ = s.repo.UpdateLeadStage(ctx, tenantID, leadID, uuid.MustParse(st.ID))
+			if st.IsWon {
+				_ = s.repo.UpdateLeadStage(ctx, tenantID, leadID, st.ID)
 				break
 			}
 		}
@@ -127,7 +128,7 @@ func (s *CRMService) EvaluateBookingConditions(ctx context.Context, tenantID, pr
 		return nil, err
 	}
 
-	client, err := s.repo.GetClientByID(ctx, tenantID, uuid.MustParse(project.ClientID))
+	client, err := s.repo.GetClientByID(ctx, tenantID, project.ClientID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch client: %w", err)
 	}
@@ -158,7 +159,7 @@ func (s *CRMService) EvaluateBookingConditions(ctx context.Context, tenantID, pr
 	return eval, nil
 }
 
-func (s *CRMService) ConfirmBooking(ctx context.Context, tenantID, projectID uuid.UUID) (*sqlc.Project, error) {
+func (s *CRMService) ConfirmBooking(ctx context.Context, tenantID, projectID uuid.UUID) (*sqlc.CrmProject, error) {
 	eval, err := s.EvaluateBookingConditions(ctx, tenantID, projectID)
 	if err != nil {
 		return nil, err
@@ -167,15 +168,15 @@ func (s *CRMService) ConfirmBooking(ctx context.Context, tenantID, projectID uui
 		return nil, fmt.Errorf("%w: %s", ErrBookingConditionsNotMet, eval.Reason)
 	}
 
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := time.Now().UTC()
 	_, err = s.db.ExecContext(ctx, `
-		UPDATE projects
+		UPDATE crm.projects
 		SET status = 'Booked',
-		    is_confirmed = 1,
-		    confirmed_at = ?,
-		    updated_at = ?
-		WHERE id = ? AND tenant_id = ?
-	`, now, now, projectID.String(), tenantID.String())
+		    is_confirmed = true,
+		    confirmed_at = $1,
+		    updated_at = $2
+		WHERE id = $3 AND tenant_id = $4
+	`, now, now, projectID, tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("update project booking status: %w", err)
 	}
@@ -208,7 +209,7 @@ type CreateQuotationRequest struct {
 	TaxMinor      int64
 }
 
-func (s *CRMService) CreateQuotationWithSnapshot(ctx context.Context, req CreateQuotationRequest) (*sqlc.Quotation, error) {
+func (s *CRMService) CreateQuotationWithSnapshot(ctx context.Context, req CreateQuotationRequest) (*sqlc.CrmQuotation, error) {
 	pkgIDStr := ""
 	if req.PackageID != nil {
 		pkgIDStr = req.PackageID.String()
@@ -241,7 +242,7 @@ func (s *CRMService) CreateQuotationWithSnapshot(ctx context.Context, req Create
 		TaxMinor:      req.TaxMinor,
 		TotalMinor:    totalMinor,
 		Status:        "draft",
-		SnapshotJSON:  string(snapBytes),
+		SnapshotJSON:  snapBytes,
 	}
 
 	if err := s.repo.CreateQuotation(ctx, quoteParam); err != nil {
@@ -252,22 +253,21 @@ func (s *CRMService) CreateQuotationWithSnapshot(ctx context.Context, req Create
 }
 
 type DashboardMetrics struct {
-	TotalLeadsCount      int64 `json:"total_leads_count"`
-	TotalClientsCount    int64 `json:"total_clients_count"`
-	TotalProjectsCount   int64 `json:"total_projects_count"`
+	TotalLeadsCount       int64 `json:"total_leads_count"`
+	TotalClientsCount     int64 `json:"total_clients_count"`
+	TotalProjectsCount    int64 `json:"total_projects_count"`
 	PendingFollowupsCount int64 `json:"pending_followups_count"`
 	UpcomingSessionsCount int64 `json:"upcoming_sessions_count"`
 }
 
 func (s *CRMService) GetDashboardMetrics(ctx context.Context, tenantID uuid.UUID) (*DashboardMetrics, error) {
 	var m DashboardMetrics
-	tID := tenantID.String()
 
-	_ = s.db.GetContext(ctx, &m.TotalLeadsCount, "SELECT COUNT(*) FROM leads WHERE tenant_id = ? AND deleted_at IS NULL", tID)
-	_ = s.db.GetContext(ctx, &m.TotalClientsCount, "SELECT COUNT(*) FROM clients WHERE tenant_id = ? AND deleted_at IS NULL", tID)
-	_ = s.db.GetContext(ctx, &m.TotalProjectsCount, "SELECT COUNT(*) FROM projects WHERE tenant_id = ? AND deleted_at IS NULL", tID)
-	_ = s.db.GetContext(ctx, &m.PendingFollowupsCount, "SELECT COUNT(*) FROM followups WHERE tenant_id = ? AND status = 'pending'", tID)
-	_ = s.db.GetContext(ctx, &m.UpcomingSessionsCount, "SELECT COUNT(*) FROM sessions WHERE tenant_id = ? AND status = 'scheduled'", tID)
+	_ = s.db.GetContext(ctx, &m.TotalLeadsCount, "SELECT COUNT(*) FROM crm.leads WHERE tenant_id = $1 AND deleted_at IS NULL", tenantID)
+	_ = s.db.GetContext(ctx, &m.TotalClientsCount, "SELECT COUNT(*) FROM crm.clients WHERE tenant_id = $1 AND deleted_at IS NULL", tenantID)
+	_ = s.db.GetContext(ctx, &m.TotalProjectsCount, "SELECT COUNT(*) FROM crm.projects WHERE tenant_id = $1 AND deleted_at IS NULL", tenantID)
+	_ = s.db.GetContext(ctx, &m.PendingFollowupsCount, "SELECT COUNT(*) FROM crm.followups WHERE tenant_id = $1 AND status = 'pending'", tenantID)
+	_ = s.db.GetContext(ctx, &m.UpcomingSessionsCount, "SELECT COUNT(*) FROM crm.sessions WHERE tenant_id = $1 AND status = 'scheduled'", tenantID)
 
 	return &m, nil
 }

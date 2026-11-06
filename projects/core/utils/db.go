@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
+	"time"
 
 	"core/db/schema"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
 )
@@ -28,8 +31,28 @@ func InitDBPool(cfg ...Config) (*DBPool, error) {
 		activeCfg = cfg[0]
 	}
 
+	if activeCfg.DatabaseURL != "" {
+		primaryDB, err := OpenDB(activeCfg.DatabaseURL)
+		if err != nil {
+			return nil, fmt.Errorf("open postgres database: %w", err)
+		}
+
+		testDB := primaryDB
+		if testURL := os.Getenv("DATABASE_TEST_URL"); testURL != "" {
+			tDB, err := OpenDB(testURL)
+			if err == nil {
+				testDB = tDB
+			}
+		}
+
+		return &DBPool{
+			Primary: primaryDB,
+			Test:    testDB,
+		}, nil
+	}
+
 	if activeCfg.DBPath == "" {
-		return nil, fmt.Errorf("DB_PATH is required")
+		return nil, fmt.Errorf("DB_PATH or DATABASE_URL is required")
 	}
 
 	primaryPath, err := filepath.Abs(activeCfg.DBPath)
@@ -67,12 +90,25 @@ func InitDBPool(cfg ...Config) (*DBPool, error) {
 	}, nil
 }
 
-func OpenDB(path string) (*sqlx.DB, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+func OpenDB(pathOrURL string) (*sqlx.DB, error) {
+	if strings.HasPrefix(pathOrURL, "postgres://") || strings.HasPrefix(pathOrURL, "postgresql://") {
+		db, err := sqlx.Open("pgx", pathOrURL)
+		if err != nil {
+			return nil, fmt.Errorf("open postgres: %w", err)
+		}
+
+		db.SetMaxOpenConns(25)
+		db.SetMaxIdleConns(5)
+		db.SetConnMaxLifetime(15 * time.Minute)
+
+		return db, nil
+	}
+
+	if err := os.MkdirAll(filepath.Dir(pathOrURL), 0o755); err != nil {
 		return nil, fmt.Errorf("create database directory: %w", err)
 	}
 
-	dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(5000)&_pragma=foreign_keys(ON)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)", path)
+	dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(5000)&_pragma=foreign_keys(ON)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)", pathOrURL)
 	db, err := sqlx.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)

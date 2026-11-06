@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"core/db/sqlc"
 	"core/models"
@@ -15,8 +14,8 @@ import (
 )
 
 var (
-	ErrPlatformAdminNotFound     = errors.New("platform admin not found")
-	ErrRegistrationNotFound      = errors.New("registration request not found")
+	ErrPlatformAdminNotFound      = errors.New("platform admin not found")
+	ErrRegistrationNotFound       = errors.New("registration request not found")
 	ErrRegistrationAlreadyHandled = errors.New("registration request already handled")
 )
 
@@ -44,7 +43,7 @@ func (r *PlatformAdminRepository) CreatePlatformAdmin(ctx context.Context, admin
 	}
 
 	return r.q.CreatePlatformAdmin(ctx, sqlc.CreatePlatformAdminParams{
-		ID:           admin.ID.String(),
+		ID:           admin.ID,
 		Name:         strings.TrimSpace(admin.Name),
 		Email:        strings.ToLower(strings.TrimSpace(admin.Email)),
 		PasswordHash: admin.PasswordHash,
@@ -62,18 +61,14 @@ func (r *PlatformAdminRepository) GetPlatformAdminByEmail(ctx context.Context, e
 		return nil, fmt.Errorf("get platform admin: %w", err)
 	}
 
-	id, _ := uuid.Parse(row.ID)
-	cAt, _ := parseSQLiteTime(row.CreatedAt)
-	uAt, _ := parseSQLiteTime(row.UpdatedAt)
-
 	return &models.PlatformAdmin{
-		ID:           id,
+		ID:           row.ID,
 		Name:         row.Name,
 		Email:        row.Email,
 		PasswordHash: row.PasswordHash,
 		Role:         row.Role,
-		CreatedAt:    cAt,
-		UpdatedAt:    uAt,
+		CreatedAt:    row.CreatedAt,
+		UpdatedAt:    row.UpdatedAt,
 	}, nil
 }
 
@@ -90,7 +85,7 @@ func (r *PlatformAdminRepository) CreateRegistrationRequest(ctx context.Context,
 	}
 
 	return r.q.CreateTenantRegistrationRequest(ctx, sqlc.CreateTenantRegistrationRequestParams{
-		ID:             req.ID.String(),
+		ID:             req.ID,
 		BusinessName:   strings.TrimSpace(req.BusinessName),
 		BusinessType:   req.BusinessType,
 		OwnerFirstName: strings.TrimSpace(req.OwnerFirstName),
@@ -104,7 +99,7 @@ func (r *PlatformAdminRepository) CreateRegistrationRequest(ctx context.Context,
 }
 
 func (r *PlatformAdminRepository) GetRegistrationRequestByID(ctx context.Context, id uuid.UUID) (*models.TenantRegistrationRequest, error) {
-	row, err := r.q.GetRegistrationRequestByID(ctx, id.String())
+	row, err := r.q.GetRegistrationRequestByID(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrRegistrationNotFound
 	}
@@ -112,12 +107,8 @@ func (r *PlatformAdminRepository) GetRegistrationRequestByID(ctx context.Context
 		return nil, fmt.Errorf("get registration: %w", err)
 	}
 
-	reqID, _ := uuid.Parse(row.ID)
-	cAt, _ := parseSQLiteTime(row.CreatedAt)
-	uAt, _ := parseSQLiteTime(row.UpdatedAt)
-
 	res := &models.TenantRegistrationRequest{
-		ID:             reqID,
+		ID:             row.ID,
 		BusinessName:   row.BusinessName,
 		BusinessType:   row.BusinessType,
 		OwnerFirstName: row.OwnerFirstName,
@@ -127,15 +118,15 @@ func (r *PlatformAdminRepository) GetRegistrationRequestByID(ctx context.Context
 		Phone:          row.Phone,
 		Notes:          row.Notes,
 		Status:         row.Status,
-		CreatedAt:      cAt,
-		UpdatedAt:      uAt,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
 	}
-	if row.ReviewedBy.Valid && row.ReviewedBy.String != "" {
-		rb, _ := uuid.Parse(row.ReviewedBy.String)
+	if row.ReviewedBy.Valid {
+		rb := row.ReviewedBy.UUID
 		res.ReviewedBy = &rb
 	}
-	if row.ReviewedAt.Valid && row.ReviewedAt.String != "" {
-		ra, _ := parseSQLiteTime(row.ReviewedAt.String)
+	if row.ReviewedAt.Valid {
+		ra := row.ReviewedAt.Time
 		res.ReviewedAt = &ra
 	}
 	return res, nil
@@ -149,12 +140,8 @@ func (r *PlatformAdminRepository) ListPendingRegistrationRequests(ctx context.Co
 
 	results := make([]models.TenantRegistrationRequest, 0, len(rows))
 	for _, row := range rows {
-		reqID, _ := uuid.Parse(row.ID)
-		cAt, _ := parseSQLiteTime(row.CreatedAt)
-		uAt, _ := parseSQLiteTime(row.UpdatedAt)
-
-		results = append(results, models.TenantRegistrationRequest{
-			ID:             reqID,
+		item := models.TenantRegistrationRequest{
+			ID:             row.ID,
 			BusinessName:   row.BusinessName,
 			BusinessType:   row.BusinessType,
 			OwnerFirstName: row.OwnerFirstName,
@@ -164,19 +151,26 @@ func (r *PlatformAdminRepository) ListPendingRegistrationRequests(ctx context.Co
 			Phone:          row.Phone,
 			Notes:          row.Notes,
 			Status:         row.Status,
-			CreatedAt:      cAt,
-			UpdatedAt:      uAt,
-		})
+			CreatedAt:      row.CreatedAt,
+			UpdatedAt:      row.UpdatedAt,
+		}
+		if row.ReviewedBy.Valid {
+			rb := row.ReviewedBy.UUID
+			item.ReviewedBy = &rb
+		}
+		if row.ReviewedAt.Valid {
+			ra := row.ReviewedAt.Time
+			item.ReviewedAt = &ra
+		}
+		results = append(results, item)
 	}
 	return results, nil
 }
 
 func (r *PlatformAdminRepository) UpdateRegistrationStatus(ctx context.Context, id uuid.UUID, status string, reviewerID uuid.UUID) error {
 	return r.q.UpdateRegistrationRequestStatus(ctx, sqlc.UpdateRegistrationRequestStatusParams{
-		ID:         id.String(),
+		ID:         id,
 		Status:     status,
-		ReviewedBy: sql.NullString{String: reviewerID.String(), Valid: true},
-		ReviewedAt: sql.NullString{String: time.Now().UTC().Format(time.RFC3339Nano), Valid: true},
+		ReviewedBy: uuid.NullUUID{UUID: reviewerID, Valid: true},
 	})
 }
-

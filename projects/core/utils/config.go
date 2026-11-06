@@ -15,6 +15,7 @@ type Config struct {
 
 	DBPath     string
 	DBTestPath string
+	DatabaseURL string
 
 	AllowTestDBHeader bool
 	TestDBHeaderKey   string
@@ -23,6 +24,14 @@ type Config struct {
 	SessionTTLHours   int
 	SessionSecure     bool
 	SessionSecret     string
+
+	SupabaseURL       string
+	SupabaseAnonKey   string
+	SupabaseJWTSecret string
+	StorageEndpoint   string
+	StorageBucket     string
+	StorageAccessKey  string
+	StorageSecretKey  string
 }
 
 var AppConfig Config
@@ -47,6 +56,15 @@ func LoadConfig(filenames ...string) error {
 		SessionSecret:     os.Getenv("SESSION_SECRET"),
 		SessionTTLHours:   24,
 		SessionSecure:     true,
+
+		DatabaseURL:       strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		SupabaseURL:       strings.TrimSpace(getEnv("SUPABASE_URL", "http://localhost:8000")),
+		SupabaseAnonKey:   strings.TrimSpace(os.Getenv("SUPABASE_ANON_KEY")),
+		SupabaseJWTSecret: strings.TrimSpace(os.Getenv("SUPABASE_JWT_SECRET")),
+		StorageEndpoint:   strings.TrimSpace(getEnv("STORAGE_ENDPOINT", "http://localhost:5000")),
+		StorageBucket:     strings.TrimSpace(getEnv("STORAGE_BUCKET", "crm-storage")),
+		StorageAccessKey:  strings.TrimSpace(os.Getenv("AWS_ACCESS_KEY_ID")),
+		StorageSecretKey:  strings.TrimSpace(os.Getenv("AWS_SECRET_ACCESS_KEY")),
 	}
 
 	switch cfg.AppEnv {
@@ -97,16 +115,18 @@ func LoadConfig(filenames ...string) error {
 		return fmt.Errorf("SESSION_SECRET must contain at least 64 characters")
 	}
 
-	if cfg.DBPath == "" {
-		return fmt.Errorf("DB_PATH is required")
-	}
+	if cfg.DatabaseURL == "" {
+		if cfg.DBPath == "" {
+			return fmt.Errorf("DB_PATH is required when DATABASE_URL is not set")
+		}
 
-	if cfg.DBTestPath == "" {
-		return fmt.Errorf("DB_TEST_PATH is required")
-	}
+		if cfg.DBTestPath == "" {
+			return fmt.Errorf("DB_TEST_PATH is required")
+		}
 
-	if cfg.DBPath == cfg.DBTestPath {
-		return fmt.Errorf("DB_PATH and DB_TEST_PATH must be different")
+		if cfg.DBPath == cfg.DBTestPath {
+			return fmt.Errorf("DB_PATH and DB_TEST_PATH must be different")
+		}
 	}
 
 	AppConfig = cfg

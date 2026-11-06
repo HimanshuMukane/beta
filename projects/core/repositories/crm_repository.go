@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"core/db/sqlc"
 	"github.com/google/uuid"
@@ -17,7 +18,6 @@ var (
 	ErrClientNotFound    = errors.New("client not found")
 	ErrProjectNotFound   = errors.New("project not found")
 	ErrQuotationNotFound = errors.New("quotation not found")
-	ErrFollowupNotFound  = errors.New("followup not found")
 )
 
 type CRMRepository struct {
@@ -56,16 +56,16 @@ func (r *CRMRepository) CreateLead(ctx context.Context, p *CreateLeadParam) erro
 		p.ID = id
 	}
 
-	var assignedUser sql.NullString
+	var assignedUser uuid.NullUUID
 	if p.AssignedUserID != nil && *p.AssignedUserID != uuid.Nil {
-		assignedUser = sql.NullString{String: p.AssignedUserID.String(), Valid: true}
+		assignedUser = uuid.NullUUID{UUID: *p.AssignedUserID, Valid: true}
 	}
 
 	return r.q.CreateLead(ctx, sqlc.CreateLeadParams{
-		ID:                  p.ID.String(),
-		TenantID:            p.TenantID.String(),
-		WorkflowID:          p.WorkflowID.String(),
-		StageID:             p.StageID.String(),
+		ID:                  p.ID,
+		TenantID:            p.TenantID,
+		WorkflowID:          p.WorkflowID,
+		StageID:             p.StageID,
 		Title:               strings.TrimSpace(p.Title),
 		ContactName:         strings.TrimSpace(p.ContactName),
 		ContactEmail:        strings.TrimSpace(p.ContactEmail),
@@ -81,10 +81,10 @@ func (r *CRMRepository) CreateLead(ctx context.Context, p *CreateLeadParam) erro
 	})
 }
 
-func (r *CRMRepository) GetLeadByID(ctx context.Context, tenantID, leadID uuid.UUID) (*sqlc.Lead, error) {
+func (r *CRMRepository) GetLeadByID(ctx context.Context, tenantID, leadID uuid.UUID) (*sqlc.CrmLead, error) {
 	row, err := r.q.GetLeadByID(ctx, sqlc.GetLeadByIDParams{
-		ID:       leadID.String(),
-		TenantID: tenantID.String(),
+		ID:       leadID,
+		TenantID: tenantID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrLeadNotFound
@@ -95,15 +95,15 @@ func (r *CRMRepository) GetLeadByID(ctx context.Context, tenantID, leadID uuid.U
 	return &row, nil
 }
 
-func (r *CRMRepository) ListLeads(ctx context.Context, tenantID uuid.UUID) ([]sqlc.Lead, error) {
-	return r.q.ListLeads(ctx, tenantID.String())
+func (r *CRMRepository) ListLeads(ctx context.Context, tenantID uuid.UUID) ([]sqlc.CrmLead, error) {
+	return r.q.ListLeads(ctx, tenantID)
 }
 
 func (r *CRMRepository) UpdateLeadStage(ctx context.Context, tenantID, leadID, stageID uuid.UUID) error {
 	return r.q.UpdateLeadStage(ctx, sqlc.UpdateLeadStageParams{
-		ID:       leadID.String(),
-		TenantID: tenantID.String(),
-		StageID:  stageID.String(),
+		ID:       leadID,
+		TenantID: tenantID,
+		StageID:  stageID,
 	})
 }
 
@@ -129,14 +129,14 @@ func (r *CRMRepository) CreateClient(ctx context.Context, p *CreateClientParam) 
 		p.ID = id
 	}
 
-	var leadID sql.NullString
+	var leadID uuid.NullUUID
 	if p.ConvertedFromLeadID != nil && *p.ConvertedFromLeadID != uuid.Nil {
-		leadID = sql.NullString{String: p.ConvertedFromLeadID.String(), Valid: true}
+		leadID = uuid.NullUUID{UUID: *p.ConvertedFromLeadID, Valid: true}
 	}
 
 	return r.q.CreateClient(ctx, sqlc.CreateClientParams{
-		ID:                  p.ID.String(),
-		TenantID:            p.TenantID.String(),
+		ID:                  p.ID,
+		TenantID:            p.TenantID,
 		FirstName:           strings.TrimSpace(p.FirstName),
 		LastName:            strings.TrimSpace(p.LastName),
 		Email:               strings.TrimSpace(p.Email),
@@ -148,10 +148,10 @@ func (r *CRMRepository) CreateClient(ctx context.Context, p *CreateClientParam) 
 	})
 }
 
-func (r *CRMRepository) GetClientByID(ctx context.Context, tenantID, clientID uuid.UUID) (*sqlc.Client, error) {
+func (r *CRMRepository) GetClientByID(ctx context.Context, tenantID, clientID uuid.UUID) (*sqlc.CrmClient, error) {
 	row, err := r.q.GetClientByID(ctx, sqlc.GetClientByIDParams{
-		ID:       clientID.String(),
-		TenantID: tenantID.String(),
+		ID:       clientID,
+		TenantID: tenantID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrClientNotFound
@@ -162,18 +162,18 @@ func (r *CRMRepository) GetClientByID(ctx context.Context, tenantID, clientID uu
 	return &row, nil
 }
 
-func (r *CRMRepository) ListClients(ctx context.Context, tenantID uuid.UUID) ([]sqlc.Client, error) {
-	return r.q.ListClients(ctx, tenantID.String())
+func (r *CRMRepository) ListClients(ctx context.Context, tenantID uuid.UUID) ([]sqlc.CrmClient, error) {
+	return r.q.ListClients(ctx, tenantID)
 }
 
-func (r *CRMRepository) ListLeadWorkflows(ctx context.Context, tenantID uuid.UUID) ([]sqlc.LeadWorkflow, error) {
-	return r.q.ListLeadWorkflows(ctx, tenantID.String())
+func (r *CRMRepository) ListLeadWorkflows(ctx context.Context, tenantID uuid.UUID) ([]sqlc.CrmLeadWorkflow, error) {
+	return r.q.ListLeadWorkflows(ctx, tenantID)
 }
 
-func (r *CRMRepository) ListLeadStages(ctx context.Context, tenantID, workflowID uuid.UUID) ([]sqlc.LeadStage, error) {
+func (r *CRMRepository) ListLeadStages(ctx context.Context, tenantID, workflowID uuid.UUID) ([]sqlc.CrmLeadStage, error) {
 	return r.q.ListLeadStages(ctx, sqlc.ListLeadStagesParams{
-		TenantID:   tenantID.String(),
-		WorkflowID: workflowID.String(),
+		TenantID:   tenantID,
+		WorkflowID: workflowID,
 	})
 }
 
@@ -205,35 +205,35 @@ func (r *CRMRepository) CreateProject(ctx context.Context, p *CreateProjectParam
 		p.Stage = "Booked"
 	}
 
-	var leadID sql.NullString
+	var leadID uuid.NullUUID
 	if p.LeadID != nil && *p.LeadID != uuid.Nil {
-		leadID = sql.NullString{String: p.LeadID.String(), Valid: true}
+		leadID = uuid.NullUUID{UUID: *p.LeadID, Valid: true}
 	}
-	var managerID sql.NullString
+	var managerID uuid.NullUUID
 	if p.ManagerID != nil && *p.ManagerID != uuid.Nil {
-		managerID = sql.NullString{String: p.ManagerID.String(), Valid: true}
+		managerID = uuid.NullUUID{UUID: *p.ManagerID, Valid: true}
 	}
 
 	return r.q.CreateProject(ctx, sqlc.CreateProjectParams{
-		ID:          p.ID.String(),
-		TenantID:    p.TenantID.String(),
-		ClientID:    p.ClientID.String(),
+		ID:          p.ID,
+		TenantID:    p.TenantID,
+		ClientID:    p.ClientID,
 		LeadID:      leadID,
 		Title:       strings.TrimSpace(p.Title),
 		ProjectType: p.ProjectType,
 		Status:      p.Status,
 		Stage:       p.Stage,
-		IsConfirmed: 0,
-		ConfirmedAt: sql.NullString{},
+		IsConfirmed: false,
+		ConfirmedAt: sql.NullTime{},
 		Address:     p.Address,
 		ManagerID:   managerID,
 	})
 }
 
-func (r *CRMRepository) GetProjectByID(ctx context.Context, tenantID, projectID uuid.UUID) (*sqlc.Project, error) {
+func (r *CRMRepository) GetProjectByID(ctx context.Context, tenantID, projectID uuid.UUID) (*sqlc.CrmProject, error) {
 	row, err := r.q.GetProjectByID(ctx, sqlc.GetProjectByIDParams{
-		ID:       projectID.String(),
-		TenantID: tenantID.String(),
+		ID:       projectID,
+		TenantID: tenantID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrProjectNotFound
@@ -244,8 +244,8 @@ func (r *CRMRepository) GetProjectByID(ctx context.Context, tenantID, projectID 
 	return &row, nil
 }
 
-func (r *CRMRepository) ListProjects(ctx context.Context, tenantID uuid.UUID) ([]sqlc.Project, error) {
-	return r.q.ListProjects(ctx, tenantID.String())
+func (r *CRMRepository) ListProjects(ctx context.Context, tenantID uuid.UUID) ([]sqlc.CrmProject, error) {
+	return r.q.ListProjects(ctx, tenantID)
 }
 
 type CreateSegmentParam struct {
@@ -254,8 +254,8 @@ type CreateSegmentParam struct {
 	ProjectID    uuid.UUID
 	SegmentType  string
 	Name         string
-	StartDate    string
-	EndDate      string
+	StartDate    time.Time
+	EndDate      time.Time
 	SegmentOrder int64
 }
 
@@ -269,21 +269,21 @@ func (r *CRMRepository) CreateProjectSegment(ctx context.Context, p *CreateSegme
 	}
 
 	return r.q.CreateProjectSegment(ctx, sqlc.CreateProjectSegmentParams{
-		ID:           p.ID.String(),
-		TenantID:     p.TenantID.String(),
-		ProjectID:    p.ProjectID.String(),
+		ID:           p.ID,
+		TenantID:     p.TenantID,
+		ProjectID:    p.ProjectID,
 		SegmentType:  p.SegmentType,
 		Name:         strings.TrimSpace(p.Name),
 		StartDate:    p.StartDate,
 		EndDate:      p.EndDate,
-		SegmentOrder: p.SegmentOrder,
+		SegmentOrder: int32(p.SegmentOrder),
 	})
 }
 
-func (r *CRMRepository) ListProjectSegments(ctx context.Context, tenantID, projectID uuid.UUID) ([]sqlc.ProjectSegment, error) {
+func (r *CRMRepository) ListProjectSegments(ctx context.Context, tenantID, projectID uuid.UUID) ([]sqlc.CrmProjectSegment, error) {
 	return r.q.ListProjectSegments(ctx, sqlc.ListProjectSegmentsParams{
-		TenantID:  tenantID.String(),
-		ProjectID: projectID.String(),
+		TenantID:  tenantID,
+		ProjectID: projectID,
 	})
 }
 
@@ -294,8 +294,8 @@ type CreateSessionParam struct {
 	SegmentID      *uuid.UUID
 	Title          string
 	SessionType    string
-	StartTime      string
-	EndTime        string
+	StartTime      time.Time
+	EndTime        time.Time
 	Location       string
 	PhotographerID *uuid.UUID
 	Status         string
@@ -313,19 +313,19 @@ func (r *CRMRepository) CreateSession(ctx context.Context, p *CreateSessionParam
 		p.Status = "scheduled"
 	}
 
-	var segmentID sql.NullString
+	var segmentID uuid.NullUUID
 	if p.SegmentID != nil && *p.SegmentID != uuid.Nil {
-		segmentID = sql.NullString{String: p.SegmentID.String(), Valid: true}
+		segmentID = uuid.NullUUID{UUID: *p.SegmentID, Valid: true}
 	}
-	var photographerID sql.NullString
+	var photographerID uuid.NullUUID
 	if p.PhotographerID != nil && *p.PhotographerID != uuid.Nil {
-		photographerID = sql.NullString{String: p.PhotographerID.String(), Valid: true}
+		photographerID = uuid.NullUUID{UUID: *p.PhotographerID, Valid: true}
 	}
 
 	return r.q.CreateSession(ctx, sqlc.CreateSessionParams{
-		ID:             p.ID.String(),
-		TenantID:       p.TenantID.String(),
-		ProjectID:      p.ProjectID.String(),
+		ID:             p.ID,
+		TenantID:       p.TenantID,
+		ProjectID:      p.ProjectID,
 		SegmentID:      segmentID,
 		Title:          strings.TrimSpace(p.Title),
 		SessionType:    p.SessionType,
@@ -337,8 +337,8 @@ func (r *CRMRepository) CreateSession(ctx context.Context, p *CreateSessionParam
 	})
 }
 
-func (r *CRMRepository) ListSessions(ctx context.Context, tenantID uuid.UUID) ([]sqlc.Session, error) {
-	return r.q.ListSessions(ctx, tenantID.String())
+func (r *CRMRepository) ListSessions(ctx context.Context, tenantID uuid.UUID) ([]sqlc.CrmSession, error) {
+	return r.q.ListSessions(ctx, tenantID)
 }
 
 type CreatePackageParam struct {
@@ -347,7 +347,7 @@ type CreatePackageParam struct {
 	Name        string
 	Description string
 	PriceMinor  int64
-	IsActive    int64
+	IsActive    bool
 }
 
 func (r *CRMRepository) CreatePackage(ctx context.Context, p *CreatePackageParam) error {
@@ -358,13 +358,10 @@ func (r *CRMRepository) CreatePackage(ctx context.Context, p *CreatePackageParam
 		}
 		p.ID = id
 	}
-	if p.IsActive == 0 {
-		p.IsActive = 1
-	}
 
 	return r.q.CreatePackage(ctx, sqlc.CreatePackageParams{
-		ID:          p.ID.String(),
-		TenantID:    p.TenantID.String(),
+		ID:          p.ID,
+		TenantID:    p.TenantID,
 		Name:        strings.TrimSpace(p.Name),
 		Description: p.Description,
 		PriceMinor:  p.PriceMinor,
@@ -372,8 +369,8 @@ func (r *CRMRepository) CreatePackage(ctx context.Context, p *CreatePackageParam
 	})
 }
 
-func (r *CRMRepository) ListPackages(ctx context.Context, tenantID uuid.UUID) ([]sqlc.Package, error) {
-	return r.q.ListPackages(ctx, tenantID.String())
+func (r *CRMRepository) ListPackages(ctx context.Context, tenantID uuid.UUID) ([]sqlc.CrmPackage, error) {
+	return r.q.ListPackages(ctx, tenantID)
 }
 
 type CreateServiceParam struct {
@@ -394,16 +391,16 @@ func (r *CRMRepository) CreateService(ctx context.Context, p *CreateServiceParam
 	}
 
 	return r.q.CreateService(ctx, sqlc.CreateServiceParams{
-		ID:          p.ID.String(),
-		TenantID:    p.TenantID.String(),
+		ID:          p.ID,
+		TenantID:    p.TenantID,
 		Name:        strings.TrimSpace(p.Name),
 		Description: p.Description,
 		PriceMinor:  p.PriceMinor,
 	})
 }
 
-func (r *CRMRepository) ListServices(ctx context.Context, tenantID uuid.UUID) ([]sqlc.Service, error) {
-	return r.q.ListServices(ctx, tenantID.String())
+func (r *CRMRepository) ListServices(ctx context.Context, tenantID uuid.UUID) ([]sqlc.CrmService, error) {
+	return r.q.ListServices(ctx, tenantID)
 }
 
 type CreateQuotationParam struct {
@@ -417,7 +414,7 @@ type CreateQuotationParam struct {
 	TaxMinor      int64
 	TotalMinor    int64
 	Status        string
-	SnapshotJSON  string
+	SnapshotJSON  []byte
 }
 
 func (r *CRMRepository) CreateQuotation(ctx context.Context, p *CreateQuotationParam) error {
@@ -431,14 +428,14 @@ func (r *CRMRepository) CreateQuotation(ctx context.Context, p *CreateQuotationP
 	if p.Status == "" {
 		p.Status = "draft"
 	}
-	if p.SnapshotJSON == "" {
-		p.SnapshotJSON = "{}"
+	if len(p.SnapshotJSON) == 0 {
+		p.SnapshotJSON = []byte("{}")
 	}
 
 	return r.q.CreateQuotation(ctx, sqlc.CreateQuotationParams{
-		ID:            p.ID.String(),
-		TenantID:      p.TenantID.String(),
-		ProjectID:     p.ProjectID.String(),
+		ID:            p.ID,
+		TenantID:      p.TenantID,
+		ProjectID:     p.ProjectID,
 		QuoteNumber:   p.QuoteNumber,
 		PackageName:   p.PackageName,
 		SubtotalMinor: p.SubtotalMinor,
@@ -446,14 +443,14 @@ func (r *CRMRepository) CreateQuotation(ctx context.Context, p *CreateQuotationP
 		TaxMinor:      p.TaxMinor,
 		TotalMinor:    p.TotalMinor,
 		Status:        p.Status,
-		SnapshotJson:  p.SnapshotJSON,
+		Snapshot:      p.SnapshotJSON,
 	})
 }
 
-func (r *CRMRepository) GetQuotationByID(ctx context.Context, tenantID, quoteID uuid.UUID) (*sqlc.Quotation, error) {
+func (r *CRMRepository) GetQuotationByID(ctx context.Context, tenantID, quoteID uuid.UUID) (*sqlc.CrmQuotation, error) {
 	row, err := r.q.GetQuotationByID(ctx, sqlc.GetQuotationByIDParams{
-		ID:       quoteID.String(),
-		TenantID: tenantID.String(),
+		ID:       quoteID,
+		TenantID: tenantID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrQuotationNotFound
@@ -464,10 +461,10 @@ func (r *CRMRepository) GetQuotationByID(ctx context.Context, tenantID, quoteID 
 	return &row, nil
 }
 
-func (r *CRMRepository) ListQuotationsByProject(ctx context.Context, tenantID, projectID uuid.UUID) ([]sqlc.Quotation, error) {
+func (r *CRMRepository) ListQuotationsByProject(ctx context.Context, tenantID, projectID uuid.UUID) ([]sqlc.CrmQuotation, error) {
 	return r.q.ListQuotationsByProject(ctx, sqlc.ListQuotationsByProjectParams{
-		TenantID:  tenantID.String(),
-		ProjectID: projectID.String(),
+		TenantID:  tenantID,
+		ProjectID: projectID,
 	})
 }
 
@@ -478,7 +475,7 @@ type CreateFollowupParam struct {
 	ClientID       *uuid.UUID
 	AssignedUserID *uuid.UUID
 	Title          string
-	DueDate        string
+	DueDate        time.Time
 	Status         string
 }
 
@@ -494,22 +491,22 @@ func (r *CRMRepository) CreateFollowup(ctx context.Context, p *CreateFollowupPar
 		p.Status = "pending"
 	}
 
-	var leadID sql.NullString
+	var leadID uuid.NullUUID
 	if p.LeadID != nil && *p.LeadID != uuid.Nil {
-		leadID = sql.NullString{String: p.LeadID.String(), Valid: true}
+		leadID = uuid.NullUUID{UUID: *p.LeadID, Valid: true}
 	}
-	var clientID sql.NullString
+	var clientID uuid.NullUUID
 	if p.ClientID != nil && *p.ClientID != uuid.Nil {
-		clientID = sql.NullString{String: p.ClientID.String(), Valid: true}
+		clientID = uuid.NullUUID{UUID: *p.ClientID, Valid: true}
 	}
-	var assignedUser sql.NullString
+	var assignedUser uuid.NullUUID
 	if p.AssignedUserID != nil && *p.AssignedUserID != uuid.Nil {
-		assignedUser = sql.NullString{String: p.AssignedUserID.String(), Valid: true}
+		assignedUser = uuid.NullUUID{UUID: *p.AssignedUserID, Valid: true}
 	}
 
 	return r.q.CreateFollowup(ctx, sqlc.CreateFollowupParams{
-		ID:             p.ID.String(),
-		TenantID:       p.TenantID.String(),
+		ID:             p.ID,
+		TenantID:       p.TenantID,
 		LeadID:         leadID,
 		ClientID:       clientID,
 		AssignedUserID: assignedUser,
@@ -519,13 +516,13 @@ func (r *CRMRepository) CreateFollowup(ctx context.Context, p *CreateFollowupPar
 	})
 }
 
-func (r *CRMRepository) ListFollowups(ctx context.Context, tenantID uuid.UUID) ([]sqlc.Followup, error) {
-	return r.q.ListFollowups(ctx, tenantID.String())
+func (r *CRMRepository) ListFollowups(ctx context.Context, tenantID uuid.UUID) ([]sqlc.CrmFollowup, error) {
+	return r.q.ListFollowups(ctx, tenantID)
 }
 
 func (r *CRMRepository) CompleteFollowup(ctx context.Context, tenantID, followupID uuid.UUID) error {
 	return r.q.CompleteFollowup(ctx, sqlc.CompleteFollowupParams{
-		ID:       followupID.String(),
-		TenantID: tenantID.String(),
+		ID:       followupID,
+		TenantID: tenantID,
 	})
 }

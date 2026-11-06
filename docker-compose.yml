@@ -1,0 +1,169 @@
+services:
+  # ----------------------------------------------------------------------------
+  # Supabase PostgreSQL (Postgres 15 with pgvector, RLS, WAL replication)
+  # ----------------------------------------------------------------------------
+  db:
+    image: supabase/postgres:15.6.1.143
+    container_name: supabase-db
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-especa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-especa}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - ./docker/volumes/db/00_init_user.sql:/docker-entrypoint-initdb.d/00_init_user.sql:ro
+      - ./projects/core/db/migrations/000001_create_schemas_and_roles.sql:/docker-entrypoint-initdb.d/01_schemas_and_roles.sql:ro
+      - ./projects/core/db/migrations/000002_create_tables.sql:/docker-entrypoint-initdb.d/02_tables.sql:ro
+      - ./projects/core/db/migrations/000003_enable_rls.sql:/docker-entrypoint-initdb.d/03_rls.sql:ro
+      - ./projects/core/db/migrations/000004_triggers_indexes_and_counters.sql:/docker-entrypoint-initdb.d/04_triggers.sql:ro
+      - supabase-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-especa} -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # Supabase Studio (Web UI Management Dashboard)
+  # ----------------------------------------------------------------------------
+  studio:
+    image: supabase/studio:20240405-f71e15b
+    container_name: supabase-studio
+    restart: unless-stopped
+    ports:
+      - "${STUDIO_PORT:-54323}:3000"
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-especa}
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
+      SUPABASE_ANON_KEY: ${ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM0NDk2MDB9.dummy_anon_key_secret_for_local_dev_only_1234567890}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzQ0OTYwMH0.dummy_service_role_key_secret_for_local_dev_12345}
+      LOGFLARE_API_KEY: ""
+      LOGFLARE_URL: ""
+      NEXT_PUBLIC_ENABLE_LOGS: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # Postgres Meta (API layer for Studio)
+  # ----------------------------------------------------------------------------
+  meta:
+    image: supabase/postgres-meta:v0.80.0
+    container_name: supabase-meta
+    restart: unless-stopped
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: ${POSTGRES_DB:-postgres}
+      PG_META_DB_USER: ${POSTGRES_USER:-especa}
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD:-especa}
+      PG_META_DB_SSL_MODE: disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # Supabase Auth (GoTrue - JWTs & User Identity)
+  # ----------------------------------------------------------------------------
+  auth:
+    image: supabase/gotrue:v2.151.0
+    container_name: supabase-auth
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://${POSTGRES_USER:-especa}:${POSTGRES_PASSWORD:-especa}@db:5432/${POSTGRES_DB:-postgres}?sslmode=disable
+      GOTRUE_SITE_URL: ${GOTRUE_SITE_URL:-http://localhost:3000}
+      GOTRUE_URI_ALLOW_LIST: ${GOTRUE_URI_ALLOW_LIST:-*}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      GOTRUE_JWT_EXP: ${GOTRUE_JWT_EXP:-3600}
+      GOTRUE_DISABLE_SIGNUP: ${GOTRUE_DISABLE_SIGNUP:-false}
+      GOTRUE_MAILER_AUTOCONFIRM: ${GOTRUE_MAILER_AUTOCONFIRM:-true}
+
+  # ----------------------------------------------------------------------------
+  # Supabase Storage (S3-Compatible Object Store)
+  # ----------------------------------------------------------------------------
+  storage:
+    image: supabase/storage-api:v1.0.6
+    container_name: supabase-storage
+    restart: unless-stopped
+    ports:
+      - "${STORAGE_PORT:-5000}:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ANON_KEY: ${ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM0NDk2MDB9.dummy_anon_key_secret_for_local_dev_only_1234567890}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzQ0OTYwMH0.dummy_service_role_key_secret_for_local_dev_12345}
+      POSTGREST_URL: http://kong:8000/rest/v1
+      PGRST_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      DATABASE_URL: postgres://${POSTGRES_USER:-especa}:${POSTGRES_PASSWORD:-especa}@db:5432/${POSTGRES_DB:-postgres}?sslmode=disable
+      FILE_SIZE_LIMIT: ${FILE_SIZE_LIMIT:-52428800}
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: default
+      GLOBAL_S3_BUCKET: ${GLOBAL_S3_BUCKET:-crm-storage}
+      REGION: local
+    volumes:
+      - supabase-storage-data:/var/lib/storage
+
+  # ----------------------------------------------------------------------------
+  # Supabase Realtime (Logical CDC & Broadcast via PostgreSQL WAL)
+  # ----------------------------------------------------------------------------
+  realtime:
+    image: supabase/realtime:v2.28.32
+    container_name: supabase-realtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-postgres}
+      DB_USER: ${POSTGRES_USER:-especa}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-especa}
+      DB_SSL: "false"
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      REPLICATION_MODE: RLS
+      REPLICATION_POLL_INTERVAL_MS: 100
+      SECURE_CHANNELS: "true"
+
+  # ----------------------------------------------------------------------------
+  # Kong Gateway (Reverse Proxy unifying Auth, Storage, and Realtime on :8000)
+  # ----------------------------------------------------------------------------
+  kong:
+    image: kong:2.8.1
+    container_name: supabase-kong
+    restart: unless-stopped
+    ports:
+      - "${KONG_HTTP_PORT:-8000}:8000"
+      - "${KONG_HTTPS_PORT:-8443}:8443"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+    volumes:
+      - ./docker/volumes/api/kong.yml:/var/lib/kong/kong.yml:ro
+    depends_on:
+      - auth
+      - storage
+      - realtime
+
+volumes:
+  supabase-db-data:
+  supabase-storage-data:

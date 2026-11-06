@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"core/db/sqlc"
 	"core/models"
@@ -16,13 +15,13 @@ import (
 )
 
 var (
-	ErrUserNotFound       = errors.New("user not found")
-	ErrEmailAlreadyExists = errors.New("email already exists")
-	ErrRoleNotFound       = errors.New("role not found")
-	ErrRoleAlreadyExists  = errors.New("role already exists")
-	ErrTenantNotFound     = errors.New("tenant not found")
+	ErrUserNotFound        = errors.New("user not found")
+	ErrEmailAlreadyExists  = errors.New("email already exists")
+	ErrRoleNotFound        = errors.New("role not found")
+	ErrRoleAlreadyExists   = errors.New("role already exists")
+	ErrTenantNotFound      = errors.New("tenant not found")
 	ErrTenantAlreadyExists = errors.New("tenant already exists")
-	ErrMembershipNotFound = errors.New("membership not found")
+	ErrMembershipNotFound  = errors.New("membership not found")
 )
 
 type RoleRepository struct {
@@ -45,7 +44,7 @@ func (r *RoleRepository) CreateRole(ctx context.Context, name string) (*models.R
 	}
 
 	err = r.q.CreateRole(ctx, sqlc.CreateRoleParams{
-		ID:   id.String(),
+		ID:   id,
 		Name: name,
 	})
 	if err != nil {
@@ -63,7 +62,7 @@ func (r *RoleRepository) GetRoleByID(ctx context.Context, id uuid.UUID) (*models
 		return nil, ErrRoleNotFound
 	}
 
-	row, err := r.q.GetRoleByID(ctx, id.String())
+	row, err := r.q.GetRoleByID(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrRoleNotFound
 	}
@@ -71,7 +70,16 @@ func (r *RoleRepository) GetRoleByID(ctx context.Context, id uuid.UUID) (*models
 		return nil, fmt.Errorf("get role by id: %w", err)
 	}
 
-	return mapRole(row.ID, row.Name, row.CreatedAt, row.UpdatedAt, row.DeletedAt)
+	role := &models.Role{
+		ID:        row.ID,
+		Name:      row.Name,
+		CreatedAt: row.CreatedAt,
+		UpdatedAt: row.UpdatedAt,
+	}
+	if row.DeletedAt.Valid {
+		role.DeletedAt = &row.DeletedAt.Time
+	}
+	return role, nil
 }
 
 func (r *RoleRepository) GetRoleByName(ctx context.Context, name string) (*models.Role, error) {
@@ -88,7 +96,16 @@ func (r *RoleRepository) GetRoleByName(ctx context.Context, name string) (*model
 		return nil, fmt.Errorf("get role by name: %w", err)
 	}
 
-	return mapRole(row.ID, row.Name, row.CreatedAt, row.UpdatedAt, row.DeletedAt)
+	role := &models.Role{
+		ID:        row.ID,
+		Name:      row.Name,
+		CreatedAt: row.CreatedAt,
+		UpdatedAt: row.UpdatedAt,
+	}
+	if row.DeletedAt.Valid {
+		role.DeletedAt = &row.DeletedAt.Time
+	}
+	return role, nil
 }
 
 type UserRepository struct {
@@ -116,13 +133,18 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) erro
 	user.LastName = strings.TrimSpace(user.LastName)
 	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
+	var roleID uuid.NullUUID
+	if user.RoleID != uuid.Nil {
+		roleID = uuid.NullUUID{UUID: user.RoleID, Valid: true}
+	}
+
 	err := r.q.CreateUser(ctx, sqlc.CreateUserParams{
-		ID:           user.ID.String(),
+		ID:           user.ID,
 		FirstName:    user.FirstName,
 		LastName:     user.LastName,
 		Email:        user.Email,
 		PasswordHash: user.PasswordHash,
-		RoleID:       user.RoleID.String(),
+		RoleID:       roleID,
 	})
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "unique") {
@@ -148,18 +170,30 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 		return nil, fmt.Errorf("get user by email: %w", err)
 	}
 
-	return mapUser(
-		row.ID,
-		row.FirstName,
-		row.LastName,
-		row.Email,
-		row.PasswordHash,
-		row.RoleID,
-		row.RoleName,
-		row.CreatedAt,
-		row.UpdatedAt,
-		row.DeletedAt,
-	)
+	var roleID uuid.UUID
+	if row.RoleID.Valid {
+		roleID = row.RoleID.UUID
+	}
+	roleName := ""
+	if row.RoleName.Valid {
+		roleName = row.RoleName.String
+	}
+
+	user := &models.User{
+		ID:           row.ID,
+		FirstName:    row.FirstName,
+		LastName:     row.LastName,
+		Email:        row.Email,
+		PasswordHash: row.PasswordHash,
+		RoleID:       roleID,
+		RoleName:     roleName,
+		CreatedAt:    row.CreatedAt,
+		UpdatedAt:    row.UpdatedAt,
+	}
+	if row.DeletedAt.Valid {
+		user.DeletedAt = &row.DeletedAt.Time
+	}
+	return user, nil
 }
 
 func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
@@ -167,7 +201,7 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*models
 		return nil, ErrUserNotFound
 	}
 
-	row, err := r.q.GetUserByID(ctx, id.String())
+	row, err := r.q.GetUserByID(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrUserNotFound
 	}
@@ -175,18 +209,30 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*models
 		return nil, fmt.Errorf("get user by id: %w", err)
 	}
 
-	return mapUser(
-		row.ID,
-		row.FirstName,
-		row.LastName,
-		row.Email,
-		row.PasswordHash,
-		row.RoleID,
-		row.RoleName,
-		row.CreatedAt,
-		row.UpdatedAt,
-		row.DeletedAt,
-	)
+	var roleID uuid.UUID
+	if row.RoleID.Valid {
+		roleID = row.RoleID.UUID
+	}
+	roleName := ""
+	if row.RoleName.Valid {
+		roleName = row.RoleName.String
+	}
+
+	user := &models.User{
+		ID:           row.ID,
+		FirstName:    row.FirstName,
+		LastName:     row.LastName,
+		Email:        row.Email,
+		PasswordHash: row.PasswordHash,
+		RoleID:       roleID,
+		RoleName:     roleName,
+		CreatedAt:    row.CreatedAt,
+		UpdatedAt:    row.UpdatedAt,
+	}
+	if row.DeletedAt.Valid {
+		user.DeletedAt = &row.DeletedAt.Time
+	}
+	return user, nil
 }
 
 type TenantRepository struct {
@@ -222,7 +268,7 @@ func (r *TenantRepository) CreateTenant(ctx context.Context, t *models.Tenant) e
 	}
 
 	err := r.q.CreateTenant(ctx, sqlc.CreateTenantParams{
-		ID:                 t.ID.String(),
+		ID:                 t.ID,
 		Name:               strings.TrimSpace(t.Name),
 		Slug:               strings.ToLower(strings.TrimSpace(t.Slug)),
 		BusinessType:       t.BusinessType,
@@ -244,7 +290,7 @@ func (r *TenantRepository) GetTenantByID(ctx context.Context, id uuid.UUID) (*mo
 	if id == uuid.Nil {
 		return nil, ErrTenantNotFound
 	}
-	row, err := r.q.GetTenantByID(ctx, id.String())
+	row, err := r.q.GetTenantByID(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTenantNotFound
 	}
@@ -252,12 +298,8 @@ func (r *TenantRepository) GetTenantByID(ctx context.Context, id uuid.UUID) (*mo
 		return nil, fmt.Errorf("get tenant by id: %w", err)
 	}
 
-	idParsed, _ := uuid.Parse(row.ID)
-	cAt, _ := parseSQLiteTime(row.CreatedAt)
-	uAt, _ := parseSQLiteTime(row.UpdatedAt)
-
 	tenant := &models.Tenant{
-		ID:                 idParsed,
+		ID:                 row.ID,
 		Name:               row.Name,
 		Slug:               row.Slug,
 		BusinessType:       row.BusinessType,
@@ -265,12 +307,11 @@ func (r *TenantRepository) GetTenantByID(ctx context.Context, id uuid.UUID) (*mo
 		SubscriptionStatus: row.SubscriptionStatus,
 		Currency:           row.Currency,
 		Timezone:           row.Timezone,
-		CreatedAt:          cAt,
-		UpdatedAt:          uAt,
+		CreatedAt:          row.CreatedAt,
+		UpdatedAt:          row.UpdatedAt,
 	}
-	if row.DeletedAt.Valid && row.DeletedAt.String != "" {
-		t, _ := parseSQLiteTime(row.DeletedAt.String)
-		tenant.DeletedAt = &t
+	if row.DeletedAt.Valid {
+		tenant.DeletedAt = &row.DeletedAt.Time
 	}
 	return tenant, nil
 }
@@ -294,9 +335,9 @@ func (r *TenantRepository) CreateMembership(ctx context.Context, m *models.Membe
 	}
 
 	err := r.q.CreateMembership(ctx, sqlc.CreateMembershipParams{
-		ID:       m.ID.String(),
-		TenantID: m.TenantID.String(),
-		UserID:   m.UserID.String(),
+		ID:       m.ID,
+		TenantID: m.TenantID,
+		UserID:   m.UserID,
 		Role:     m.Role,
 		Status:   m.Status,
 	})
@@ -308,8 +349,8 @@ func (r *TenantRepository) CreateMembership(ctx context.Context, m *models.Membe
 
 func (r *TenantRepository) GetMembership(ctx context.Context, tenantID, userID uuid.UUID) (*models.Membership, error) {
 	row, err := r.q.GetMembership(ctx, sqlc.GetMembershipParams{
-		TenantID: tenantID.String(),
-		UserID:   userID.String(),
+		TenantID: tenantID,
+		UserID:   userID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrMembershipNotFound
@@ -318,45 +359,33 @@ func (r *TenantRepository) GetMembership(ctx context.Context, tenantID, userID u
 		return nil, fmt.Errorf("get membership: %w", err)
 	}
 
-	mID, _ := uuid.Parse(row.ID)
-	tID, _ := uuid.Parse(row.TenantID)
-	uID, _ := uuid.Parse(row.UserID)
-	cAt, _ := parseSQLiteTime(row.CreatedAt)
-	uAt, _ := parseSQLiteTime(row.UpdatedAt)
-
 	return &models.Membership{
-		ID:        mID,
-		TenantID:  tID,
-		UserID:    uID,
+		ID:        row.ID,
+		TenantID:  row.TenantID,
+		UserID:    row.UserID,
 		Role:      row.Role,
 		Status:    row.Status,
-		CreatedAt: cAt,
-		UpdatedAt: uAt,
+		CreatedAt: row.CreatedAt,
+		UpdatedAt: row.UpdatedAt,
 	}, nil
 }
 
 func (r *TenantRepository) ListUserMemberships(ctx context.Context, userID uuid.UUID) ([]models.Membership, error) {
-	rows, err := r.q.ListUserMemberships(ctx, userID.String())
+	rows, err := r.q.ListUserMemberships(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("list user memberships: %w", err)
 	}
 
 	memberships := make([]models.Membership, 0, len(rows))
 	for _, row := range rows {
-		mID, _ := uuid.Parse(row.ID)
-		tID, _ := uuid.Parse(row.TenantID)
-		uID, _ := uuid.Parse(row.UserID)
-		cAt, _ := parseSQLiteTime(row.CreatedAt)
-		uAt, _ := parseSQLiteTime(row.UpdatedAt)
-
 		memberships = append(memberships, models.Membership{
-			ID:                       mID,
-			TenantID:                 tID,
-			UserID:                   uID,
+			ID:                       row.ID,
+			TenantID:                 row.TenantID,
+			UserID:                   row.UserID,
 			Role:                     row.Role,
 			Status:                   row.Status,
-			CreatedAt:                cAt,
-			UpdatedAt:                uAt,
+			CreatedAt:                row.CreatedAt,
+			UpdatedAt:                row.UpdatedAt,
 			TenantName:               row.TenantName,
 			TenantSlug:               row.TenantSlug,
 			TenantBusinessType:       row.TenantBusinessType,
@@ -365,89 +394,4 @@ func (r *TenantRepository) ListUserMemberships(ctx context.Context, userID uuid.
 		})
 	}
 	return memberships, nil
-}
-
-func mapRole(idStr, name, createdStr, updatedStr string, deletedStr sql.NullString) (*models.Role, error) {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return nil, fmt.Errorf("parse role id: %w", err)
-	}
-	createdAt, err := parseSQLiteTime(createdStr)
-	if err != nil {
-		return nil, fmt.Errorf("parse role created_at: %w", err)
-	}
-	updatedAt, err := parseSQLiteTime(updatedStr)
-	if err != nil {
-		return nil, fmt.Errorf("parse role updated_at: %w", err)
-	}
-
-	role := &models.Role{
-		ID:        id,
-		Name:      name,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
-	}
-	if deletedStr.Valid && deletedStr.String != "" {
-		t, err := parseSQLiteTime(deletedStr.String)
-		if err != nil {
-			return nil, fmt.Errorf("parse role deleted_at: %w", err)
-		}
-		role.DeletedAt = &t
-	}
-	return role, nil
-}
-
-func mapUser(idStr, firstName, lastName, email, pwdHash, roleIDStr, roleName, createdStr, updatedStr string, deletedStr sql.NullString) (*models.User, error) {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return nil, fmt.Errorf("parse user id: %w", err)
-	}
-	roleID, err := uuid.Parse(roleIDStr)
-	if err != nil {
-		return nil, fmt.Errorf("parse user role_id: %w", err)
-	}
-	createdAt, err := parseSQLiteTime(createdStr)
-	if err != nil {
-		return nil, fmt.Errorf("parse user created_at: %w", err)
-	}
-	updatedAt, err := parseSQLiteTime(updatedStr)
-	if err != nil {
-		return nil, fmt.Errorf("parse user updated_at: %w", err)
-	}
-
-	user := &models.User{
-		ID:           id,
-		FirstName:    firstName,
-		LastName:     lastName,
-		Email:        email,
-		PasswordHash: pwdHash,
-		RoleID:       roleID,
-		RoleName:     roleName,
-		CreatedAt:    createdAt,
-		UpdatedAt:    updatedAt,
-	}
-	if deletedStr.Valid && deletedStr.String != "" {
-		t, err := parseSQLiteTime(deletedStr.String)
-		if err != nil {
-			return nil, fmt.Errorf("parse user deleted_at: %w", err)
-		}
-		user.DeletedAt = &t
-	}
-	return user, nil
-}
-
-func parseSQLiteTime(value string) (time.Time, error) {
-	layouts := []string{
-		time.RFC3339Nano,
-		"2006-01-02 15:04:05.999999999-07:00",
-		"2006-01-02 15:04:05.999999999",
-		"2006-01-02 15:04:05",
-	}
-
-	for _, layout := range layouts {
-		if parsed, err := time.Parse(layout, value); err == nil {
-			return parsed, nil
-		}
-	}
-	return time.Time{}, fmt.Errorf("unsupported SQLite timestamp %q", value)
 }
