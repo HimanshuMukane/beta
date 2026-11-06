@@ -12,7 +12,7 @@ import (
 	"finance/models"
 	"finance/ui/layouts"
 	"fmt"
-	"shared"
+	"core/utils"
 )
 
 func EmployeesList(employees []models.Employee, payrollPeriods []models.PayrollPeriod) templ.Component {
@@ -146,7 +146,7 @@ func EmployeesList(employees []models.Employee, payrollPeriods []models.PayrollP
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var9 string
-					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(emp.MonthlyCompensationMinor))
+					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(emp.MonthlyCompensationMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/employees.templ`, Line: 58, Col: 92}
 					}
@@ -159,7 +159,7 @@ func EmployeesList(employees []models.Employee, payrollPeriods []models.PayrollP
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var10 string
-					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(emp.AnnualCompensationMinor))
+					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(emp.AnnualCompensationMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/employees.templ`, Line: 59, Col: 59}
 					}
@@ -411,7 +411,7 @@ func EmployeeDetail(emp models.Employee, comp *models.EmployeeCompensation, comp
 			}
 			if comp != nil {
 				var templ_7745c5c3_Var25 string
-				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(comp.BaseAmountMinor))
+				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(comp.BaseAmountMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/employees.templ`, Line: 131, Col: 46}
 				}
@@ -430,7 +430,7 @@ func EmployeeDetail(emp models.Employee, comp *models.EmployeeCompensation, comp
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var26 string
-			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(gross))
+			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(gross))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/employees.templ`, Line: 139, Col: 110}
 			}
@@ -443,7 +443,7 @@ func EmployeeDetail(emp models.Employee, comp *models.EmployeeCompensation, comp
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var27 string
-			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(deductions))
+			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(deductions))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/employees.templ`, Line: 143, Col: 115}
 			}
@@ -456,7 +456,7 @@ func EmployeeDetail(emp models.Employee, comp *models.EmployeeCompensation, comp
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var28 string
-			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(net))
+			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(net))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/employees.templ`, Line: 147, Col: 108}
 			}
@@ -545,7 +545,7 @@ func EmployeeDetail(emp models.Employee, comp *models.EmployeeCompensation, comp
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var31 string
-					templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(c.AmountMinor))
+					templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(c.AmountMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/employees.templ`, Line: 188, Col: 55}
 					}
@@ -856,7 +856,7 @@ func PayrollRegister(period models.PayrollPeriod, records []models.PayrollRecord
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var49 string
-				templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(r.GrossAmountMinor))
+				templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(r.GrossAmountMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/employees.templ`, Line: 321, Col: 57}
 				}
@@ -869,7 +869,7 @@ func PayrollRegister(period models.PayrollPeriod, records []models.PayrollRecord
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var50 string
-				templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(r.EmployeeDeductionsMinor))
+				templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(r.EmployeeDeductionsMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/employees.templ`, Line: 322, Col: 80}
 				}
@@ -882,7 +882,7 @@ func PayrollRegister(period models.PayrollPeriod, records []models.PayrollRecord
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var51 string
-				templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(r.NetAmountMinor))
+				templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(r.NetAmountMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/employees.templ`, Line: 323, Col: 79}
 				}
@@ -895,7 +895,7 @@ func PayrollRegister(period models.PayrollPeriod, records []models.PayrollRecord
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var52 string
-				templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(r.TotalEmployerCostMinor))
+				templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(r.TotalEmployerCostMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/employees.templ`, Line: 324, Col: 87}
 				}

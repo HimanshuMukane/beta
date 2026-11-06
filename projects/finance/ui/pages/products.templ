@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"finance/models"
 	"finance/ui/layouts"
-	"shared"
+	"core/utils"
 )
 
 templ ProductsList(products []models.Product) {
@@ -52,9 +52,9 @@ templ ProductsList(products []models.Product) {
 								</td>
 								<td><span class="finance-badge-pill finance-badge-draft">{ p.Category }</span></td>
 								<td><strong>{ fmt.Sprintf("%d", p.ClientCount) }</strong></td>
-								<td><strong style="color: #00b894;">{ shared.FormatINR(p.MonthlyRevenue) }</strong></td>
-								<td><strong style="color: #0984e3;">{ shared.FormatINR(p.AnnualRevenue) }</strong></td>
-								<td>{ shared.FormatINR(p.OneTimeRevenue) }</td>
+								<td><strong style="color: #00b894;">{ utils.FormatINR(p.MonthlyRevenue) }</strong></td>
+								<td><strong style="color: #0984e3;">{ utils.FormatINR(p.AnnualRevenue) }</strong></td>
+								<td>{ utils.FormatINR(p.OneTimeRevenue) }</td>
 								<td><span class="finance-badge-pill finance-badge-active">{ p.Status }</span></td>
 								<td>
 									<a href={ templ.SafeURL(fmt.Sprintf("/products/detail?id=%s", p.ID)) } style="color: #74b9ff; font-size: 12px; text-decoration: none;">View Detail →</a>
@@ -91,15 +91,15 @@ templ ProductDetail(p models.Product, clientProducts []models.ClientProduct, pri
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">Monthly Recurring Revenue (MRR)</div>
-				<div style="font-size: 20px; font-weight: 700; color: #00b894; margin-top: 4px;">{ shared.FormatINR(p.MonthlyRevenue) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #00b894; margin-top: 4px;">{ utils.FormatINR(p.MonthlyRevenue) }</div>
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">Annual Recurring Revenue (ARR)</div>
-				<div style="font-size: 20px; font-weight: 700; color: #0984e3; margin-top: 4px;">{ shared.FormatINR(p.AnnualRevenue) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #0984e3; margin-top: 4px;">{ utils.FormatINR(p.AnnualRevenue) }</div>
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">One-Time Revenue</div>
-				<div style="font-size: 20px; font-weight: 700; color: #fff; margin-top: 4px;">{ shared.FormatINR(p.OneTimeRevenue) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #fff; margin-top: 4px;">{ utils.FormatINR(p.OneTimeRevenue) }</div>
 			</div>
 		</div>
 
@@ -168,9 +168,9 @@ templ ProductDetail(p models.Product, clientProducts []models.ClientProduct, pri
 									<tr>
 										<td><strong>{ pr.Name }</strong></td>
 										<td><span class="finance-badge-pill finance-badge-draft">{ pr.Frequency }</span></td>
-										<td><strong>{ shared.FormatINR(pr.AmountMinor) }</strong></td>
-										<td>{ shared.FormatINR(pr.MonthlyEquivalentMinor) }</td>
-										<td>{ shared.FormatINR(pr.AnnualEquivalentMinor) }</td>
+										<td><strong>{ utils.FormatINR(pr.AmountMinor) }</strong></td>
+										<td>{ utils.FormatINR(pr.MonthlyEquivalentMinor) }</td>
+										<td>{ utils.FormatINR(pr.AnnualEquivalentMinor) }</td>
 										<td><span class="finance-badge-pill finance-badge-active">{ pr.Status }</span></td>
 									</tr>
 								}
@@ -207,7 +207,7 @@ templ ProductDetail(p models.Product, clientProducts []models.ClientProduct, pri
 											if c.CalculationType == "percentage" {
 												<span>{ fmt.Sprintf("%.2f%%", float64(c.Percentage)/100.0) }</span>
 											} else {
-												<span>{ shared.FormatINR(c.AmountMinor) }</span>
+												<span>{ utils.FormatINR(c.AmountMinor) }</span>
 											}
 										</td>
 										<td>{ c.EffectiveFrom }</td>

@@ -8,7 +8,7 @@ import (
 	"core/models"
 	"core/repositories"
 	"core/services"
-	"shared/security"
+	"core/security"
 )
 
 func TestPlatformAdminApprovalFlow(t *testing.T) {

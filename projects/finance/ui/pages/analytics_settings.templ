@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"finance/models"
 	"finance/ui/layouts"
-	"shared"
+	"core/utils"
 )
 
 type AnalyticsData struct {
@@ -35,15 +35,15 @@ templ AnalyticsView(data AnalyticsData) {
 					<h4 style="font-size: 14px; font-weight: 600; color: #74b9ff; margin-bottom: 10px;">Accrual Basis (Revenue earned, expenses incurred)</h4>
 					<div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
 						<span style="color: var(--text-muted);">Recognized Revenue:</span>
-						<strong style="color: #00b894;">{ shared.FormatINR(data.TotalAccrualRevenueMinor) }</strong>
+						<strong style="color: #00b894;">{ utils.FormatINR(data.TotalAccrualRevenueMinor) }</strong>
 					</div>
 					<div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
 						<span style="color: var(--text-muted);">Incurred Expenses:</span>
-						<strong style="color: #e17055;">{ shared.FormatINR(data.TotalExpenseMinor) }</strong>
+						<strong style="color: #e17055;">{ utils.FormatINR(data.TotalExpenseMinor) }</strong>
 					</div>
 					<div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #2d3748; font-weight: 700;">
 						<span>Net Accrual Profit:</span>
-						<span style="color: #74b9ff;">{ shared.FormatINR(data.NetAccrualProfitMinor) }</span>
+						<span style="color: #74b9ff;">{ utils.FormatINR(data.NetAccrualProfitMinor) }</span>
 					</div>
 				</div>
 
@@ -51,15 +51,15 @@ templ AnalyticsView(data AnalyticsData) {
 					<h4 style="font-size: 14px; font-weight: 600; color: #00cec9; margin-bottom: 10px;">Cash Basis (Actual cash receipts & payments)</h4>
 					<div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
 						<span style="color: var(--text-muted);">Cash Receipts (Bank):</span>
-						<strong style="color: #00b894;">{ shared.FormatINR(data.TotalCashRevenueMinor) }</strong>
+						<strong style="color: #00b894;">{ utils.FormatINR(data.TotalCashRevenueMinor) }</strong>
 					</div>
 					<div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
 						<span style="color: var(--text-muted);">Cash Payments:</span>
-						<strong style="color: #e17055;">{ shared.FormatINR(data.TotalExpenseMinor) }</strong>
+						<strong style="color: #e17055;">{ utils.FormatINR(data.TotalExpenseMinor) }</strong>
 					</div>
 					<div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #2d3748; font-weight: 700;">
 						<span>Net Cash Profit:</span>
-						<span style="color: #00cec9;">{ shared.FormatINR(data.NetCashProfitMinor) }</span>
+						<span style="color: #00cec9;">{ utils.FormatINR(data.NetCashProfitMinor) }</span>
 					</div>
 				</div>
 			</div>
@@ -69,15 +69,15 @@ templ AnalyticsView(data AnalyticsData) {
 		<div class="finance-card-grid">
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">MRR (Monthly Recurring)</div>
-				<div style="font-size: 20px; font-weight: 700; color: #00b894; margin-top: 4px;">{ shared.FormatINR(data.MRRMinor) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #00b894; margin-top: 4px;">{ utils.FormatINR(data.MRRMinor) }</div>
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">ARR (Annual Run Rate)</div>
-				<div style="font-size: 20px; font-weight: 700; color: #0984e3; margin-top: 4px;">{ shared.FormatINR(data.ARRMinor) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #0984e3; margin-top: 4px;">{ utils.FormatINR(data.ARRMinor) }</div>
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">Total Monthly Payroll Cost</div>
-				<div style="font-size: 20px; font-weight: 700; color: #fab1a0; margin-top: 4px;">{ shared.FormatINR(data.TotalPayrollMinor) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #fab1a0; margin-top: 4px;">{ utils.FormatINR(data.TotalPayrollMinor) }</div>
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">Company Operating Margin</div>

@@ -11,7 +11,7 @@ import (
 	"core/models"
 	"core/repositories"
 	"core/services"
-	"shared/security"
+	"core/security"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"

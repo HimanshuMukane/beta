@@ -12,7 +12,7 @@ import (
 	"finance/models"
 	"finance/ui/layouts"
 	"fmt"
-	"shared"
+	"core/utils"
 )
 
 func ProductTemplatesList(templates []models.FinancialTemplate) templ.Component {
@@ -166,7 +166,7 @@ func ProductTemplatesList(templates []models.FinancialTemplate) templ.Component 
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var9 string
-						templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(t.DefaultAmountMinor))
+						templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(t.DefaultAmountMinor))
 						if templ_7745c5c3_Err != nil {
 							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/templates.templ`, Line: 57, Col: 58}
 						}
@@ -383,7 +383,7 @@ func EmployeeTemplatesList(templates []models.FinancialTemplate) templ.Component
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var19 string
-						templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(t.DefaultAmountMinor))
+						templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(t.DefaultAmountMinor))
 						if templ_7745c5c3_Err != nil {
 							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/templates.templ`, Line: 126, Col: 58}
 						}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"finance/models"
 	"finance/ui/layouts"
-	"shared"
+	"core/utils"
 )
 
 templ EmployeesList(employees []models.Employee, payrollPeriods []models.PayrollPeriod) {
@@ -55,8 +55,8 @@ templ EmployeesList(employees []models.Employee, payrollPeriods []models.Payroll
 								<td>{ emp.Designation }</td>
 								<td><span class="finance-badge-pill finance-badge-draft">{ emp.EmploymentType }</span></td>
 								<td>{ emp.Department }</td>
-								<td><strong style="color: #00b894;">{ shared.FormatINR(emp.MonthlyCompensationMinor) }</strong></td>
-								<td>{ shared.FormatINR(emp.AnnualCompensationMinor) }</td>
+								<td><strong style="color: #00b894;">{ utils.FormatINR(emp.MonthlyCompensationMinor) }</strong></td>
+								<td>{ utils.FormatINR(emp.AnnualCompensationMinor) }</td>
 								<td><span class="finance-badge-pill finance-badge-active">{ emp.Status }</span></td>
 								<td>
 									<a href={ templ.SafeURL(fmt.Sprintf("/employees/detail?id=%s", emp.ID)) } style="color: #74b9ff; font-size: 12px; text-decoration: none;">Compensation →</a>
@@ -128,7 +128,7 @@ templ EmployeeDetail(emp models.Employee, comp *models.EmployeeCompensation, com
 				<div style="font-size: 12px; color: var(--text-muted);">Base Salary (Monthly)</div>
 				<div style="font-size: 20px; font-weight: 700; color: #fff; margin-top: 4px;">
 					if comp != nil {
-						{ shared.FormatINR(comp.BaseAmountMinor) }
+						{ utils.FormatINR(comp.BaseAmountMinor) }
 					} else {
 						<span>₹0</span>
 					}
@@ -136,15 +136,15 @@ templ EmployeeDetail(emp models.Employee, comp *models.EmployeeCompensation, com
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">Gross Earnings</div>
-				<div style="font-size: 20px; font-weight: 700; color: #00b894; margin-top: 4px;">{ shared.FormatINR(gross) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #00b894; margin-top: 4px;">{ utils.FormatINR(gross) }</div>
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">Employee Deductions (PF/TDS)</div>
-				<div style="font-size: 20px; font-weight: 700; color: #e17055; margin-top: 4px;">{ shared.FormatINR(deductions) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #e17055; margin-top: 4px;">{ utils.FormatINR(deductions) }</div>
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">Net Take-Home Payable</div>
-				<div style="font-size: 20px; font-weight: 700; color: #74b9ff; margin-top: 4px;">{ shared.FormatINR(net) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #74b9ff; margin-top: 4px;">{ utils.FormatINR(net) }</div>
 			</div>
 		</div>
 
@@ -185,7 +185,7 @@ templ EmployeeDetail(emp models.Employee, comp *models.EmployeeCompensation, com
 												<span>Fixed</span>
 											}
 										</td>
-										<td><strong>{ shared.FormatINR(c.AmountMinor) }</strong></td>
+										<td><strong>{ utils.FormatINR(c.AmountMinor) }</strong></td>
 										<td><span class="finance-badge-pill finance-badge-active">{ c.Status }</span></td>
 									</tr>
 								}
@@ -318,10 +318,10 @@ templ PayrollRegister(period models.PayrollPeriod, records []models.PayrollRecor
 						<tr>
 							<td><strong style="color: #fff;">{ r.EmployeeName }</strong></td>
 							<td>{ r.Department }</td>
-							<td><strong>{ shared.FormatINR(r.GrossAmountMinor) }</strong></td>
-							<td style="color: #e17055;">{ shared.FormatINR(r.EmployeeDeductionsMinor) }</td>
-							<td><strong style="color: #00b894;">{ shared.FormatINR(r.NetAmountMinor) }</strong></td>
-							<td><strong style="color: #0984e3;">{ shared.FormatINR(r.TotalEmployerCostMinor) }</strong></td>
+							<td><strong>{ utils.FormatINR(r.GrossAmountMinor) }</strong></td>
+							<td style="color: #e17055;">{ utils.FormatINR(r.EmployeeDeductionsMinor) }</td>
+							<td><strong style="color: #00b894;">{ utils.FormatINR(r.NetAmountMinor) }</strong></td>
+							<td><strong style="color: #0984e3;">{ utils.FormatINR(r.TotalEmployerCostMinor) }</strong></td>
 							<td><span class="finance-badge-pill finance-badge-posted">{ r.Status }</span></td>
 						</tr>
 					}

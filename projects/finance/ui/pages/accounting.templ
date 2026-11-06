@@ -4,7 +4,7 @@ import (
 	"finance/models"
 	"finance/services"
 	"finance/ui/layouts"
-	"shared"
+	"core/utils"
 )
 
 templ ChartOfAccountsView(accounts []models.ChartOfAccount) {
@@ -49,9 +49,9 @@ templ ChartOfAccountsView(accounts []models.ChartOfAccount) {
 									<span class="finance-badge-pill finance-badge-posted">EQUITY</span>
 								}
 							</td>
-							<td>{ shared.FormatINR(a.DebitTotalMinor) }</td>
-							<td>{ shared.FormatINR(a.CreditTotalMinor) }</td>
-							<td><strong>{ shared.FormatINR(a.BalanceMinor) }</strong></td>
+							<td>{ utils.FormatINR(a.DebitTotalMinor) }</td>
+							<td>{ utils.FormatINR(a.CreditTotalMinor) }</td>
+							<td><strong>{ utils.FormatINR(a.BalanceMinor) }</strong></td>
 						</tr>
 					}
 				</tbody>
@@ -96,8 +96,8 @@ templ JournalEntriesView(entries []models.JournalEntry) {
 								<td><strong style="color: #74b9ff;">{ e.EntryNumber }</strong></td>
 								<td>{ e.EntryDate }</td>
 								<td>{ e.Description }</td>
-								<td><strong style="color: #00b894;">{ shared.FormatINR(e.TotalDebitMinor) }</strong></td>
-								<td><strong style="color: #0984e3;">{ shared.FormatINR(e.TotalCreditMinor) }</strong></td>
+								<td><strong style="color: #00b894;">{ utils.FormatINR(e.TotalDebitMinor) }</strong></td>
+								<td><strong style="color: #0984e3;">{ utils.FormatINR(e.TotalCreditMinor) }</strong></td>
 								<td><span class="finance-badge-pill finance-badge-posted">{ e.Status }</span></td>
 							</tr>
 						}
@@ -186,19 +186,19 @@ templ FinancialStatementsView(fs services.FinancialStatements) {
 		<div class="finance-card-grid">
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">Total Income (P&L)</div>
-				<div style="font-size: 20px; font-weight: 700; color: #00b894; margin-top: 4px;">{ shared.FormatINR(fs.TotalIncomeMinor) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #00b894; margin-top: 4px;">{ utils.FormatINR(fs.TotalIncomeMinor) }</div>
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">Total Expenses (P&L)</div>
-				<div style="font-size: 20px; font-weight: 700; color: #e17055; margin-top: 4px;">{ shared.FormatINR(fs.TotalExpenseMinor) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #e17055; margin-top: 4px;">{ utils.FormatINR(fs.TotalExpenseMinor) }</div>
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">Net Profit / Loss</div>
-				<div style="font-size: 20px; font-weight: 700; color: #74b9ff; margin-top: 4px;">{ shared.FormatINR(fs.NetProfitMinor) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #74b9ff; margin-top: 4px;">{ utils.FormatINR(fs.NetProfitMinor) }</div>
 			</div>
 			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
 				<div style="font-size: 12px; color: var(--text-muted);">Net Cash Flow</div>
-				<div style="font-size: 20px; font-weight: 700; color: #00cec9; margin-top: 4px;">{ shared.FormatINR(fs.NetCashFlowMinor) }</div>
+				<div style="font-size: 20px; font-weight: 700; color: #00cec9; margin-top: 4px;">{ utils.FormatINR(fs.NetCashFlowMinor) }</div>
 			</div>
 		</div>
 
@@ -212,12 +212,12 @@ templ FinancialStatementsView(fs services.FinancialStatements) {
 					for _, inc := range fs.IncomeAccounts {
 						<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
 							<span>{ inc.Name }</span>
-							<strong>{ shared.FormatINR(inc.BalanceMinor) }</strong>
+							<strong>{ utils.FormatINR(inc.BalanceMinor) }</strong>
 						</div>
 					}
 					<div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 700; font-size: 13px; color: #00b894;">
 						<span>Total Revenue</span>
-						<span>{ shared.FormatINR(fs.TotalIncomeMinor) }</span>
+						<span>{ utils.FormatINR(fs.TotalIncomeMinor) }</span>
 					</div>
 				</div>
 
@@ -226,18 +226,18 @@ templ FinancialStatementsView(fs services.FinancialStatements) {
 					for _, exp := range fs.ExpenseAccounts {
 						<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
 							<span>{ exp.Name }</span>
-							<strong>{ shared.FormatINR(exp.BalanceMinor) }</strong>
+							<strong>{ utils.FormatINR(exp.BalanceMinor) }</strong>
 						</div>
 					}
 					<div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 700; font-size: 13px; color: #e17055;">
 						<span>Total Expenses</span>
-						<span>{ shared.FormatINR(fs.TotalExpenseMinor) }</span>
+						<span>{ utils.FormatINR(fs.TotalExpenseMinor) }</span>
 					</div>
 				</div>
 
 				<div style="display: flex; justify-content: space-between; padding: 12px 0; margin-top: 15px; border-top: 2px solid #2d3748; font-weight: 700; font-size: 15px; color: #74b9ff;">
 					<span>NET PROFIT</span>
-					<span>{ shared.FormatINR(fs.NetProfitMinor) }</span>
+					<span>{ utils.FormatINR(fs.NetProfitMinor) }</span>
 				</div>
 			</div>
 
@@ -249,12 +249,12 @@ templ FinancialStatementsView(fs services.FinancialStatements) {
 					for _, a := range fs.AssetAccounts {
 						<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
 							<span>{ a.Name }</span>
-							<strong>{ shared.FormatINR(a.BalanceMinor) }</strong>
+							<strong>{ utils.FormatINR(a.BalanceMinor) }</strong>
 						</div>
 					}
 					<div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 700; font-size: 13px; color: #74b9ff;">
 						<span>Total Assets</span>
-						<span>{ shared.FormatINR(fs.TotalAssetsMinor) }</span>
+						<span>{ utils.FormatINR(fs.TotalAssetsMinor) }</span>
 					</div>
 				</div>
 
@@ -263,12 +263,12 @@ templ FinancialStatementsView(fs services.FinancialStatements) {
 					for _, l := range fs.LiabilityAccounts {
 						<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
 							<span>{ l.Name }</span>
-							<strong>{ shared.FormatINR(l.BalanceMinor) }</strong>
+							<strong>{ utils.FormatINR(l.BalanceMinor) }</strong>
 						</div>
 					}
 					<div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 700; font-size: 13px; color: #fab1a0;">
 						<span>Total Liabilities</span>
-						<span>{ shared.FormatINR(fs.TotalLiabMinor) }</span>
+						<span>{ utils.FormatINR(fs.TotalLiabMinor) }</span>
 					</div>
 				</div>
 
@@ -277,16 +277,16 @@ templ FinancialStatementsView(fs services.FinancialStatements) {
 					for _, eq := range fs.EquityAccounts {
 						<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
 							<span>{ eq.Name }</span>
-							<strong>{ shared.FormatINR(eq.BalanceMinor) }</strong>
+							<strong>{ utils.FormatINR(eq.BalanceMinor) }</strong>
 						</div>
 					}
 					<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
 						<span>Current Year Net Earnings</span>
-						<strong>{ shared.FormatINR(fs.NetProfitMinor) }</strong>
+						<strong>{ utils.FormatINR(fs.NetProfitMinor) }</strong>
 					</div>
 					<div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 700; font-size: 13px; color: #a29bfe;">
 						<span>Total Equity</span>
-						<span>{ shared.FormatINR(fs.TotalEquityMinor + fs.NetProfitMinor) }</span>
+						<span>{ utils.FormatINR(fs.TotalEquityMinor + fs.NetProfitMinor) }</span>
 					</div>
 				</div>
 			</div>

@@ -13,7 +13,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"chi-mysql-server/routes"
-	"shared/security"
+	"core/security"
 	"core/utils"
 )
 

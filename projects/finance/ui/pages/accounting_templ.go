@@ -12,7 +12,7 @@ import (
 	"finance/models"
 	"finance/services"
 	"finance/ui/layouts"
-	"shared"
+	"core/utils"
 )
 
 func ChartOfAccountsView(accounts []models.ChartOfAccount) templ.Component {
@@ -114,7 +114,7 @@ func ChartOfAccountsView(accounts []models.ChartOfAccount) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var5 string
-				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(a.DebitTotalMinor))
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(a.DebitTotalMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 52, Col: 48}
 				}
@@ -127,7 +127,7 @@ func ChartOfAccountsView(accounts []models.ChartOfAccount) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 string
-				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(a.CreditTotalMinor))
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(a.CreditTotalMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 53, Col: 49}
 				}
@@ -140,7 +140,7 @@ func ChartOfAccountsView(accounts []models.ChartOfAccount) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var7 string
-				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(a.BalanceMinor))
+				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(a.BalanceMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 54, Col: 53}
 				}
@@ -259,7 +259,7 @@ func JournalEntriesView(entries []models.JournalEntry) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var13 string
-					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(e.TotalDebitMinor))
+					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(e.TotalDebitMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 99, Col: 81}
 					}
@@ -272,7 +272,7 @@ func JournalEntriesView(entries []models.JournalEntry) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var14 string
-					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(e.TotalCreditMinor))
+					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(e.TotalCreditMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 100, Col: 82}
 					}
@@ -522,7 +522,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var28 string
-			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(fs.TotalIncomeMinor))
+			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(fs.TotalIncomeMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 189, Col: 124}
 			}
@@ -535,7 +535,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var29 string
-			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(fs.TotalExpenseMinor))
+			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(fs.TotalExpenseMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 193, Col: 125}
 			}
@@ -548,7 +548,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var30 string
-			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(fs.NetProfitMinor))
+			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(fs.NetProfitMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 197, Col: 122}
 			}
@@ -561,7 +561,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var31 string
-			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(fs.NetCashFlowMinor))
+			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(fs.NetCashFlowMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 201, Col: 124}
 			}
@@ -592,7 +592,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var33 string
-				templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(inc.BalanceMinor))
+				templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(inc.BalanceMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 215, Col: 51}
 				}
@@ -610,7 +610,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var34 string
-			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(fs.TotalIncomeMinor))
+			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(fs.TotalIncomeMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 220, Col: 51}
 			}
@@ -641,7 +641,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var36 string
-				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(exp.BalanceMinor))
+				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(exp.BalanceMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 229, Col: 51}
 				}
@@ -659,7 +659,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var37 string
-			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(fs.TotalExpenseMinor))
+			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(fs.TotalExpenseMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 234, Col: 52}
 			}
@@ -672,7 +672,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var38 string
-			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(fs.NetProfitMinor))
+			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(fs.NetProfitMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 240, Col: 48}
 			}
@@ -703,7 +703,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var40 string
-				templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(a.BalanceMinor))
+				templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(a.BalanceMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 252, Col: 49}
 				}
@@ -721,7 +721,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var41 string
-			templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(fs.TotalAssetsMinor))
+			templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(fs.TotalAssetsMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 257, Col: 51}
 			}
@@ -752,7 +752,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var43 string
-				templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(l.BalanceMinor))
+				templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(l.BalanceMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 266, Col: 49}
 				}
@@ -770,7 +770,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var44 string
-			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(fs.TotalLiabMinor))
+			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(fs.TotalLiabMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 271, Col: 49}
 			}
@@ -801,7 +801,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var46 string
-				templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(eq.BalanceMinor))
+				templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(eq.BalanceMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 280, Col: 50}
 				}
@@ -819,7 +819,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var47 string
-			templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(fs.NetProfitMinor))
+			templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(fs.NetProfitMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 285, Col: 51}
 			}
@@ -832,7 +832,7 @@ func FinancialStatementsView(fs services.FinancialStatements) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var48 string
-			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(fs.TotalEquityMinor + fs.NetProfitMinor))
+			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(fs.TotalEquityMinor + fs.NetProfitMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/accounting.templ`, Line: 289, Col: 71}
 			}

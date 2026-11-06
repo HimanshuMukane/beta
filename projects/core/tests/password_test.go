@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"shared/security"
+	"core/security"
 )
 
 func TestHashPasswordAndVerify(t *testing.T) {

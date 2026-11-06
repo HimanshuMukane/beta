@@ -7,7 +7,7 @@ import (
 	"core/models"
 	"core/repositories"
 	"core/utils"
-	"shared/security"
+	"core/security"
 )
 
 type Middleware func(http.Handler) http.Handler

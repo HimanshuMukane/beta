@@ -3,7 +3,7 @@ package pages
 import (
 	"fmt"
 	"finance/ui/layouts"
-	"shared"
+	"core/utils"
 	"components"
 )
 
@@ -43,17 +43,17 @@ templ Overview(data OverviewData) {
 		</div>
 
 		<div class="finance-card-grid">
-			@components.StatCard("Monthly Recurring Revenue (MRR)", shared.FormatINR(data.MRRMinor), "Active Software", true, "dollar")
-			@components.StatCard("Annual Recurring Revenue (ARR)", shared.FormatINR(data.ARRMinor), "Run Rate", true, "trending-up")
-			@components.StatCard("Total Revenue (Accrual)", shared.FormatINR(data.TotalRevenueMinor), "P&L Recognized", true, "chart")
-			@components.StatCard("Net Profit", shared.FormatINR(data.NetProfitMinor), "Accrual Net", data.NetProfitMinor >= 0, "sparkles")
+			@components.StatCard("Monthly Recurring Revenue (MRR)", utils.FormatINR(data.MRRMinor), "Active Software", true, "dollar")
+			@components.StatCard("Annual Recurring Revenue (ARR)", utils.FormatINR(data.ARRMinor), "Run Rate", true, "trending-up")
+			@components.StatCard("Total Revenue (Accrual)", utils.FormatINR(data.TotalRevenueMinor), "P&L Recognized", true, "chart")
+			@components.StatCard("Net Profit", utils.FormatINR(data.NetProfitMinor), "Accrual Net", data.NetProfitMinor >= 0, "sparkles")
 		</div>
 
 		<div class="finance-card-grid">
-			@components.StatCard("Outstanding Receivables", shared.FormatINR(data.ReceivablesMinor), "Awaiting Collection", false, "clock")
-			@components.StatCard("Outstanding Payables", shared.FormatINR(data.PayablesMinor), "Vendor/Taxes Due", false, "target")
-			@components.StatCard("Total Company Expenses", shared.FormatINR(data.TotalExpensesMinor), "Operating Cost", false, "folder")
-			@components.StatCard("Monthly Payroll Cost", shared.FormatINR(data.PayrollExpenseMinor), fmt.Sprintf("%d Employees", data.EmployeeCount), true, "users")
+			@components.StatCard("Outstanding Receivables", utils.FormatINR(data.ReceivablesMinor), "Awaiting Collection", false, "clock")
+			@components.StatCard("Outstanding Payables", utils.FormatINR(data.PayablesMinor), "Vendor/Taxes Due", false, "target")
+			@components.StatCard("Total Company Expenses", utils.FormatINR(data.TotalExpensesMinor), "Operating Cost", false, "folder")
+			@components.StatCard("Monthly Payroll Cost", utils.FormatINR(data.PayrollExpenseMinor), fmt.Sprintf("%d Employees", data.EmployeeCount), true, "users")
 		</div>
 
 		<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px;">
@@ -80,7 +80,7 @@ templ Overview(data OverviewData) {
 									<td>{ entry.Date }</td>
 									<td><strong style="color: #74b9ff;">{ entry.Number }</strong></td>
 									<td>{ entry.Description }</td>
-									<td><strong>{ shared.FormatINR(entry.AmountMinor) }</strong></td>
+									<td><strong>{ utils.FormatINR(entry.AmountMinor) }</strong></td>
 									<td><span class="finance-badge-pill finance-badge-posted">POSTED</span></td>
 								</tr>
 							}

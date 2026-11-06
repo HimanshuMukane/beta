@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"finance/models"
 	"finance/ui/layouts"
-	"shared"
+	"core/utils"
 )
 
 templ InvoicesList(invoices []models.Invoice) {
@@ -47,9 +47,9 @@ templ InvoicesList(invoices []models.Invoice) {
 								<td>{ inv.ClientName }</td>
 								<td>{ inv.InvoiceDate }</td>
 								<td>{ inv.DueDate }</td>
-								<td>{ shared.FormatINR(inv.SubtotalMinor) }</td>
-								<td>{ shared.FormatINR(inv.TaxMinor) }</td>
-								<td><strong style="color: #fff;">{ shared.FormatINR(inv.TotalMinor) }</strong></td>
+								<td>{ utils.FormatINR(inv.SubtotalMinor) }</td>
+								<td>{ utils.FormatINR(inv.TaxMinor) }</td>
+								<td><strong style="color: #fff;">{ utils.FormatINR(inv.TotalMinor) }</strong></td>
 								<td>
 									if inv.Status == "paid" {
 										<span class="finance-badge-pill finance-badge-paid">PAID</span>
@@ -174,7 +174,7 @@ templ PaymentsList(payments []models.Payment) {
 										<span>-</span>
 									}
 								</td>
-								<td><strong style="color: #00b894;">{ shared.FormatINR(p.AmountMinor) }</strong></td>
+								<td><strong style="color: #00b894;">{ utils.FormatINR(p.AmountMinor) }</strong></td>
 								<td><span class="finance-badge-pill finance-badge-posted">{ p.Status }</span></td>
 							</tr>
 						}
@@ -195,7 +195,7 @@ templ PaymentCreate(invoices []models.Invoice, preselectedInvoiceID string) {
 					<select name="invoice_id">
 						<option value="">-- No specific invoice (Direct receipt) --</option>
 						for _, inv := range invoices {
-							<option value={ inv.ID } selected?={ inv.ID == preselectedInvoiceID }>{ inv.InvoiceNumber } - { inv.ClientName } ({ shared.FormatINR(inv.TotalMinor) })</option>
+							<option value={ inv.ID } selected?={ inv.ID == preselectedInvoiceID }>{ inv.InvoiceNumber } - { inv.ClientName } ({ utils.FormatINR(inv.TotalMinor) })</option>
 						}
 					</select>
 				</div>
@@ -266,7 +266,7 @@ templ BillsList(bills []models.Bill) {
 								<td><strong style="color: #fff;">{ b.VendorName }</strong></td>
 								<td>{ b.BillDate }</td>
 								<td>{ b.DueDate }</td>
-								<td><strong style="color: #e17055;">{ shared.FormatINR(b.TotalMinor) }</strong></td>
+								<td><strong style="color: #e17055;">{ utils.FormatINR(b.TotalMinor) }</strong></td>
 								<td><span class="finance-badge-pill finance-badge-pending">{ b.Status }</span></td>
 							</tr>
 						}

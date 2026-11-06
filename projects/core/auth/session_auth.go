@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"shared/security"
+	"core/security"
 )
 
 type SessionAuthConfig struct {

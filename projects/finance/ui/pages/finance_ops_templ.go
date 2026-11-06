@@ -12,7 +12,7 @@ import (
 	"finance/models"
 	"finance/ui/layouts"
 	"fmt"
-	"shared"
+	"core/utils"
 )
 
 func InvoicesList(invoices []models.Invoice) templ.Component {
@@ -120,7 +120,7 @@ func InvoicesList(invoices []models.Invoice) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var7 string
-					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(inv.SubtotalMinor))
+					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(inv.SubtotalMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/finance_ops.templ`, Line: 50, Col: 49}
 					}
@@ -133,7 +133,7 @@ func InvoicesList(invoices []models.Invoice) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var8 string
-					templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(inv.TaxMinor))
+					templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(inv.TaxMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/finance_ops.templ`, Line: 51, Col: 44}
 					}
@@ -146,7 +146,7 @@ func InvoicesList(invoices []models.Invoice) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var9 string
-					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(inv.TotalMinor))
+					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(inv.TotalMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/finance_ops.templ`, Line: 52, Col: 75}
 					}
@@ -435,7 +435,7 @@ func PaymentsList(payments []models.Payment) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var21 string
-					templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(p.AmountMinor))
+					templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(p.AmountMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/finance_ops.templ`, Line: 177, Col: 77}
 					}
@@ -568,7 +568,7 @@ func PaymentCreate(invoices []models.Invoice, preselectedInvoiceID string) templ
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var28 string
-				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(inv.TotalMinor))
+				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(inv.TotalMinor))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/finance_ops.templ`, Line: 198, Col: 155}
 				}
@@ -700,7 +700,7 @@ func BillsList(bills []models.Bill) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var35 string
-					templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(b.TotalMinor))
+					templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(b.TotalMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/finance_ops.templ`, Line: 269, Col: 76}
 					}

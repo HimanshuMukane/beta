@@ -12,7 +12,7 @@ import (
 	"finance/models"
 	"finance/ui/layouts"
 	"fmt"
-	"shared"
+	"core/utils"
 )
 
 func ProductsList(products []models.Product) templ.Component {
@@ -146,7 +146,7 @@ func ProductsList(products []models.Product) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var9 string
-					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(p.MonthlyRevenue))
+					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(p.MonthlyRevenue))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/products.templ`, Line: 55, Col: 80}
 					}
@@ -159,7 +159,7 @@ func ProductsList(products []models.Product) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var10 string
-					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(p.AnnualRevenue))
+					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(p.AnnualRevenue))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/products.templ`, Line: 56, Col: 79}
 					}
@@ -172,7 +172,7 @@ func ProductsList(products []models.Product) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var11 string
-					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(p.OneTimeRevenue))
+					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(p.OneTimeRevenue))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/products.templ`, Line: 57, Col: 48}
 					}
@@ -329,7 +329,7 @@ func ProductDetail(p models.Product, clientProducts []models.ClientProduct, pric
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var21 string
-			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(p.MonthlyRevenue))
+			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(p.MonthlyRevenue))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/products.templ`, Line: 94, Col: 121}
 			}
@@ -342,7 +342,7 @@ func ProductDetail(p models.Product, clientProducts []models.ClientProduct, pric
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var22 string
-			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(p.AnnualRevenue))
+			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(p.AnnualRevenue))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/products.templ`, Line: 98, Col: 120}
 			}
@@ -355,7 +355,7 @@ func ProductDetail(p models.Product, clientProducts []models.ClientProduct, pric
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var23 string
-			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(p.OneTimeRevenue))
+			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(p.OneTimeRevenue))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/products.templ`, Line: 102, Col: 118}
 			}
@@ -506,7 +506,7 @@ func ProductDetail(p models.Product, clientProducts []models.ClientProduct, pric
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var31 string
-					templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(pr.AmountMinor))
+					templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(pr.AmountMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/products.templ`, Line: 171, Col: 56}
 					}
@@ -519,7 +519,7 @@ func ProductDetail(p models.Product, clientProducts []models.ClientProduct, pric
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var32 string
-					templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(pr.MonthlyEquivalentMinor))
+					templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(pr.MonthlyEquivalentMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/products.templ`, Line: 172, Col: 59}
 					}
@@ -532,7 +532,7 @@ func ProductDetail(p models.Product, clientProducts []models.ClientProduct, pric
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var33 string
-					templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(pr.AnnualEquivalentMinor))
+					templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(pr.AnnualEquivalentMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/products.templ`, Line: 173, Col: 58}
 					}
@@ -645,7 +645,7 @@ func ProductDetail(p models.Product, clientProducts []models.ClientProduct, pric
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var39 string
-						templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(c.AmountMinor))
+						templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(c.AmountMinor))
 						if templ_7745c5c3_Err != nil {
 							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/products.templ`, Line: 210, Col: 51}
 						}

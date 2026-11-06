@@ -13,7 +13,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"superadmin/routes"
-	"shared/security"
+	"core/security"
 	"core/utils"
 )
 

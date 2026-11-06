@@ -9,5 +9,4 @@ use (
 	./projects/finance
 	./projects/photography_crm
 	./projects/superadmin
-	./shared
 )

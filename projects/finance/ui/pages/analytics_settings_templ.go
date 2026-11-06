@@ -12,7 +12,7 @@ import (
 	"finance/models"
 	"finance/ui/layouts"
 	"fmt"
-	"shared"
+	"core/utils"
 )
 
 type AnalyticsData struct {
@@ -64,7 +64,7 @@ func AnalyticsView(data AnalyticsData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
-			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(data.TotalAccrualRevenueMinor))
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(data.TotalAccrualRevenueMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/analytics_settings.templ`, Line: 38, Col: 87}
 			}
@@ -77,7 +77,7 @@ func AnalyticsView(data AnalyticsData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(data.TotalExpenseMinor))
+			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(data.TotalExpenseMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/analytics_settings.templ`, Line: 42, Col: 80}
 			}
@@ -90,7 +90,7 @@ func AnalyticsView(data AnalyticsData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(data.NetAccrualProfitMinor))
+			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(data.NetAccrualProfitMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/analytics_settings.templ`, Line: 46, Col: 82}
 			}
@@ -103,7 +103,7 @@ func AnalyticsView(data AnalyticsData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(data.TotalCashRevenueMinor))
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(data.TotalCashRevenueMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/analytics_settings.templ`, Line: 54, Col: 84}
 			}
@@ -116,7 +116,7 @@ func AnalyticsView(data AnalyticsData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
-			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(data.TotalExpenseMinor))
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(data.TotalExpenseMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/analytics_settings.templ`, Line: 58, Col: 80}
 			}
@@ -129,7 +129,7 @@ func AnalyticsView(data AnalyticsData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var8 string
-			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(data.NetCashProfitMinor))
+			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(data.NetCashProfitMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/analytics_settings.templ`, Line: 62, Col: 79}
 			}
@@ -142,7 +142,7 @@ func AnalyticsView(data AnalyticsData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 string
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(data.MRRMinor))
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(data.MRRMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/analytics_settings.templ`, Line: 72, Col: 118}
 			}
@@ -155,7 +155,7 @@ func AnalyticsView(data AnalyticsData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 string
-			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(data.ARRMinor))
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(data.ARRMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/analytics_settings.templ`, Line: 76, Col: 118}
 			}
@@ -168,7 +168,7 @@ func AnalyticsView(data AnalyticsData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 string
-			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(data.TotalPayrollMinor))
+			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(data.TotalPayrollMinor))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/analytics_settings.templ`, Line: 80, Col: 127}
 			}

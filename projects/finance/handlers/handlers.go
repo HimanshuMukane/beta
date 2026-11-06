@@ -12,7 +12,7 @@ import (
 	"finance/ui/pages"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"shared"
+	"core/utils"
 )
 
 type FinanceHandlers struct {
@@ -471,7 +471,7 @@ func (h *FinanceHandlers) AddEmployeeComponentHandler(w http.ResponseWriter, r *
 		percentage = int64(valFloat * 100)
 		var baseMinor int64
 		_ = h.DB.GetContext(ctx, &baseMinor, "SELECT base_amount_minor FROM employee_compensations WHERE id = ?", compensationID)
-		amountMinor = shared.CalculatePercentageMinor(baseMinor, percentage)
+		amountMinor = utils.CalculatePercentageMinor(baseMinor, percentage)
 	} else {
 		amountMinor = int64(valFloat * 100)
 	}

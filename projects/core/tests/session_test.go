@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"shared/security"
+	"core/security"
 
 	"github.com/google/uuid"
 )

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"finance/models"
 	"finance/ui/layouts"
-	"shared"
+	"core/utils"
 )
 
 templ ProductTemplatesList(templates []models.FinancialTemplate) {
@@ -54,7 +54,7 @@ templ ProductTemplatesList(templates []models.FinancialTemplate) {
 									if t.CalculationType == "percentage" {
 										<strong>{ fmt.Sprintf("%.2f%%", float64(t.DefaultPercentage)/100.0) }</strong>
 									} else {
-										<strong>{ shared.FormatINR(t.DefaultAmountMinor) }</strong>
+										<strong>{ utils.FormatINR(t.DefaultAmountMinor) }</strong>
 									}
 								</td>
 								<td><code>{ t.DefaultCalculationBase }</code></td>
@@ -123,7 +123,7 @@ templ EmployeeTemplatesList(templates []models.FinancialTemplate) {
 									if t.CalculationType == "percentage" {
 										<strong>{ fmt.Sprintf("%.2f%%", float64(t.DefaultPercentage)/100.0) }</strong>
 									} else {
-										<strong>{ shared.FormatINR(t.DefaultAmountMinor) }</strong>
+										<strong>{ utils.FormatINR(t.DefaultAmountMinor) }</strong>
 									}
 								</td>
 								<td><code>{ t.DefaultCalculationBase }</code></td>

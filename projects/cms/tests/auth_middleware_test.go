@@ -10,7 +10,7 @@ import (
 
 	"core/middleware"
 	"core/models"
-	"shared/security"
+	"core/security"
 	"core/utils"
 
 	"github.com/google/uuid"

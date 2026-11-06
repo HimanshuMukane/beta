@@ -2,7 +2,7 @@ package services
 
 import (
 	"finance/models"
-	"shared"
+	"core/utils"
 )
 
 func AnnualizeAmount(amountMinor int64, frequency string) int64 {
@@ -37,7 +37,7 @@ func MonthlyEquivalent(amountMinor int64, frequency string) int64 {
 
 func CalculateComponentAmount(calcType string, fixedAmountMinor int64, percentageBasisPoints int64, baseMinor int64) int64 {
 	if calcType == "percentage" {
-		return shared.CalculatePercentageMinor(baseMinor, percentageBasisPoints)
+		return utils.CalculatePercentageMinor(baseMinor, percentageBasisPoints)
 	}
 	return fixedAmountMinor
 }
@@ -61,7 +61,7 @@ func CalculateProductTotals(pricingItems []models.PricingItem, components []mode
 		}
 		amt := comp.AmountMinor
 		if comp.CalculationType == "percentage" {
-			amt = shared.CalculatePercentageMinor(mrr, comp.Percentage)
+			amt = utils.CalculatePercentageMinor(mrr, comp.Percentage)
 		}
 
 		if comp.Classification == "expense" || comp.Classification == "contra_revenue" {
@@ -80,7 +80,7 @@ func CalculatePayrollBreakdown(baseSalaryMinor int64, components []models.Employ
 		}
 		amt := c.AmountMinor
 		if c.CalculationType == "percentage" {
-			amt = shared.CalculatePercentageMinor(baseSalaryMinor, c.Percentage)
+			amt = utils.CalculatePercentageMinor(baseSalaryMinor, c.Percentage)
 		}
 
 		switch c.Classification {

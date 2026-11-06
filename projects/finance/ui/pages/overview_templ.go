@@ -12,7 +12,7 @@ import (
 	"components"
 	"finance/ui/layouts"
 	"fmt"
-	"shared"
+	"core/utils"
 )
 
 type OverviewData struct {
@@ -74,19 +74,19 @@ func Overview(data OverviewData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.StatCard("Monthly Recurring Revenue (MRR)", shared.FormatINR(data.MRRMinor), "Active Software", true, "dollar").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.StatCard("Monthly Recurring Revenue (MRR)", utils.FormatINR(data.MRRMinor), "Active Software", true, "dollar").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.StatCard("Annual Recurring Revenue (ARR)", shared.FormatINR(data.ARRMinor), "Run Rate", true, "trending-up").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.StatCard("Annual Recurring Revenue (ARR)", utils.FormatINR(data.ARRMinor), "Run Rate", true, "trending-up").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.StatCard("Total Revenue (Accrual)", shared.FormatINR(data.TotalRevenueMinor), "P&L Recognized", true, "chart").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.StatCard("Total Revenue (Accrual)", utils.FormatINR(data.TotalRevenueMinor), "P&L Recognized", true, "chart").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.StatCard("Net Profit", shared.FormatINR(data.NetProfitMinor), "Accrual Net", data.NetProfitMinor >= 0, "sparkles").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.StatCard("Net Profit", utils.FormatINR(data.NetProfitMinor), "Accrual Net", data.NetProfitMinor >= 0, "sparkles").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -94,19 +94,19 @@ func Overview(data OverviewData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.StatCard("Outstanding Receivables", shared.FormatINR(data.ReceivablesMinor), "Awaiting Collection", false, "clock").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.StatCard("Outstanding Receivables", utils.FormatINR(data.ReceivablesMinor), "Awaiting Collection", false, "clock").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.StatCard("Outstanding Payables", shared.FormatINR(data.PayablesMinor), "Vendor/Taxes Due", false, "target").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.StatCard("Outstanding Payables", utils.FormatINR(data.PayablesMinor), "Vendor/Taxes Due", false, "target").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.StatCard("Total Company Expenses", shared.FormatINR(data.TotalExpensesMinor), "Operating Cost", false, "folder").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.StatCard("Total Company Expenses", utils.FormatINR(data.TotalExpensesMinor), "Operating Cost", false, "folder").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.StatCard("Monthly Payroll Cost", shared.FormatINR(data.PayrollExpenseMinor), fmt.Sprintf("%d Employees", data.EmployeeCount), true, "users").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.StatCard("Monthly Payroll Cost", utils.FormatINR(data.PayrollExpenseMinor), fmt.Sprintf("%d Employees", data.EmployeeCount), true, "users").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -169,7 +169,7 @@ func Overview(data OverviewData) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var6 string
-					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(shared.FormatINR(entry.AmountMinor))
+					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatINR(entry.AmountMinor))
 					if templ_7745c5c3_Err != nil {
 						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/finance/ui/pages/overview.templ`, Line: 83, Col: 58}
 					}
