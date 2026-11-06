@@ -6,6 +6,7 @@ use (
 	./components
 	./projects/cms
 	./projects/core
+	./projects/finance
 	./projects/photography_crm
 	./projects/superadmin
 	./shared

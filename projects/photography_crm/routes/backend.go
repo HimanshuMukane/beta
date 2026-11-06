@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"chi-mysql-server/handlers"
 	coreHandlers "core/handlers"
 	"core/middleware"
 	"core/utils"
@@ -44,9 +45,11 @@ func RegisterBackendRoutes(
 
 	r.Route("/api/auth", func(r chi.Router) {
 		r.Post("/login", coreHandlers.LoginAPIHandler(cfg))
+		r.Post("/register-business", handlers.RegisterBusinessAPIHandler(cfg))
 		r.Post("/signup", coreHandlers.SignupAPIHandler(cfg))
 		r.Post("/logout", coreHandlers.LogoutAPIHandler(cfg))
 
 		r.With(middleware.RequireAuth(cfg)).Get("/me", coreHandlers.MeAPIHandler())
+		r.With(middleware.RequireAuth(cfg)).Get("/workspaces", handlers.WorkspacesAPIHandler())
 	})
 }

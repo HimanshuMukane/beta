@@ -1,0 +1,295 @@
+package pages
+
+import (
+	"finance/models"
+	"finance/services"
+	"finance/ui/layouts"
+	"shared"
+)
+
+templ ChartOfAccountsView(accounts []models.ChartOfAccount) {
+	@layouts.MainLayout("Chart of Accounts", "coa", []layouts.Breadcrumb{{Label: "Accounting"}, {Label: "Chart of Accounts"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Chart of Accounts</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Double-entry general ledger accounts: Assets, Liabilities, Equity, Income, Expenses</p>
+			</div>
+			<div>
+				<a href="/accounting/journal/new" class="finance-action-btn">+ New Journal Entry</a>
+			</div>
+		</div>
+
+		<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; overflow: hidden;">
+			<table class="finance-table" style="margin-top: 0;">
+				<thead>
+					<tr>
+						<th>Code</th>
+						<th>Account Name</th>
+						<th>Type</th>
+						<th>Total Debits</th>
+						<th>Total Credits</th>
+						<th>Current Balance</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, a := range accounts {
+						<tr>
+							<td><code>{ a.Code }</code></td>
+							<td><strong style="color: #fff;">{ a.Name }</strong></td>
+							<td>
+								if a.AccountType == "asset" {
+									<span class="finance-badge-pill finance-badge-active">ASSET</span>
+								} else if a.AccountType == "liability" {
+									<span class="finance-badge-pill finance-badge-pending">LIABILITY</span>
+								} else if a.AccountType == "income" {
+									<span class="finance-badge-pill finance-badge-posted">INCOME</span>
+								} else if a.AccountType == "expense" {
+									<span class="finance-badge-pill finance-badge-draft">EXPENSE</span>
+								} else {
+									<span class="finance-badge-pill finance-badge-posted">EQUITY</span>
+								}
+							</td>
+							<td>{ shared.FormatINR(a.DebitTotalMinor) }</td>
+							<td>{ shared.FormatINR(a.CreditTotalMinor) }</td>
+							<td><strong>{ shared.FormatINR(a.BalanceMinor) }</strong></td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}
+
+templ JournalEntriesView(entries []models.JournalEntry) {
+	@layouts.MainLayout("Journal Entries", "journal", []layouts.Breadcrumb{{Label: "Accounting"}, {Label: "Journal Entries"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Journal Entries</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Double-entry financial journal. All posted transactions must balance debits and credits.</p>
+			</div>
+			<div>
+				<a href="/accounting/journal/new" class="finance-action-btn">+ New Journal Entry</a>
+			</div>
+		</div>
+
+		if len(entries) == 0 {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 40px; text-align: center;">
+				<p style="color: var(--text-muted); margin-bottom: 15px;">No journal entries posted yet.</p>
+				<a href="/accounting/journal/new" class="finance-action-btn">+ Post Opening Balance / Journal Entry</a>
+			</div>
+		} else {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; overflow: hidden;">
+				<table class="finance-table" style="margin-top: 0;">
+					<thead>
+						<tr>
+							<th>Entry #</th>
+							<th>Date</th>
+							<th>Description</th>
+							<th>Debit</th>
+							<th>Credit</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, e := range entries {
+							<tr>
+								<td><strong style="color: #74b9ff;">{ e.EntryNumber }</strong></td>
+								<td>{ e.EntryDate }</td>
+								<td>{ e.Description }</td>
+								<td><strong style="color: #00b894;">{ shared.FormatINR(e.TotalDebitMinor) }</strong></td>
+								<td><strong style="color: #0984e3;">{ shared.FormatINR(e.TotalCreditMinor) }</strong></td>
+								<td><span class="finance-badge-pill finance-badge-posted">{ e.Status }</span></td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}
+
+templ JournalEntryCreate(accounts []models.ChartOfAccount) {
+	@layouts.MainLayout("New Journal Entry", "journal", []layouts.Breadcrumb{{Label: "Accounting"}, {Label: "Journal", URL: "/accounting/journal"}, {Label: "New"}}) {
+		<div style="max-width: 800px; margin: 0 auto; background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 24px;">
+			<h2 style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px;">Create Balanced Journal Entry</h2>
+			<p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Select a debit account and a credit account with matching amounts to enforce double-entry bookkeeping.</p>
+
+			<form method="POST" action="/accounting/journal/new">
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 18px;">
+					<div class="finance-form-group">
+						<label>Entry Date</label>
+						<input type="date" name="entry_date" value="2025-01-01" required/>
+					</div>
+					<div class="finance-form-group">
+						<label>Description / Reference</label>
+						<input type="text" name="description" placeholder="e.g. Owner Capital Opening Balance or Office Rent" required/>
+					</div>
+				</div>
+
+				<div style="background: #141824; border: 1px solid #2d3748; border-radius: 6px; padding: 16px; margin-bottom: 18px;">
+					<h4 style="font-size: 14px; font-weight: 600; color: #00b894; margin-bottom: 12px;">Debit Leg (Asset increase or Expense incurred)</h4>
+					<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+						<div class="finance-form-group">
+							<label>Debit Account</label>
+							<select name="debit_account_id" required>
+								<option value="">-- Choose Account --</option>
+								for _, a := range accounts {
+									<option value={ a.ID }>[{ a.Code }] { a.Name } ({ a.AccountType })</option>
+								}
+							</select>
+						</div>
+						<div class="finance-form-group">
+							<label>Debit Amount (₹)</label>
+							<input type="number" name="amount" id="debit_amt" placeholder="e.g. 100000" step="1" required/>
+						</div>
+					</div>
+				</div>
+
+				<div style="background: #141824; border: 1px solid #2d3748; border-radius: 6px; padding: 16px; margin-bottom: 20px;">
+					<h4 style="font-size: 14px; font-weight: 600; color: #0984e3; margin-bottom: 12px;">Credit Leg (Liability/Equity increase or Income earned)</h4>
+					<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+						<div class="finance-form-group">
+							<label>Credit Account</label>
+							<select name="credit_account_id" required>
+								<option value="">-- Choose Account --</option>
+								for _, a := range accounts {
+									<option value={ a.ID }>[{ a.Code }] { a.Name } ({ a.AccountType })</option>
+								}
+							</select>
+						</div>
+						<div class="finance-form-group">
+							<label>Credit Amount (Must match Debit)</label>
+							<input type="text" value="Matches Debit Amount" readonly style="color: var(--text-muted);"/>
+						</div>
+					</div>
+				</div>
+
+				<div style="display: flex; justify-content: flex-end; gap: 10px;">
+					<a href="/accounting/journal" class="finance-action-btn" style="background: #2d3748;">Cancel</a>
+					<button type="submit" class="finance-action-btn">Post Balanced Journal Entry</button>
+				</div>
+			</form>
+		</div>
+	}
+}
+
+templ FinancialStatementsView(fs services.FinancialStatements) {
+	@layouts.MainLayout("Financial Statements", "statements", []layouts.Breadcrumb{{Label: "Accounting"}, {Label: "Statements"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Financial Statements (Authoritative Accounting Data)</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Derived strictly from posted double-entry journal entries</p>
+			</div>
+		</div>
+
+		<!-- Top Summary Cards -->
+		<div class="finance-card-grid">
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">Total Income (P&L)</div>
+				<div style="font-size: 20px; font-weight: 700; color: #00b894; margin-top: 4px;">{ shared.FormatINR(fs.TotalIncomeMinor) }</div>
+			</div>
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">Total Expenses (P&L)</div>
+				<div style="font-size: 20px; font-weight: 700; color: #e17055; margin-top: 4px;">{ shared.FormatINR(fs.TotalExpenseMinor) }</div>
+			</div>
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">Net Profit / Loss</div>
+				<div style="font-size: 20px; font-weight: 700; color: #74b9ff; margin-top: 4px;">{ shared.FormatINR(fs.NetProfitMinor) }</div>
+			</div>
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">Net Cash Flow</div>
+				<div style="font-size: 20px; font-weight: 700; color: #00cec9; margin-top: 4px;">{ shared.FormatINR(fs.NetCashFlowMinor) }</div>
+			</div>
+		</div>
+
+		<!-- P&L and Balance Sheet Split View -->
+		<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+			<!-- Profit and Loss -->
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 20px;">
+				<h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 14px;">Profit & Loss Statement</h3>
+				<div style="margin-bottom: 16px;">
+					<div style="font-weight: 600; color: #00b894; font-size: 13px; margin-bottom: 8px;">REVENUE / INCOME</div>
+					for _, inc := range fs.IncomeAccounts {
+						<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
+							<span>{ inc.Name }</span>
+							<strong>{ shared.FormatINR(inc.BalanceMinor) }</strong>
+						</div>
+					}
+					<div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 700; font-size: 13px; color: #00b894;">
+						<span>Total Revenue</span>
+						<span>{ shared.FormatINR(fs.TotalIncomeMinor) }</span>
+					</div>
+				</div>
+
+				<div>
+					<div style="font-weight: 600; color: #e17055; font-size: 13px; margin-bottom: 8px;">OPERATING EXPENSES</div>
+					for _, exp := range fs.ExpenseAccounts {
+						<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
+							<span>{ exp.Name }</span>
+							<strong>{ shared.FormatINR(exp.BalanceMinor) }</strong>
+						</div>
+					}
+					<div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 700; font-size: 13px; color: #e17055;">
+						<span>Total Expenses</span>
+						<span>{ shared.FormatINR(fs.TotalExpenseMinor) }</span>
+					</div>
+				</div>
+
+				<div style="display: flex; justify-content: space-between; padding: 12px 0; margin-top: 15px; border-top: 2px solid #2d3748; font-weight: 700; font-size: 15px; color: #74b9ff;">
+					<span>NET PROFIT</span>
+					<span>{ shared.FormatINR(fs.NetProfitMinor) }</span>
+				</div>
+			</div>
+
+			<!-- Balance Sheet -->
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 20px;">
+				<h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 14px;">Balance Sheet</h3>
+				<div style="margin-bottom: 16px;">
+					<div style="font-weight: 600; color: #74b9ff; font-size: 13px; margin-bottom: 8px;">ASSETS</div>
+					for _, a := range fs.AssetAccounts {
+						<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
+							<span>{ a.Name }</span>
+							<strong>{ shared.FormatINR(a.BalanceMinor) }</strong>
+						</div>
+					}
+					<div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 700; font-size: 13px; color: #74b9ff;">
+						<span>Total Assets</span>
+						<span>{ shared.FormatINR(fs.TotalAssetsMinor) }</span>
+					</div>
+				</div>
+
+				<div style="margin-bottom: 16px;">
+					<div style="font-weight: 600; color: #fab1a0; font-size: 13px; margin-bottom: 8px;">LIABILITIES</div>
+					for _, l := range fs.LiabilityAccounts {
+						<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
+							<span>{ l.Name }</span>
+							<strong>{ shared.FormatINR(l.BalanceMinor) }</strong>
+						</div>
+					}
+					<div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 700; font-size: 13px; color: #fab1a0;">
+						<span>Total Liabilities</span>
+						<span>{ shared.FormatINR(fs.TotalLiabMinor) }</span>
+					</div>
+				</div>
+
+				<div>
+					<div style="font-weight: 600; color: #a29bfe; font-size: 13px; margin-bottom: 8px;">EQUITY</div>
+					for _, eq := range fs.EquityAccounts {
+						<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
+							<span>{ eq.Name }</span>
+							<strong>{ shared.FormatINR(eq.BalanceMinor) }</strong>
+						</div>
+					}
+					<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
+						<span>Current Year Net Earnings</span>
+						<strong>{ shared.FormatINR(fs.NetProfitMinor) }</strong>
+					</div>
+					<div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 700; font-size: 13px; color: #a29bfe;">
+						<span>Total Equity</span>
+						<span>{ shared.FormatINR(fs.TotalEquityMinor + fs.NetProfitMinor) }</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

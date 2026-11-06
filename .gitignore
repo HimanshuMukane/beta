@@ -14,3 +14,14 @@
 
 _temp_repos/
 bruno/*
+
+# Root-level compiled binaries
+/chi-mysql-server
+/cmd/runner/runner
+/cms
+/finance
+/runner
+/superadmin
+/projects/cms/cms
+/projects/photography_crm/chi-mysql-server
+/projects/superadmin/superadmin

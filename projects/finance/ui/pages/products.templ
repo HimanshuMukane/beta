@@ -1,0 +1,354 @@
+package pages
+
+import (
+	"fmt"
+	"finance/models"
+	"finance/ui/layouts"
+	"shared"
+)
+
+templ ProductsList(products []models.Product) {
+	@layouts.MainLayout("Products & Licensing", "products", []layouts.Breadcrumb{{Label: "Products"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Software Products & Offerings</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Manage software licenses, client associations, contracts, and revenue</p>
+			</div>
+			<div>
+				<a href="/products/new" class="finance-action-btn">+ Add Product</a>
+			</div>
+		</div>
+
+		if len(products) == 0 {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 40px; text-align: center;">
+				<p style="color: var(--text-muted); margin-bottom: 15px;">No products found yet.</p>
+				<a href="/products/new" class="finance-action-btn">+ Create First Product</a>
+			</div>
+		} else {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; overflow: hidden;">
+				<table class="finance-table" style="margin-top: 0;">
+					<thead>
+						<tr>
+							<th>Code</th>
+							<th>Product Name</th>
+							<th>Category</th>
+							<th>Clients</th>
+							<th>MRR</th>
+							<th>ARR</th>
+							<th>One-Time</th>
+							<th>Status</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, p := range products {
+							<tr>
+								<td><strong style="color: #00cec9;">{ p.Code }</strong></td>
+								<td>
+									<a href={ templ.SafeURL(fmt.Sprintf("/products/detail?id=%s", p.ID)) } style="color: #fff; font-weight: 600; text-decoration: none;">
+										{ p.Name }
+									</a>
+									<div style="font-size: 11px; color: var(--text-muted);">{ p.Description }</div>
+								</td>
+								<td><span class="finance-badge-pill finance-badge-draft">{ p.Category }</span></td>
+								<td><strong>{ fmt.Sprintf("%d", p.ClientCount) }</strong></td>
+								<td><strong style="color: #00b894;">{ shared.FormatINR(p.MonthlyRevenue) }</strong></td>
+								<td><strong style="color: #0984e3;">{ shared.FormatINR(p.AnnualRevenue) }</strong></td>
+								<td>{ shared.FormatINR(p.OneTimeRevenue) }</td>
+								<td><span class="finance-badge-pill finance-badge-active">{ p.Status }</span></td>
+								<td>
+									<a href={ templ.SafeURL(fmt.Sprintf("/products/detail?id=%s", p.ID)) } style="color: #74b9ff; font-size: 12px; text-decoration: none;">View Detail →</a>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}
+
+templ ProductDetail(p models.Product, clientProducts []models.ClientProduct, pricing []models.PricingItem, components []models.ClientProductComponent, allClients []models.Client, productTemplates []models.FinancialTemplate) {
+	@layouts.MainLayout(p.Name, "products", []layouts.Breadcrumb{{Label: "Products", URL: "/products"}, {Label: p.Name}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<div style="display: flex; align-items: center; gap: 8px;">
+					<h1 style="font-size: 22px; font-weight: 700; color: #fff;">{ p.Name }</h1>
+					<span class="finance-badge-pill finance-badge-draft">{ p.Code }</span>
+					<span class="finance-badge-pill finance-badge-active">{ p.Status }</span>
+				</div>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">{ p.Description }</p>
+			</div>
+			<div>
+				<a href="/products" class="finance-action-btn" style="background: #2d3748;">← Back to Products</a>
+			</div>
+		</div>
+
+		<div class="finance-card-grid">
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">Active Clients</div>
+				<div style="font-size: 20px; font-weight: 700; color: #fff; margin-top: 4px;">{ fmt.Sprintf("%d", len(clientProducts)) }</div>
+			</div>
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">Monthly Recurring Revenue (MRR)</div>
+				<div style="font-size: 20px; font-weight: 700; color: #00b894; margin-top: 4px;">{ shared.FormatINR(p.MonthlyRevenue) }</div>
+			</div>
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">Annual Recurring Revenue (ARR)</div>
+				<div style="font-size: 20px; font-weight: 700; color: #0984e3; margin-top: 4px;">{ shared.FormatINR(p.AnnualRevenue) }</div>
+			</div>
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">One-Time Revenue</div>
+				<div style="font-size: 20px; font-weight: 700; color: #fff; margin-top: 4px;">{ shared.FormatINR(p.OneTimeRevenue) }</div>
+			</div>
+		</div>
+
+		<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px;">
+			<div>
+				<!-- Client Product Associations -->
+				<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+					<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+						<h3 style="font-size: 15px; font-weight: 600; color: #fff;">Associated Clients & Contracts</h3>
+					</div>
+					if len(clientProducts) == 0 {
+						<p style="color: var(--text-muted); font-size: 13px;">No clients associated with this product yet.</p>
+					} else {
+						<table class="finance-table" style="margin-top: 0;">
+							<thead>
+								<tr>
+									<th>Client Name</th>
+									<th>Start Date</th>
+									<th>Renewal</th>
+									<th>Next Renewal</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody>
+								for _, cp := range clientProducts {
+									<tr>
+										<td><strong style="color: #74b9ff;">{ cp.ClientName }</strong></td>
+										<td>{ cp.StartDate }</td>
+										<td>{ cp.RenewalFrequency }</td>
+										<td>
+											if cp.NextRenewalDate != nil {
+												{ *cp.NextRenewalDate }
+											} else {
+												<span>-</span>
+											}
+										</td>
+										<td><span class="finance-badge-pill finance-badge-active">{ cp.Status }</span></td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					}
+				</div>
+
+				<!-- Pricing Items -->
+				<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+					<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+						<h3 style="font-size: 15px; font-weight: 600; color: #fff;">Client Pricing Configurations</h3>
+					</div>
+					if len(pricing) == 0 {
+						<p style="color: var(--text-muted); font-size: 13px;">No pricing items defined yet.</p>
+					} else {
+						<table class="finance-table" style="margin-top: 0;">
+							<thead>
+								<tr>
+									<th>Pricing Item</th>
+									<th>Frequency</th>
+									<th>Amount</th>
+									<th>Monthly Eq.</th>
+									<th>Annual Eq.</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody>
+								for _, pr := range pricing {
+									<tr>
+										<td><strong>{ pr.Name }</strong></td>
+										<td><span class="finance-badge-pill finance-badge-draft">{ pr.Frequency }</span></td>
+										<td><strong>{ shared.FormatINR(pr.AmountMinor) }</strong></td>
+										<td>{ shared.FormatINR(pr.MonthlyEquivalentMinor) }</td>
+										<td>{ shared.FormatINR(pr.AnnualEquivalentMinor) }</td>
+										<td><span class="finance-badge-pill finance-badge-active">{ pr.Status }</span></td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					}
+				</div>
+
+				<!-- Financial Components -->
+				<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 18px;">
+					<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+						<h3 style="font-size: 15px; font-weight: 600; color: #fff;">Applied Financial Components (Commission / Hosting / Discount)</h3>
+					</div>
+					if len(components) == 0 {
+						<p style="color: var(--text-muted); font-size: 13px;">No financial components applied yet.</p>
+					} else {
+						<table class="finance-table" style="margin-top: 0;">
+							<thead>
+								<tr>
+									<th>Component</th>
+									<th>Classification</th>
+									<th>Type</th>
+									<th>Value</th>
+									<th>Effective From</th>
+								</tr>
+							</thead>
+							<tbody>
+								for _, c := range components {
+									<tr>
+										<td><strong>{ c.NameSnapshot }</strong></td>
+										<td><span class="finance-badge-pill finance-badge-pending">{ c.Classification }</span></td>
+										<td>{ c.CalculationType }</td>
+										<td>
+											if c.CalculationType == "percentage" {
+												<span>{ fmt.Sprintf("%.2f%%", float64(c.Percentage)/100.0) }</span>
+											} else {
+												<span>{ shared.FormatINR(c.AmountMinor) }</span>
+											}
+										</td>
+										<td>{ c.EffectiveFrom }</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					}
+				</div>
+			</div>
+
+			<!-- Quick Add Client Association / Pricing -->
+			<div>
+				<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+					<h3 style="font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 12px;">Associate Client</h3>
+					<form method="POST" action="/products/associate-client">
+						<input type="hidden" name="product_id" value={ p.ID }/>
+						<div class="finance-form-group" style="margin-bottom: 12px;">
+							<label>Select Client</label>
+							<select name="client_id" required>
+								<option value="">-- Choose Client --</option>
+								for _, c := range allClients {
+									<option value={ c.ID }>{ c.CompanyName } ({ c.Name })</option>
+								}
+							</select>
+						</div>
+						<div class="finance-form-group" style="margin-bottom: 12px;">
+							<label>Contract Start Date</label>
+							<input type="date" name="start_date" required value="2025-01-01"/>
+						</div>
+						<div class="finance-form-group" style="margin-bottom: 12px;">
+							<label>Renewal Frequency</label>
+							<select name="renewal_frequency">
+								<option value="monthly">Monthly</option>
+								<option value="quarterly">Quarterly</option>
+								<option value="yearly" selected>Yearly</option>
+							</select>
+						</div>
+						<button type="submit" class="finance-action-btn" style="width: 100%; justify-content: center;">Associate Client</button>
+					</form>
+				</div>
+
+				if len(clientProducts) > 0 {
+					<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+						<h3 style="font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 12px;">Add Pricing Item</h3>
+						<form method="POST" action="/products/add-pricing">
+							<input type="hidden" name="product_id" value={ p.ID }/>
+							<div class="finance-form-group" style="margin-bottom: 12px;">
+								<label>Client Contract</label>
+								<select name="client_product_id" required>
+									for _, cp := range clientProducts {
+										<option value={ cp.ID }>{ cp.ClientName }</option>
+									}
+								</select>
+							</div>
+							<div class="finance-form-group" style="margin-bottom: 12px;">
+								<label>Pricing Name</label>
+								<input type="text" name="name" placeholder="e.g. Software License" required/>
+							</div>
+							<div class="finance-form-group" style="margin-bottom: 12px;">
+								<label>Amount (in Rupees)</label>
+								<input type="number" name="amount" placeholder="e.g. 10000" step="1" required/>
+							</div>
+							<div class="finance-form-group" style="margin-bottom: 12px;">
+								<label>Frequency</label>
+								<select name="frequency">
+									<option value="monthly">Monthly</option>
+									<option value="quarterly">Quarterly</option>
+									<option value="yearly">Yearly</option>
+									<option value="one_time">One-time</option>
+								</select>
+							</div>
+							<button type="submit" class="finance-action-btn" style="width: 100%; justify-content: center;">Add Pricing</button>
+						</form>
+					</div>
+
+					<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 18px;">
+						<h3 style="font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 12px;">Apply Financial Component</h3>
+						<form method="POST" action="/products/apply-component">
+							<input type="hidden" name="product_id" value={ p.ID }/>
+							<div class="finance-form-group" style="margin-bottom: 12px;">
+								<label>Client Contract</label>
+								<select name="client_product_id" required>
+									for _, cp := range clientProducts {
+										<option value={ cp.ID }>{ cp.ClientName }</option>
+									}
+								</select>
+							</div>
+							<div class="finance-form-group" style="margin-bottom: 12px;">
+								<label>Product Template</label>
+								<select name="template_id" required>
+									<option value="">-- Choose Template --</option>
+									for _, t := range productTemplates {
+										<option value={ t.ID }>{ t.Name } ({ t.Classification })</option>
+									}
+								</select>
+							</div>
+							<div class="finance-form-group" style="margin-bottom: 12px;">
+								<label>Percentage (e.g. 10 for 10%) or Amount</label>
+								<input type="number" name="value" placeholder="10" step="0.1" required/>
+							</div>
+							<button type="submit" class="finance-action-btn" style="width: 100%; justify-content: center;">Apply Component</button>
+						</form>
+					</div>
+				}
+			</div>
+		</div>
+	}
+}
+
+templ ProductCreate() {
+	@layouts.MainLayout("Create Product", "products", []layouts.Breadcrumb{{Label: "Products", URL: "/products"}, {Label: "New"}}) {
+		<div style="max-width: 600px; margin: 0 auto; background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 24px;">
+			<h2 style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 16px;">Create New Product / Service</h2>
+			<form method="POST" action="/products/new">
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Product Name</label>
+					<input type="text" name="name" placeholder="e.g. Hotel Management CRM" required/>
+				</div>
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Product Code</label>
+					<input type="text" name="code" placeholder="e.g. PROD-CRM-01" required/>
+				</div>
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Category</label>
+					<select name="category">
+						<option value="SaaS License">SaaS License</option>
+						<option value="Custom Software Development">Custom Software Development</option>
+						<option value="Consulting & Support">Consulting & Support</option>
+						<option value="Infrastructure & Maintenance">Infrastructure & Maintenance</option>
+					</select>
+				</div>
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Description</label>
+					<textarea name="description" rows="3" placeholder="Brief summary of what this software delivers..."></textarea>
+				</div>
+				<div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+					<a href="/products" class="finance-action-btn" style="background: #2d3748;">Cancel</a>
+					<button type="submit" class="finance-action-btn">Save Product</button>
+				</div>
+			</form>
+		</div>
+	}
+}

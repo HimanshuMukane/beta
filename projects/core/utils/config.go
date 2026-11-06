@@ -27,10 +27,15 @@ type Config struct {
 
 var AppConfig Config
 
-func LoadConfig() error {
-	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("load .env: %w", err)
+func LoadConfig(filenames ...string) error {
+	if len(filenames) > 0 {
+		if err := godotenv.Load(filenames...); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("load .env: %w", err)
+		}
+	} else {
+		_ = godotenv.Load(".env", "projects/photography_crm/.env", "projects/cms/.env", "projects/superadmin/.env")
 	}
+
 
 	cfg := Config{
 		AppEnv:            strings.ToLower(strings.TrimSpace(getEnv("APP_ENV", "development"))),

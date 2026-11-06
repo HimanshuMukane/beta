@@ -18,6 +18,7 @@ func SetupRouter(pool *utils.DBPool, cfg utils.Config) http.Handler {
 	})
 	r.NotFound(handlers.NotFoundHandler)
 	r.Use(middleware.DatabaseRoutingMiddleware(pool, cfg))
+	r.Use(middleware.TenantContextMiddleware)
 
 	RegisterFrontendRoutes(r, cfg)
 	RegisterBackendRoutes(r, pool, cfg)

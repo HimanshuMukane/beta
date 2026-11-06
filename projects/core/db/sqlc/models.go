@@ -8,12 +8,229 @@ import (
 	"database/sql"
 )
 
+type Client struct {
+	ID                  string         `json:"id"`
+	TenantID            string         `json:"tenant_id"`
+	FirstName           string         `json:"first_name"`
+	LastName            string         `json:"last_name"`
+	Email               string         `json:"email"`
+	Phone               string         `json:"phone"`
+	Address             string         `json:"address"`
+	LeadSource          string         `json:"lead_source"`
+	ConvertedFromLeadID sql.NullString `json:"converted_from_lead_id"`
+	Notes               string         `json:"notes"`
+	CreatedAt           string         `json:"created_at"`
+	UpdatedAt           string         `json:"updated_at"`
+	DeletedAt           sql.NullString `json:"deleted_at"`
+}
+
+type Followup struct {
+	ID             string         `json:"id"`
+	TenantID       string         `json:"tenant_id"`
+	LeadID         sql.NullString `json:"lead_id"`
+	ClientID       sql.NullString `json:"client_id"`
+	AssignedUserID sql.NullString `json:"assigned_user_id"`
+	Title          string         `json:"title"`
+	DueDate        string         `json:"due_date"`
+	CompletedAt    sql.NullString `json:"completed_at"`
+	Status         string         `json:"status"`
+	CreatedAt      string         `json:"created_at"`
+	UpdatedAt      string         `json:"updated_at"`
+}
+
+type Lead struct {
+	ID                  string         `json:"id"`
+	TenantID            string         `json:"tenant_id"`
+	WorkflowID          string         `json:"workflow_id"`
+	StageID             string         `json:"stage_id"`
+	Title               string         `json:"title"`
+	ContactName         string         `json:"contact_name"`
+	ContactEmail        string         `json:"contact_email"`
+	ContactPhone        string         `json:"contact_phone"`
+	Source              string         `json:"source"`
+	PhotographyService  string         `json:"photography_service"`
+	EstimatedValueMinor int64          `json:"estimated_value_minor"`
+	AssignedUserID      sql.NullString `json:"assigned_user_id"`
+	RequestedDate       string         `json:"requested_date"`
+	Location            string         `json:"location"`
+	Notes               string         `json:"notes"`
+	Status              string         `json:"status"`
+	CreatedAt           string         `json:"created_at"`
+	UpdatedAt           string         `json:"updated_at"`
+	DeletedAt           sql.NullString `json:"deleted_at"`
+}
+
+type LeadStage struct {
+	ID         string `json:"id"`
+	TenantID   string `json:"tenant_id"`
+	WorkflowID string `json:"workflow_id"`
+	Name       string `json:"name"`
+	Color      string `json:"color"`
+	StageOrder int64  `json:"stage_order"`
+	IsWon      int64  `json:"is_won"`
+	IsLost     int64  `json:"is_lost"`
+	CreatedAt  string `json:"created_at"`
+}
+
+type LeadWorkflow struct {
+	ID        string `json:"id"`
+	TenantID  string `json:"tenant_id"`
+	Name      string `json:"name"`
+	IsDefault int64  `json:"is_default"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type Membership struct {
+	ID        string         `json:"id"`
+	TenantID  string         `json:"tenant_id"`
+	UserID    string         `json:"user_id"`
+	Role      string         `json:"role"`
+	Status    string         `json:"status"`
+	CreatedAt string         `json:"created_at"`
+	UpdatedAt string         `json:"updated_at"`
+	DeletedAt sql.NullString `json:"deleted_at"`
+}
+
+type Package struct {
+	ID          string `json:"id"`
+	TenantID    string `json:"tenant_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	PriceMinor  int64  `json:"price_minor"`
+	IsActive    int64  `json:"is_active"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+type PlatformAdmin struct {
+	ID           string         `json:"id"`
+	Name         string         `json:"name"`
+	Email        string         `json:"email"`
+	PasswordHash string         `json:"password_hash"`
+	Role         string         `json:"role"`
+	CreatedAt    string         `json:"created_at"`
+	UpdatedAt    string         `json:"updated_at"`
+	DeletedAt    sql.NullString `json:"deleted_at"`
+}
+
+type Project struct {
+	ID          string         `json:"id"`
+	TenantID    string         `json:"tenant_id"`
+	ClientID    string         `json:"client_id"`
+	LeadID      sql.NullString `json:"lead_id"`
+	Title       string         `json:"title"`
+	ProjectType string         `json:"project_type"`
+	Status      string         `json:"status"`
+	Stage       string         `json:"stage"`
+	IsConfirmed int64          `json:"is_confirmed"`
+	ConfirmedAt sql.NullString `json:"confirmed_at"`
+	Address     string         `json:"address"`
+	ManagerID   sql.NullString `json:"manager_id"`
+	CreatedAt   string         `json:"created_at"`
+	UpdatedAt   string         `json:"updated_at"`
+	DeletedAt   sql.NullString `json:"deleted_at"`
+}
+
+type ProjectSegment struct {
+	ID           string `json:"id"`
+	TenantID     string `json:"tenant_id"`
+	ProjectID    string `json:"project_id"`
+	SegmentType  string `json:"segment_type"`
+	Name         string `json:"name"`
+	StartDate    string `json:"start_date"`
+	EndDate      string `json:"end_date"`
+	SegmentOrder int64  `json:"segment_order"`
+	CreatedAt    string `json:"created_at"`
+}
+
+type Quotation struct {
+	ID            string `json:"id"`
+	TenantID      string `json:"tenant_id"`
+	ProjectID     string `json:"project_id"`
+	QuoteNumber   string `json:"quote_number"`
+	PackageName   string `json:"package_name"`
+	SubtotalMinor int64  `json:"subtotal_minor"`
+	DiscountMinor int64  `json:"discount_minor"`
+	TaxMinor      int64  `json:"tax_minor"`
+	TotalMinor    int64  `json:"total_minor"`
+	Status        string `json:"status"`
+	SnapshotJson  string `json:"snapshot_json"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
+}
+
 type Role struct {
 	ID        string         `json:"id"`
 	Name      string         `json:"name"`
 	CreatedAt string         `json:"created_at"`
 	UpdatedAt string         `json:"updated_at"`
 	DeletedAt sql.NullString `json:"deleted_at"`
+}
+
+type SequenceCounter struct {
+	TenantID      string `json:"tenant_id"`
+	EntityType    string `json:"entity_type"`
+	FormatPattern string `json:"format_pattern"`
+	NextCounter   int64  `json:"next_counter"`
+	UpdatedAt     string `json:"updated_at"`
+}
+
+type Service struct {
+	ID          string `json:"id"`
+	TenantID    string `json:"tenant_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	PriceMinor  int64  `json:"price_minor"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+type Session struct {
+	ID             string         `json:"id"`
+	TenantID       string         `json:"tenant_id"`
+	ProjectID      string         `json:"project_id"`
+	SegmentID      sql.NullString `json:"segment_id"`
+	Title          string         `json:"title"`
+	SessionType    string         `json:"session_type"`
+	StartTime      string         `json:"start_time"`
+	EndTime        string         `json:"end_time"`
+	Location       string         `json:"location"`
+	PhotographerID sql.NullString `json:"photographer_id"`
+	Status         string         `json:"status"`
+	CreatedAt      string         `json:"created_at"`
+	UpdatedAt      string         `json:"updated_at"`
+}
+
+type Tenant struct {
+	ID                 string         `json:"id"`
+	Name               string         `json:"name"`
+	Slug               string         `json:"slug"`
+	BusinessType       string         `json:"business_type"`
+	Status             string         `json:"status"`
+	SubscriptionStatus string         `json:"subscription_status"`
+	Currency           string         `json:"currency"`
+	Timezone           string         `json:"timezone"`
+	CreatedAt          string         `json:"created_at"`
+	UpdatedAt          string         `json:"updated_at"`
+	DeletedAt          sql.NullString `json:"deleted_at"`
+}
+
+type TenantRegistrationRequest struct {
+	ID             string         `json:"id"`
+	BusinessName   string         `json:"business_name"`
+	BusinessType   string         `json:"business_type"`
+	OwnerFirstName string         `json:"owner_first_name"`
+	OwnerLastName  string         `json:"owner_last_name"`
+	OwnerEmail     string         `json:"owner_email"`
+	PasswordHash   string         `json:"password_hash"`
+	Phone          string         `json:"phone"`
+	Notes          string         `json:"notes"`
+	Status         string         `json:"status"`
+	ReviewedBy     sql.NullString `json:"reviewed_by"`
+	ReviewedAt     sql.NullString `json:"reviewed_at"`
+	CreatedAt      string         `json:"created_at"`
+	UpdatedAt      string         `json:"updated_at"`
 }
 
 type User struct {

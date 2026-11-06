@@ -10,6 +10,445 @@ import (
 	"database/sql"
 )
 
+const completeFollowup = `-- name: CompleteFollowup :exec
+UPDATE followups
+SET status = 'completed', completed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ? AND tenant_id = ?
+`
+
+type CompleteFollowupParams struct {
+	ID       string `json:"id"`
+	TenantID string `json:"tenant_id"`
+}
+
+func (q *Queries) CompleteFollowup(ctx context.Context, arg CompleteFollowupParams) error {
+	_, err := q.db.ExecContext(ctx, completeFollowup, arg.ID, arg.TenantID)
+	return err
+}
+
+const createClient = `-- name: CreateClient :exec
+INSERT INTO clients (
+    id,
+    tenant_id,
+    first_name,
+    last_name,
+    email,
+    phone,
+    address,
+    lead_source,
+    converted_from_lead_id,
+    notes
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateClientParams struct {
+	ID                  string         `json:"id"`
+	TenantID            string         `json:"tenant_id"`
+	FirstName           string         `json:"first_name"`
+	LastName            string         `json:"last_name"`
+	Email               string         `json:"email"`
+	Phone               string         `json:"phone"`
+	Address             string         `json:"address"`
+	LeadSource          string         `json:"lead_source"`
+	ConvertedFromLeadID sql.NullString `json:"converted_from_lead_id"`
+	Notes               string         `json:"notes"`
+}
+
+func (q *Queries) CreateClient(ctx context.Context, arg CreateClientParams) error {
+	_, err := q.db.ExecContext(ctx, createClient,
+		arg.ID,
+		arg.TenantID,
+		arg.FirstName,
+		arg.LastName,
+		arg.Email,
+		arg.Phone,
+		arg.Address,
+		arg.LeadSource,
+		arg.ConvertedFromLeadID,
+		arg.Notes,
+	)
+	return err
+}
+
+const createFollowup = `-- name: CreateFollowup :exec
+INSERT INTO followups (
+    id,
+    tenant_id,
+    lead_id,
+    client_id,
+    assigned_user_id,
+    title,
+    due_date,
+    status
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateFollowupParams struct {
+	ID             string         `json:"id"`
+	TenantID       string         `json:"tenant_id"`
+	LeadID         sql.NullString `json:"lead_id"`
+	ClientID       sql.NullString `json:"client_id"`
+	AssignedUserID sql.NullString `json:"assigned_user_id"`
+	Title          string         `json:"title"`
+	DueDate        string         `json:"due_date"`
+	Status         string         `json:"status"`
+}
+
+func (q *Queries) CreateFollowup(ctx context.Context, arg CreateFollowupParams) error {
+	_, err := q.db.ExecContext(ctx, createFollowup,
+		arg.ID,
+		arg.TenantID,
+		arg.LeadID,
+		arg.ClientID,
+		arg.AssignedUserID,
+		arg.Title,
+		arg.DueDate,
+		arg.Status,
+	)
+	return err
+}
+
+const createLead = `-- name: CreateLead :exec
+INSERT INTO leads (
+    id,
+    tenant_id,
+    workflow_id,
+    stage_id,
+    title,
+    contact_name,
+    contact_email,
+    contact_phone,
+    source,
+    photography_service,
+    estimated_value_minor,
+    assigned_user_id,
+    requested_date,
+    location,
+    notes,
+    status
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateLeadParams struct {
+	ID                  string         `json:"id"`
+	TenantID            string         `json:"tenant_id"`
+	WorkflowID          string         `json:"workflow_id"`
+	StageID             string         `json:"stage_id"`
+	Title               string         `json:"title"`
+	ContactName         string         `json:"contact_name"`
+	ContactEmail        string         `json:"contact_email"`
+	ContactPhone        string         `json:"contact_phone"`
+	Source              string         `json:"source"`
+	PhotographyService  string         `json:"photography_service"`
+	EstimatedValueMinor int64          `json:"estimated_value_minor"`
+	AssignedUserID      sql.NullString `json:"assigned_user_id"`
+	RequestedDate       string         `json:"requested_date"`
+	Location            string         `json:"location"`
+	Notes               string         `json:"notes"`
+	Status              string         `json:"status"`
+}
+
+func (q *Queries) CreateLead(ctx context.Context, arg CreateLeadParams) error {
+	_, err := q.db.ExecContext(ctx, createLead,
+		arg.ID,
+		arg.TenantID,
+		arg.WorkflowID,
+		arg.StageID,
+		arg.Title,
+		arg.ContactName,
+		arg.ContactEmail,
+		arg.ContactPhone,
+		arg.Source,
+		arg.PhotographyService,
+		arg.EstimatedValueMinor,
+		arg.AssignedUserID,
+		arg.RequestedDate,
+		arg.Location,
+		arg.Notes,
+		arg.Status,
+	)
+	return err
+}
+
+const createLeadStage = `-- name: CreateLeadStage :exec
+INSERT INTO lead_stages (id, tenant_id, workflow_id, name, color, stage_order, is_won, is_lost)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateLeadStageParams struct {
+	ID         string `json:"id"`
+	TenantID   string `json:"tenant_id"`
+	WorkflowID string `json:"workflow_id"`
+	Name       string `json:"name"`
+	Color      string `json:"color"`
+	StageOrder int64  `json:"stage_order"`
+	IsWon      int64  `json:"is_won"`
+	IsLost     int64  `json:"is_lost"`
+}
+
+func (q *Queries) CreateLeadStage(ctx context.Context, arg CreateLeadStageParams) error {
+	_, err := q.db.ExecContext(ctx, createLeadStage,
+		arg.ID,
+		arg.TenantID,
+		arg.WorkflowID,
+		arg.Name,
+		arg.Color,
+		arg.StageOrder,
+		arg.IsWon,
+		arg.IsLost,
+	)
+	return err
+}
+
+const createLeadWorkflow = `-- name: CreateLeadWorkflow :exec
+INSERT INTO lead_workflows (id, tenant_id, name, is_default)
+VALUES (?, ?, ?, ?)
+`
+
+type CreateLeadWorkflowParams struct {
+	ID        string `json:"id"`
+	TenantID  string `json:"tenant_id"`
+	Name      string `json:"name"`
+	IsDefault int64  `json:"is_default"`
+}
+
+func (q *Queries) CreateLeadWorkflow(ctx context.Context, arg CreateLeadWorkflowParams) error {
+	_, err := q.db.ExecContext(ctx, createLeadWorkflow,
+		arg.ID,
+		arg.TenantID,
+		arg.Name,
+		arg.IsDefault,
+	)
+	return err
+}
+
+const createMembership = `-- name: CreateMembership :exec
+INSERT INTO memberships (
+    id,
+    tenant_id,
+    user_id,
+    role,
+    status
+)
+VALUES (?, ?, ?, ?, ?)
+`
+
+type CreateMembershipParams struct {
+	ID       string `json:"id"`
+	TenantID string `json:"tenant_id"`
+	UserID   string `json:"user_id"`
+	Role     string `json:"role"`
+	Status   string `json:"status"`
+}
+
+func (q *Queries) CreateMembership(ctx context.Context, arg CreateMembershipParams) error {
+	_, err := q.db.ExecContext(ctx, createMembership,
+		arg.ID,
+		arg.TenantID,
+		arg.UserID,
+		arg.Role,
+		arg.Status,
+	)
+	return err
+}
+
+const createPackage = `-- name: CreatePackage :exec
+INSERT INTO packages (id, tenant_id, name, description, price_minor, is_active)
+VALUES (?, ?, ?, ?, ?, ?)
+`
+
+type CreatePackageParams struct {
+	ID          string `json:"id"`
+	TenantID    string `json:"tenant_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	PriceMinor  int64  `json:"price_minor"`
+	IsActive    int64  `json:"is_active"`
+}
+
+func (q *Queries) CreatePackage(ctx context.Context, arg CreatePackageParams) error {
+	_, err := q.db.ExecContext(ctx, createPackage,
+		arg.ID,
+		arg.TenantID,
+		arg.Name,
+		arg.Description,
+		arg.PriceMinor,
+		arg.IsActive,
+	)
+	return err
+}
+
+const createPlatformAdmin = `-- name: CreatePlatformAdmin :exec
+INSERT INTO platform_admins (
+    id,
+    name,
+    email,
+    password_hash,
+    role
+)
+VALUES (?, ?, ?, ?, ?)
+`
+
+type CreatePlatformAdminParams struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Email        string `json:"email"`
+	PasswordHash string `json:"password_hash"`
+	Role         string `json:"role"`
+}
+
+func (q *Queries) CreatePlatformAdmin(ctx context.Context, arg CreatePlatformAdminParams) error {
+	_, err := q.db.ExecContext(ctx, createPlatformAdmin,
+		arg.ID,
+		arg.Name,
+		arg.Email,
+		arg.PasswordHash,
+		arg.Role,
+	)
+	return err
+}
+
+const createProject = `-- name: CreateProject :exec
+INSERT INTO projects (
+    id,
+    tenant_id,
+    client_id,
+    lead_id,
+    title,
+    project_type,
+    status,
+    stage,
+    is_confirmed,
+    confirmed_at,
+    address,
+    manager_id
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateProjectParams struct {
+	ID          string         `json:"id"`
+	TenantID    string         `json:"tenant_id"`
+	ClientID    string         `json:"client_id"`
+	LeadID      sql.NullString `json:"lead_id"`
+	Title       string         `json:"title"`
+	ProjectType string         `json:"project_type"`
+	Status      string         `json:"status"`
+	Stage       string         `json:"stage"`
+	IsConfirmed int64          `json:"is_confirmed"`
+	ConfirmedAt sql.NullString `json:"confirmed_at"`
+	Address     string         `json:"address"`
+	ManagerID   sql.NullString `json:"manager_id"`
+}
+
+func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) error {
+	_, err := q.db.ExecContext(ctx, createProject,
+		arg.ID,
+		arg.TenantID,
+		arg.ClientID,
+		arg.LeadID,
+		arg.Title,
+		arg.ProjectType,
+		arg.Status,
+		arg.Stage,
+		arg.IsConfirmed,
+		arg.ConfirmedAt,
+		arg.Address,
+		arg.ManagerID,
+	)
+	return err
+}
+
+const createProjectSegment = `-- name: CreateProjectSegment :exec
+INSERT INTO project_segments (
+    id,
+    tenant_id,
+    project_id,
+    segment_type,
+    name,
+    start_date,
+    end_date,
+    segment_order
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateProjectSegmentParams struct {
+	ID           string `json:"id"`
+	TenantID     string `json:"tenant_id"`
+	ProjectID    string `json:"project_id"`
+	SegmentType  string `json:"segment_type"`
+	Name         string `json:"name"`
+	StartDate    string `json:"start_date"`
+	EndDate      string `json:"end_date"`
+	SegmentOrder int64  `json:"segment_order"`
+}
+
+func (q *Queries) CreateProjectSegment(ctx context.Context, arg CreateProjectSegmentParams) error {
+	_, err := q.db.ExecContext(ctx, createProjectSegment,
+		arg.ID,
+		arg.TenantID,
+		arg.ProjectID,
+		arg.SegmentType,
+		arg.Name,
+		arg.StartDate,
+		arg.EndDate,
+		arg.SegmentOrder,
+	)
+	return err
+}
+
+const createQuotation = `-- name: CreateQuotation :exec
+INSERT INTO quotations (
+    id,
+    tenant_id,
+    project_id,
+    quote_number,
+    package_name,
+    subtotal_minor,
+    discount_minor,
+    tax_minor,
+    total_minor,
+    status,
+    snapshot_json
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateQuotationParams struct {
+	ID            string `json:"id"`
+	TenantID      string `json:"tenant_id"`
+	ProjectID     string `json:"project_id"`
+	QuoteNumber   string `json:"quote_number"`
+	PackageName   string `json:"package_name"`
+	SubtotalMinor int64  `json:"subtotal_minor"`
+	DiscountMinor int64  `json:"discount_minor"`
+	TaxMinor      int64  `json:"tax_minor"`
+	TotalMinor    int64  `json:"total_minor"`
+	Status        string `json:"status"`
+	SnapshotJson  string `json:"snapshot_json"`
+}
+
+func (q *Queries) CreateQuotation(ctx context.Context, arg CreateQuotationParams) error {
+	_, err := q.db.ExecContext(ctx, createQuotation,
+		arg.ID,
+		arg.TenantID,
+		arg.ProjectID,
+		arg.QuoteNumber,
+		arg.PackageName,
+		arg.SubtotalMinor,
+		arg.DiscountMinor,
+		arg.TaxMinor,
+		arg.TotalMinor,
+		arg.Status,
+		arg.SnapshotJson,
+	)
+	return err
+}
+
 const createRole = `-- name: CreateRole :exec
 INSERT INTO roles (id, name)
 VALUES (?, ?)
@@ -22,6 +461,162 @@ type CreateRoleParams struct {
 
 func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) error {
 	_, err := q.db.ExecContext(ctx, createRole, arg.ID, arg.Name)
+	return err
+}
+
+const createService = `-- name: CreateService :exec
+INSERT INTO services (id, tenant_id, name, description, price_minor)
+VALUES (?, ?, ?, ?, ?)
+`
+
+type CreateServiceParams struct {
+	ID          string `json:"id"`
+	TenantID    string `json:"tenant_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	PriceMinor  int64  `json:"price_minor"`
+}
+
+func (q *Queries) CreateService(ctx context.Context, arg CreateServiceParams) error {
+	_, err := q.db.ExecContext(ctx, createService,
+		arg.ID,
+		arg.TenantID,
+		arg.Name,
+		arg.Description,
+		arg.PriceMinor,
+	)
+	return err
+}
+
+const createSession = `-- name: CreateSession :exec
+INSERT INTO sessions (
+    id,
+    tenant_id,
+    project_id,
+    segment_id,
+    title,
+    session_type,
+    start_time,
+    end_time,
+    location,
+    photographer_id,
+    status
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateSessionParams struct {
+	ID             string         `json:"id"`
+	TenantID       string         `json:"tenant_id"`
+	ProjectID      string         `json:"project_id"`
+	SegmentID      sql.NullString `json:"segment_id"`
+	Title          string         `json:"title"`
+	SessionType    string         `json:"session_type"`
+	StartTime      string         `json:"start_time"`
+	EndTime        string         `json:"end_time"`
+	Location       string         `json:"location"`
+	PhotographerID sql.NullString `json:"photographer_id"`
+	Status         string         `json:"status"`
+}
+
+func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) error {
+	_, err := q.db.ExecContext(ctx, createSession,
+		arg.ID,
+		arg.TenantID,
+		arg.ProjectID,
+		arg.SegmentID,
+		arg.Title,
+		arg.SessionType,
+		arg.StartTime,
+		arg.EndTime,
+		arg.Location,
+		arg.PhotographerID,
+		arg.Status,
+	)
+	return err
+}
+
+const createTenant = `-- name: CreateTenant :exec
+INSERT INTO tenants (
+    id,
+    name,
+    slug,
+    business_type,
+    status,
+    subscription_status,
+    currency,
+    timezone
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateTenantParams struct {
+	ID                 string `json:"id"`
+	Name               string `json:"name"`
+	Slug               string `json:"slug"`
+	BusinessType       string `json:"business_type"`
+	Status             string `json:"status"`
+	SubscriptionStatus string `json:"subscription_status"`
+	Currency           string `json:"currency"`
+	Timezone           string `json:"timezone"`
+}
+
+func (q *Queries) CreateTenant(ctx context.Context, arg CreateTenantParams) error {
+	_, err := q.db.ExecContext(ctx, createTenant,
+		arg.ID,
+		arg.Name,
+		arg.Slug,
+		arg.BusinessType,
+		arg.Status,
+		arg.SubscriptionStatus,
+		arg.Currency,
+		arg.Timezone,
+	)
+	return err
+}
+
+const createTenantRegistrationRequest = `-- name: CreateTenantRegistrationRequest :exec
+INSERT INTO tenant_registration_requests (
+    id,
+    business_name,
+    business_type,
+    owner_first_name,
+    owner_last_name,
+    owner_email,
+    password_hash,
+    phone,
+    notes,
+    status
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateTenantRegistrationRequestParams struct {
+	ID             string `json:"id"`
+	BusinessName   string `json:"business_name"`
+	BusinessType   string `json:"business_type"`
+	OwnerFirstName string `json:"owner_first_name"`
+	OwnerLastName  string `json:"owner_last_name"`
+	OwnerEmail     string `json:"owner_email"`
+	PasswordHash   string `json:"password_hash"`
+	Phone          string `json:"phone"`
+	Notes          string `json:"notes"`
+	Status         string `json:"status"`
+}
+
+func (q *Queries) CreateTenantRegistrationRequest(ctx context.Context, arg CreateTenantRegistrationRequestParams) error {
+	_, err := q.db.ExecContext(ctx, createTenantRegistrationRequest,
+		arg.ID,
+		arg.BusinessName,
+		arg.BusinessType,
+		arg.OwnerFirstName,
+		arg.OwnerLastName,
+		arg.OwnerEmail,
+		arg.PasswordHash,
+		arg.Phone,
+		arg.Notes,
+		arg.Status,
+	)
 	return err
 }
 
@@ -58,6 +653,226 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 	return err
 }
 
+const getClientByID = `-- name: GetClientByID :one
+SELECT id, tenant_id, first_name, last_name, email, phone, address, lead_source, converted_from_lead_id, notes, created_at, updated_at, deleted_at
+FROM clients
+WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+LIMIT 1
+`
+
+type GetClientByIDParams struct {
+	ID       string `json:"id"`
+	TenantID string `json:"tenant_id"`
+}
+
+func (q *Queries) GetClientByID(ctx context.Context, arg GetClientByIDParams) (Client, error) {
+	row := q.db.QueryRowContext(ctx, getClientByID, arg.ID, arg.TenantID)
+	var i Client
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.Phone,
+		&i.Address,
+		&i.LeadSource,
+		&i.ConvertedFromLeadID,
+		&i.Notes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getLeadByID = `-- name: GetLeadByID :one
+SELECT id, tenant_id, workflow_id, stage_id, title, contact_name, contact_email, contact_phone, source, photography_service, estimated_value_minor, assigned_user_id, requested_date, location, notes, status, created_at, updated_at, deleted_at
+FROM leads
+WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+LIMIT 1
+`
+
+type GetLeadByIDParams struct {
+	ID       string `json:"id"`
+	TenantID string `json:"tenant_id"`
+}
+
+func (q *Queries) GetLeadByID(ctx context.Context, arg GetLeadByIDParams) (Lead, error) {
+	row := q.db.QueryRowContext(ctx, getLeadByID, arg.ID, arg.TenantID)
+	var i Lead
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.WorkflowID,
+		&i.StageID,
+		&i.Title,
+		&i.ContactName,
+		&i.ContactEmail,
+		&i.ContactPhone,
+		&i.Source,
+		&i.PhotographyService,
+		&i.EstimatedValueMinor,
+		&i.AssignedUserID,
+		&i.RequestedDate,
+		&i.Location,
+		&i.Notes,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getMembership = `-- name: GetMembership :one
+SELECT id, tenant_id, user_id, role, status, created_at, updated_at, deleted_at
+FROM memberships
+WHERE tenant_id = ? AND user_id = ? AND deleted_at IS NULL
+LIMIT 1
+`
+
+type GetMembershipParams struct {
+	TenantID string `json:"tenant_id"`
+	UserID   string `json:"user_id"`
+}
+
+func (q *Queries) GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error) {
+	row := q.db.QueryRowContext(ctx, getMembership, arg.TenantID, arg.UserID)
+	var i Membership
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.UserID,
+		&i.Role,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getPlatformAdminByEmail = `-- name: GetPlatformAdminByEmail :one
+SELECT id, name, email, password_hash, role, created_at, updated_at, deleted_at
+FROM platform_admins
+WHERE email = ? AND deleted_at IS NULL
+LIMIT 1
+`
+
+func (q *Queries) GetPlatformAdminByEmail(ctx context.Context, email string) (PlatformAdmin, error) {
+	row := q.db.QueryRowContext(ctx, getPlatformAdminByEmail, email)
+	var i PlatformAdmin
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.PasswordHash,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getProjectByID = `-- name: GetProjectByID :one
+SELECT id, tenant_id, client_id, lead_id, title, project_type, status, stage, is_confirmed, confirmed_at, address, manager_id, created_at, updated_at, deleted_at
+FROM projects
+WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+LIMIT 1
+`
+
+type GetProjectByIDParams struct {
+	ID       string `json:"id"`
+	TenantID string `json:"tenant_id"`
+}
+
+func (q *Queries) GetProjectByID(ctx context.Context, arg GetProjectByIDParams) (Project, error) {
+	row := q.db.QueryRowContext(ctx, getProjectByID, arg.ID, arg.TenantID)
+	var i Project
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ClientID,
+		&i.LeadID,
+		&i.Title,
+		&i.ProjectType,
+		&i.Status,
+		&i.Stage,
+		&i.IsConfirmed,
+		&i.ConfirmedAt,
+		&i.Address,
+		&i.ManagerID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getQuotationByID = `-- name: GetQuotationByID :one
+SELECT id, tenant_id, project_id, quote_number, package_name, subtotal_minor, discount_minor, tax_minor, total_minor, status, snapshot_json, created_at, updated_at
+FROM quotations
+WHERE id = ? AND tenant_id = ?
+LIMIT 1
+`
+
+type GetQuotationByIDParams struct {
+	ID       string `json:"id"`
+	TenantID string `json:"tenant_id"`
+}
+
+func (q *Queries) GetQuotationByID(ctx context.Context, arg GetQuotationByIDParams) (Quotation, error) {
+	row := q.db.QueryRowContext(ctx, getQuotationByID, arg.ID, arg.TenantID)
+	var i Quotation
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ProjectID,
+		&i.QuoteNumber,
+		&i.PackageName,
+		&i.SubtotalMinor,
+		&i.DiscountMinor,
+		&i.TaxMinor,
+		&i.TotalMinor,
+		&i.Status,
+		&i.SnapshotJson,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getRegistrationRequestByID = `-- name: GetRegistrationRequestByID :one
+SELECT id, business_name, business_type, owner_first_name, owner_last_name, owner_email, password_hash, phone, notes, status, reviewed_by, reviewed_at, created_at, updated_at
+FROM tenant_registration_requests
+WHERE id = ?
+LIMIT 1
+`
+
+func (q *Queries) GetRegistrationRequestByID(ctx context.Context, id string) (TenantRegistrationRequest, error) {
+	row := q.db.QueryRowContext(ctx, getRegistrationRequestByID, id)
+	var i TenantRegistrationRequest
+	err := row.Scan(
+		&i.ID,
+		&i.BusinessName,
+		&i.BusinessType,
+		&i.OwnerFirstName,
+		&i.OwnerLastName,
+		&i.OwnerEmail,
+		&i.PasswordHash,
+		&i.Phone,
+		&i.Notes,
+		&i.Status,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getRoleByID = `-- name: GetRoleByID :one
 SELECT id, name, created_at, updated_at, deleted_at
 FROM roles
@@ -91,6 +906,58 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (Role, error) 
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getTenantByID = `-- name: GetTenantByID :one
+SELECT id, name, slug, business_type, status, subscription_status, currency, timezone, created_at, updated_at, deleted_at
+FROM tenants
+WHERE id = ? AND deleted_at IS NULL
+LIMIT 1
+`
+
+func (q *Queries) GetTenantByID(ctx context.Context, id string) (Tenant, error) {
+	row := q.db.QueryRowContext(ctx, getTenantByID, id)
+	var i Tenant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.BusinessType,
+		&i.Status,
+		&i.SubscriptionStatus,
+		&i.Currency,
+		&i.Timezone,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getTenantBySlug = `-- name: GetTenantBySlug :one
+SELECT id, name, slug, business_type, status, subscription_status, currency, timezone, created_at, updated_at, deleted_at
+FROM tenants
+WHERE slug = ? AND deleted_at IS NULL
+LIMIT 1
+`
+
+func (q *Queries) GetTenantBySlug(ctx context.Context, slug string) (Tenant, error) {
+	row := q.db.QueryRowContext(ctx, getTenantBySlug, slug)
+	var i Tenant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.BusinessType,
+		&i.Status,
+		&i.SubscriptionStatus,
+		&i.Currency,
+		&i.Timezone,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -198,4 +1065,683 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (GetUserByIDRow, e
 		&i.RoleName,
 	)
 	return i, err
+}
+
+const listClients = `-- name: ListClients :many
+SELECT id, tenant_id, first_name, last_name, email, phone, address, lead_source, converted_from_lead_id, notes, created_at, updated_at, deleted_at
+FROM clients
+WHERE tenant_id = ? AND deleted_at IS NULL
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListClients(ctx context.Context, tenantID string) ([]Client, error) {
+	rows, err := q.db.QueryContext(ctx, listClients, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Client{}
+	for rows.Next() {
+		var i Client
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Email,
+			&i.Phone,
+			&i.Address,
+			&i.LeadSource,
+			&i.ConvertedFromLeadID,
+			&i.Notes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listFollowups = `-- name: ListFollowups :many
+SELECT id, tenant_id, lead_id, client_id, assigned_user_id, title, due_date, completed_at, status, created_at, updated_at
+FROM followups
+WHERE tenant_id = ?
+ORDER BY due_date ASC
+`
+
+func (q *Queries) ListFollowups(ctx context.Context, tenantID string) ([]Followup, error) {
+	rows, err := q.db.QueryContext(ctx, listFollowups, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Followup{}
+	for rows.Next() {
+		var i Followup
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.LeadID,
+			&i.ClientID,
+			&i.AssignedUserID,
+			&i.Title,
+			&i.DueDate,
+			&i.CompletedAt,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLeadStages = `-- name: ListLeadStages :many
+SELECT id, tenant_id, workflow_id, name, color, stage_order, is_won, is_lost, created_at
+FROM lead_stages
+WHERE tenant_id = ? AND workflow_id = ?
+ORDER BY stage_order ASC
+`
+
+type ListLeadStagesParams struct {
+	TenantID   string `json:"tenant_id"`
+	WorkflowID string `json:"workflow_id"`
+}
+
+func (q *Queries) ListLeadStages(ctx context.Context, arg ListLeadStagesParams) ([]LeadStage, error) {
+	rows, err := q.db.QueryContext(ctx, listLeadStages, arg.TenantID, arg.WorkflowID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LeadStage{}
+	for rows.Next() {
+		var i LeadStage
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.WorkflowID,
+			&i.Name,
+			&i.Color,
+			&i.StageOrder,
+			&i.IsWon,
+			&i.IsLost,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLeadWorkflows = `-- name: ListLeadWorkflows :many
+SELECT id, tenant_id, name, is_default, created_at, updated_at
+FROM lead_workflows
+WHERE tenant_id = ?
+ORDER BY is_default DESC, name ASC
+`
+
+func (q *Queries) ListLeadWorkflows(ctx context.Context, tenantID string) ([]LeadWorkflow, error) {
+	rows, err := q.db.QueryContext(ctx, listLeadWorkflows, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LeadWorkflow{}
+	for rows.Next() {
+		var i LeadWorkflow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Name,
+			&i.IsDefault,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLeads = `-- name: ListLeads :many
+SELECT id, tenant_id, workflow_id, stage_id, title, contact_name, contact_email, contact_phone, source, photography_service, estimated_value_minor, assigned_user_id, requested_date, location, notes, status, created_at, updated_at, deleted_at
+FROM leads
+WHERE tenant_id = ? AND deleted_at IS NULL
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListLeads(ctx context.Context, tenantID string) ([]Lead, error) {
+	rows, err := q.db.QueryContext(ctx, listLeads, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Lead{}
+	for rows.Next() {
+		var i Lead
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.WorkflowID,
+			&i.StageID,
+			&i.Title,
+			&i.ContactName,
+			&i.ContactEmail,
+			&i.ContactPhone,
+			&i.Source,
+			&i.PhotographyService,
+			&i.EstimatedValueMinor,
+			&i.AssignedUserID,
+			&i.RequestedDate,
+			&i.Location,
+			&i.Notes,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPackages = `-- name: ListPackages :many
+SELECT id, tenant_id, name, description, price_minor, is_active, created_at, updated_at
+FROM packages
+WHERE tenant_id = ? AND is_active = 1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListPackages(ctx context.Context, tenantID string) ([]Package, error) {
+	rows, err := q.db.QueryContext(ctx, listPackages, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Package{}
+	for rows.Next() {
+		var i Package
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Name,
+			&i.Description,
+			&i.PriceMinor,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPendingRegistrationRequests = `-- name: ListPendingRegistrationRequests :many
+SELECT id, business_name, business_type, owner_first_name, owner_last_name, owner_email, password_hash, phone, notes, status, reviewed_by, reviewed_at, created_at, updated_at
+FROM tenant_registration_requests
+WHERE status = 'pending'
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListPendingRegistrationRequests(ctx context.Context) ([]TenantRegistrationRequest, error) {
+	rows, err := q.db.QueryContext(ctx, listPendingRegistrationRequests)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TenantRegistrationRequest{}
+	for rows.Next() {
+		var i TenantRegistrationRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.BusinessName,
+			&i.BusinessType,
+			&i.OwnerFirstName,
+			&i.OwnerLastName,
+			&i.OwnerEmail,
+			&i.PasswordHash,
+			&i.Phone,
+			&i.Notes,
+			&i.Status,
+			&i.ReviewedBy,
+			&i.ReviewedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listProjectSegments = `-- name: ListProjectSegments :many
+SELECT id, tenant_id, project_id, segment_type, name, start_date, end_date, segment_order, created_at
+FROM project_segments
+WHERE tenant_id = ? AND project_id = ?
+ORDER BY segment_order ASC
+`
+
+type ListProjectSegmentsParams struct {
+	TenantID  string `json:"tenant_id"`
+	ProjectID string `json:"project_id"`
+}
+
+func (q *Queries) ListProjectSegments(ctx context.Context, arg ListProjectSegmentsParams) ([]ProjectSegment, error) {
+	rows, err := q.db.QueryContext(ctx, listProjectSegments, arg.TenantID, arg.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ProjectSegment{}
+	for rows.Next() {
+		var i ProjectSegment
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.ProjectID,
+			&i.SegmentType,
+			&i.Name,
+			&i.StartDate,
+			&i.EndDate,
+			&i.SegmentOrder,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listProjects = `-- name: ListProjects :many
+SELECT id, tenant_id, client_id, lead_id, title, project_type, status, stage, is_confirmed, confirmed_at, address, manager_id, created_at, updated_at, deleted_at
+FROM projects
+WHERE tenant_id = ? AND deleted_at IS NULL
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListProjects(ctx context.Context, tenantID string) ([]Project, error) {
+	rows, err := q.db.QueryContext(ctx, listProjects, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Project{}
+	for rows.Next() {
+		var i Project
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.ClientID,
+			&i.LeadID,
+			&i.Title,
+			&i.ProjectType,
+			&i.Status,
+			&i.Stage,
+			&i.IsConfirmed,
+			&i.ConfirmedAt,
+			&i.Address,
+			&i.ManagerID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listQuotationsByProject = `-- name: ListQuotationsByProject :many
+SELECT id, tenant_id, project_id, quote_number, package_name, subtotal_minor, discount_minor, tax_minor, total_minor, status, snapshot_json, created_at, updated_at
+FROM quotations
+WHERE tenant_id = ? AND project_id = ?
+ORDER BY created_at DESC
+`
+
+type ListQuotationsByProjectParams struct {
+	TenantID  string `json:"tenant_id"`
+	ProjectID string `json:"project_id"`
+}
+
+func (q *Queries) ListQuotationsByProject(ctx context.Context, arg ListQuotationsByProjectParams) ([]Quotation, error) {
+	rows, err := q.db.QueryContext(ctx, listQuotationsByProject, arg.TenantID, arg.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Quotation{}
+	for rows.Next() {
+		var i Quotation
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.ProjectID,
+			&i.QuoteNumber,
+			&i.PackageName,
+			&i.SubtotalMinor,
+			&i.DiscountMinor,
+			&i.TaxMinor,
+			&i.TotalMinor,
+			&i.Status,
+			&i.SnapshotJson,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listServices = `-- name: ListServices :many
+SELECT id, tenant_id, name, description, price_minor, created_at, updated_at
+FROM services
+WHERE tenant_id = ?
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListServices(ctx context.Context, tenantID string) ([]Service, error) {
+	rows, err := q.db.QueryContext(ctx, listServices, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Service{}
+	for rows.Next() {
+		var i Service
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Name,
+			&i.Description,
+			&i.PriceMinor,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSessions = `-- name: ListSessions :many
+SELECT id, tenant_id, project_id, segment_id, title, session_type, start_time, end_time, location, photographer_id, status, created_at, updated_at
+FROM sessions
+WHERE tenant_id = ?
+ORDER BY start_time ASC
+`
+
+func (q *Queries) ListSessions(ctx context.Context, tenantID string) ([]Session, error) {
+	rows, err := q.db.QueryContext(ctx, listSessions, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Session{}
+	for rows.Next() {
+		var i Session
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.ProjectID,
+			&i.SegmentID,
+			&i.Title,
+			&i.SessionType,
+			&i.StartTime,
+			&i.EndTime,
+			&i.Location,
+			&i.PhotographerID,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTenants = `-- name: ListTenants :many
+SELECT id, name, slug, business_type, status, subscription_status, currency, timezone, created_at, updated_at, deleted_at
+FROM tenants
+WHERE deleted_at IS NULL
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListTenants(ctx context.Context) ([]Tenant, error) {
+	rows, err := q.db.QueryContext(ctx, listTenants)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Tenant{}
+	for rows.Next() {
+		var i Tenant
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.BusinessType,
+			&i.Status,
+			&i.SubscriptionStatus,
+			&i.Currency,
+			&i.Timezone,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUserMemberships = `-- name: ListUserMemberships :many
+SELECT
+    m.id,
+    m.tenant_id,
+    m.user_id,
+    m.role,
+    m.status,
+    m.created_at,
+    m.updated_at,
+    t.name AS tenant_name,
+    t.slug AS tenant_slug,
+    t.business_type AS tenant_business_type,
+    t.status AS tenant_status,
+    t.subscription_status AS tenant_subscription_status
+FROM memberships AS m
+INNER JOIN tenants AS t ON t.id = m.tenant_id
+WHERE m.user_id = ?
+  AND m.deleted_at IS NULL
+  AND t.deleted_at IS NULL
+ORDER BY m.created_at ASC
+`
+
+type ListUserMembershipsRow struct {
+	ID                       string `json:"id"`
+	TenantID                 string `json:"tenant_id"`
+	UserID                   string `json:"user_id"`
+	Role                     string `json:"role"`
+	Status                   string `json:"status"`
+	CreatedAt                string `json:"created_at"`
+	UpdatedAt                string `json:"updated_at"`
+	TenantName               string `json:"tenant_name"`
+	TenantSlug               string `json:"tenant_slug"`
+	TenantBusinessType       string `json:"tenant_business_type"`
+	TenantStatus             string `json:"tenant_status"`
+	TenantSubscriptionStatus string `json:"tenant_subscription_status"`
+}
+
+func (q *Queries) ListUserMemberships(ctx context.Context, userID string) ([]ListUserMembershipsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listUserMemberships, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUserMembershipsRow{}
+	for rows.Next() {
+		var i ListUserMembershipsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.UserID,
+			&i.Role,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.TenantName,
+			&i.TenantSlug,
+			&i.TenantBusinessType,
+			&i.TenantStatus,
+			&i.TenantSubscriptionStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateLeadStage = `-- name: UpdateLeadStage :exec
+UPDATE leads
+SET stage_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+`
+
+type UpdateLeadStageParams struct {
+	StageID  string `json:"stage_id"`
+	ID       string `json:"id"`
+	TenantID string `json:"tenant_id"`
+}
+
+func (q *Queries) UpdateLeadStage(ctx context.Context, arg UpdateLeadStageParams) error {
+	_, err := q.db.ExecContext(ctx, updateLeadStage, arg.StageID, arg.ID, arg.TenantID)
+	return err
+}
+
+const updateRegistrationRequestStatus = `-- name: UpdateRegistrationRequestStatus :exec
+UPDATE tenant_registration_requests
+SET status = ?, reviewed_by = ?, reviewed_at = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?
+`
+
+type UpdateRegistrationRequestStatusParams struct {
+	Status     string         `json:"status"`
+	ReviewedBy sql.NullString `json:"reviewed_by"`
+	ReviewedAt sql.NullString `json:"reviewed_at"`
+	ID         string         `json:"id"`
+}
+
+func (q *Queries) UpdateRegistrationRequestStatus(ctx context.Context, arg UpdateRegistrationRequestStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updateRegistrationRequestStatus,
+		arg.Status,
+		arg.ReviewedBy,
+		arg.ReviewedAt,
+		arg.ID,
+	)
+	return err
 }
