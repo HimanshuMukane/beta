@@ -17,6 +17,7 @@ func RegisterFrontendRoutes(r *chi.Mux, cfg utils.Config) {
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.RequireAuthPage(cfg))
+		r.Get("/switch-tenant", handlers.SwitchTenantHandler)
 		r.Get("/", handlers.HomeHandler)
 
 		r.Get("/leads", handlers.LeadsHandler)

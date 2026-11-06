@@ -1,5 +1,9 @@
 package components
 
+import (
+	"components/utils"
+)
+
 type AvatarProps struct {
 	Src      string
 	Alt      string
@@ -11,23 +15,30 @@ type AvatarProps struct {
 
 templ Avatar(props AvatarProps) {
 	{{
-		sizeClass := "avatar-md"
+		sizeClass := "size-8"
+		crmSize := "avatar-md"
 		if props.Size == "sm" {
-			sizeClass = "avatar-sm"
+			sizeClass = "size-6 text-xs"
+			crmSize = "avatar-sm"
 		} else if props.Size == "lg" {
-			sizeClass = "avatar-lg"
+			sizeClass = "size-10 text-sm"
+			crmSize = "avatar-lg"
 		}
 		bgStyle := ""
 		if props.BgColor != "" {
 			bgStyle = "background-color: " + props.BgColor + ";"
 		}
 	}}
-	<span class={ "crm-avatar", sizeClass, props.Class } style={ bgStyle }>
+	<span
+		data-slot="avatar"
+		data-size={ props.Size }
+		class={ utils.CN("crm-avatar rounded-full after:rounded-full group/avatar relative flex shrink-0 select-none after:absolute after:inset-0 after:border after:border-border overflow-hidden items-center justify-center font-medium", crmSize, sizeClass, props.Class) }
+		style={ bgStyle }
+	>
 		if props.Src != "" {
-			<img src={ props.Src } alt={ props.Alt } class="crm-avatar-img"/>
+			<img data-slot="avatar-image" class="crm-avatar-img rounded-full aspect-square size-full object-cover" src={ props.Src } alt={ props.Alt }/>
 		} else {
-			<span class="crm-avatar-fallback">{ props.Initials }</span>
+			<span data-slot="avatar-fallback" class="crm-avatar-fallback flex size-full items-center justify-center font-medium">{ props.Initials }</span>
 		}
 	</span>
 }
-

@@ -1,5 +1,9 @@
 package components
 
+import (
+	"components/utils"
+)
+
 templ Tabs(class ...string) {
 	{{
 		extraClass := ""
@@ -7,27 +11,45 @@ templ Tabs(class ...string) {
 			extraClass = class[0]
 		}
 	}}
-	<div class={ "crm-tabs-list", extraClass }>
+	<div
+		role="tablist"
+		data-slot="tabs-list"
+		class={ utils.CN("crm-tabs-list rounded-lg p-[3px] h-8 inline-flex w-fit items-center justify-center text-muted-foreground bg-muted", extraClass) }
+	>
 		{ children... }
 	</div>
 }
 
 type TabTriggerProps struct {
-	Active bool
-	Href   string
-	Class  string
+	Active  bool
+	Href    string
+	Class   string
 	Onclick string
 }
 
+const tabTriggerBaseClasses = "crm-tab-trigger gap-1.5 rounded-md border border-transparent px-2.5 py-1 text-sm font-medium relative inline-flex items-center justify-center whitespace-nowrap text-foreground/60 transition-all hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 dark:text-muted-foreground dark:hover:text-foreground data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30"
+
 templ TabTrigger(props TabTriggerProps) {
 	if props.Href != "" {
-		<a href={ templ.SafeURL(props.Href) } class={ "crm-tab-trigger", templ.KV("active", props.Active), props.Class }>
+		<a
+			href={ templ.SafeURL(props.Href) }
+			role="tab"
+			data-slot="tabs-trigger"
+			data-active?={ props.Active }
+			class={ utils.CN(tabTriggerBaseClasses, templ.KV("active", props.Active), props.Class) }
+		>
 			{ children... }
 		</a>
 	} else {
-		<button type="button" class={ "crm-tab-trigger", templ.KV("active", props.Active), props.Class } onclick={ templ.ComponentScript{Call: props.Onclick} }>
+		<button
+			type="button"
+			role="tab"
+			data-slot="tabs-trigger"
+			data-active?={ props.Active }
+			class={ utils.CN(tabTriggerBaseClasses, templ.KV("active", props.Active), props.Class) }
+			onclick={ templ.ComponentScript{Call: props.Onclick} }
+		>
 			{ children... }
 		</button>
 	}
 }
-

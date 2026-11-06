@@ -1,5 +1,15 @@
 package components
 
+import (
+	"components/utils"
+)
+
+type TableProps struct {
+	ID         string
+	Class      string
+	Attributes templ.Attributes
+}
+
 templ Table(class ...string) {
 	{{
 		extraClass := ""
@@ -7,8 +17,11 @@ templ Table(class ...string) {
 			extraClass = class[0]
 		}
 	}}
-	<div class={ "crm-table-container", extraClass }>
-		<table class="crm-table">
+	<div data-slot="table-container" class={ utils.CN("crm-table-container relative w-full overflow-x-auto", extraClass) }>
+		<table
+			data-slot="table"
+			class="crm-table w-full caption-bottom text-sm"
+		>
 			{ children... }
 		</table>
 	</div>
@@ -21,7 +34,10 @@ templ TableHead(class ...string) {
 			extraClass = class[0]
 		}
 	}}
-	<thead class={ extraClass }>
+	<thead
+		data-slot="table-header"
+		class={ utils.CN("[&_tr]:border-b", extraClass) }
+	>
 		<tr>
 			{ children... }
 		</tr>
@@ -35,9 +51,27 @@ templ TableBody(class ...string) {
 			extraClass = class[0]
 		}
 	}}
-	<tbody class={ extraClass }>
+	<tbody
+		data-slot="table-body"
+		class={ utils.CN("[&_tr:last-child]:border-0", extraClass) }
+	>
 		{ children... }
 	</tbody>
+}
+
+templ TableFooter(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<tfoot
+		data-slot="table-footer"
+		class={ utils.CN("bg-muted/50 border-t font-medium [&>tr]:last:border-b-0", extraClass) }
+	>
+		{ children... }
+	</tfoot>
 }
 
 templ TableRow(class ...string) {
@@ -47,7 +81,10 @@ templ TableRow(class ...string) {
 			extraClass = class[0]
 		}
 	}}
-	<tr class={ extraClass }>
+	<tr
+		data-slot="table-row"
+		class={ utils.CN("hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors has-aria-expanded:bg-muted/50", extraClass) }
+	>
 		{ children... }
 	</tr>
 }
@@ -59,7 +96,10 @@ templ TableCell(class ...string) {
 			extraClass = class[0]
 		}
 	}}
-	<td class={ extraClass }>
+	<td
+		data-slot="table-cell"
+		class={ utils.CN("p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has([data-slot=checkbox])]:pr-0", extraClass) }
+	>
 		{ children... }
 	</td>
 }
@@ -71,7 +111,10 @@ templ TableHeaderCell(class ...string) {
 			extraClass = class[0]
 		}
 	}}
-	<th class={ extraClass }>
+	<th
+		data-slot="table-head"
+		class={ utils.CN("text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has([data-slot=checkbox])]:pr-0", extraClass) }
+	>
 		{ children... }
 	</th>
 }
