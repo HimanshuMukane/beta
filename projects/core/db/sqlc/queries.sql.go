@@ -16,10 +16,10 @@ import (
 
 const claimDueFollowups = `-- name: ClaimDueFollowups :many
 SELECT id, tenant_id, lead_id, client_id, assigned_user_id, title, due_date, completed_at, status, created_at, updated_at
-FROM crm.followups
+FROM followups
 WHERE status = 'pending' AND due_date <= now()
 ORDER BY due_date ASC
-LIMIT $1
+LIMIT ?
 FOR UPDATE SKIP LOCKED
 `
 
@@ -59,9 +59,9 @@ func (q *Queries) ClaimDueFollowups(ctx context.Context, limit int32) ([]CrmFoll
 }
 
 const completeFollowup = `-- name: CompleteFollowup :exec
-UPDATE crm.followups
+UPDATE followups
 SET status = 'completed', completed_at = now(), updated_at = now()
-WHERE id = $1 AND tenant_id = $2
+WHERE id = ? AND tenant_id = ?
 `
 
 type CompleteFollowupParams struct {
@@ -75,7 +75,7 @@ func (q *Queries) CompleteFollowup(ctx context.Context, arg CompleteFollowupPara
 }
 
 const createClient = `-- name: CreateClient :exec
-INSERT INTO crm.clients (
+INSERT INTO clients (
     id,
     tenant_id,
     first_name,
@@ -87,7 +87,7 @@ INSERT INTO crm.clients (
     converted_from_lead_id,
     notes
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateClientParams struct {
@@ -120,7 +120,7 @@ func (q *Queries) CreateClient(ctx context.Context, arg CreateClientParams) erro
 }
 
 const createFollowup = `-- name: CreateFollowup :exec
-INSERT INTO crm.followups (
+INSERT INTO followups (
     id,
     tenant_id,
     lead_id,
@@ -130,7 +130,7 @@ INSERT INTO crm.followups (
     due_date,
     status
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateFollowupParams struct {
@@ -159,7 +159,7 @@ func (q *Queries) CreateFollowup(ctx context.Context, arg CreateFollowupParams) 
 }
 
 const createLead = `-- name: CreateLead :exec
-INSERT INTO crm.leads (
+INSERT INTO leads (
     id,
     tenant_id,
     workflow_id,
@@ -177,7 +177,7 @@ INSERT INTO crm.leads (
     notes,
     status
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateLeadParams struct {
@@ -222,8 +222,8 @@ func (q *Queries) CreateLead(ctx context.Context, arg CreateLeadParams) error {
 }
 
 const createLeadStage = `-- name: CreateLeadStage :exec
-INSERT INTO crm.lead_stages (id, tenant_id, workflow_id, name, color, stage_order, is_won, is_lost)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO lead_stages (id, tenant_id, workflow_id, name, color, stage_order, is_won, is_lost)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateLeadStageParams struct {
@@ -252,8 +252,8 @@ func (q *Queries) CreateLeadStage(ctx context.Context, arg CreateLeadStageParams
 }
 
 const createLeadWorkflow = `-- name: CreateLeadWorkflow :exec
-INSERT INTO crm.lead_workflows (id, tenant_id, name, is_default)
-VALUES ($1, $2, $3, $4)
+INSERT INTO lead_workflows (id, tenant_id, name, is_default)
+VALUES (?, ?, ?, ?)
 `
 
 type CreateLeadWorkflowParams struct {
@@ -274,14 +274,14 @@ func (q *Queries) CreateLeadWorkflow(ctx context.Context, arg CreateLeadWorkflow
 }
 
 const createMembership = `-- name: CreateMembership :exec
-INSERT INTO identity.memberships (
+INSERT INTO memberships (
     id,
     tenant_id,
     user_id,
     role,
     status
 )
-VALUES ($1, $2, $3, $4, $5)
+VALUES (?, ?, ?, ?, ?)
 `
 
 type CreateMembershipParams struct {
@@ -304,8 +304,8 @@ func (q *Queries) CreateMembership(ctx context.Context, arg CreateMembershipPara
 }
 
 const createPackage = `-- name: CreatePackage :exec
-INSERT INTO crm.packages (id, tenant_id, name, description, price_minor, is_active)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO packages (id, tenant_id, name, description, price_minor, is_active)
+VALUES (?, ?, ?, ?, ?, ?)
 `
 
 type CreatePackageParams struct {
@@ -337,7 +337,7 @@ INSERT INTO platform.platform_admins (
     password_hash,
     role
 )
-VALUES ($1, $2, $3, $4, $5)
+VALUES (?, ?, ?, ?, ?)
 `
 
 type CreatePlatformAdminParams struct {
@@ -360,7 +360,7 @@ func (q *Queries) CreatePlatformAdmin(ctx context.Context, arg CreatePlatformAdm
 }
 
 const createProject = `-- name: CreateProject :exec
-INSERT INTO crm.projects (
+INSERT INTO projects (
     id,
     tenant_id,
     client_id,
@@ -374,7 +374,7 @@ INSERT INTO crm.projects (
     address,
     manager_id
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateProjectParams struct {
@@ -411,7 +411,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) er
 }
 
 const createProjectSegment = `-- name: CreateProjectSegment :exec
-INSERT INTO crm.project_segments (
+INSERT INTO project_segments (
     id,
     tenant_id,
     project_id,
@@ -421,7 +421,7 @@ INSERT INTO crm.project_segments (
     end_date,
     segment_order
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateProjectSegmentParams struct {
@@ -450,7 +450,7 @@ func (q *Queries) CreateProjectSegment(ctx context.Context, arg CreateProjectSeg
 }
 
 const createQuotation = `-- name: CreateQuotation :exec
-INSERT INTO crm.quotations (
+INSERT INTO quotations (
     id,
     tenant_id,
     project_id,
@@ -463,7 +463,7 @@ INSERT INTO crm.quotations (
     status,
     snapshot
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateQuotationParams struct {
@@ -498,8 +498,8 @@ func (q *Queries) CreateQuotation(ctx context.Context, arg CreateQuotationParams
 }
 
 const createRole = `-- name: CreateRole :exec
-INSERT INTO identity.roles (id, name)
-VALUES ($1, $2)
+INSERT INTO roles (id, name)
+VALUES (?, ?)
 `
 
 type CreateRoleParams struct {
@@ -513,8 +513,8 @@ func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) error {
 }
 
 const createService = `-- name: CreateService :exec
-INSERT INTO crm.services (id, tenant_id, name, description, price_minor)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO services (id, tenant_id, name, description, price_minor)
+VALUES (?, ?, ?, ?, ?)
 `
 
 type CreateServiceParams struct {
@@ -537,7 +537,7 @@ func (q *Queries) CreateService(ctx context.Context, arg CreateServiceParams) er
 }
 
 const createSession = `-- name: CreateSession :exec
-INSERT INTO crm.sessions (
+INSERT INTO sessions (
     id,
     tenant_id,
     project_id,
@@ -550,7 +550,7 @@ INSERT INTO crm.sessions (
     photographer_id,
     status
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateSessionParams struct {
@@ -585,7 +585,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 }
 
 const createTenant = `-- name: CreateTenant :exec
-INSERT INTO crm.tenants (
+INSERT INTO tenants (
     id,
     name,
     slug,
@@ -595,7 +595,7 @@ INSERT INTO crm.tenants (
     currency,
     timezone
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateTenantParams struct {
@@ -636,7 +636,7 @@ INSERT INTO platform.tenant_registration_requests (
     notes,
     status
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateTenantRegistrationRequestParams struct {
@@ -669,7 +669,7 @@ func (q *Queries) CreateTenantRegistrationRequest(ctx context.Context, arg Creat
 }
 
 const createUser = `-- name: CreateUser :exec
-INSERT INTO identity.users (
+INSERT INTO users (
     id,
     first_name,
     last_name,
@@ -678,7 +678,7 @@ INSERT INTO identity.users (
     auth_provider_id,
     role_id
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateUserParams struct {
@@ -706,8 +706,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 
 const getClientByID = `-- name: GetClientByID :one
 SELECT id, tenant_id, first_name, last_name, email, phone, address, lead_source, converted_from_lead_id, notes, created_at, updated_at, deleted_at
-FROM crm.clients
-WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
+FROM clients
+WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -739,8 +739,8 @@ func (q *Queries) GetClientByID(ctx context.Context, arg GetClientByIDParams) (C
 
 const getLeadByID = `-- name: GetLeadByID :one
 SELECT id, tenant_id, workflow_id, stage_id, title, contact_name, contact_email, contact_phone, source, photography_service, estimated_value_minor, assigned_user_id, requested_date, location, notes, status, created_at, updated_at, deleted_at
-FROM crm.leads
-WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
+FROM leads
+WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -778,8 +778,8 @@ func (q *Queries) GetLeadByID(ctx context.Context, arg GetLeadByIDParams) (CrmLe
 
 const getMembership = `-- name: GetMembership :one
 SELECT id, tenant_id, user_id, role, status, created_at, updated_at, deleted_at
-FROM identity.memberships
-WHERE tenant_id = $1 AND user_id = $2 AND deleted_at IS NULL
+FROM memberships
+WHERE tenant_id = ? AND user_id = ? AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -807,7 +807,7 @@ func (q *Queries) GetMembership(ctx context.Context, arg GetMembershipParams) (I
 const getPlatformAdminByEmail = `-- name: GetPlatformAdminByEmail :one
 SELECT id, name, email, password_hash, role, created_at, updated_at, deleted_at
 FROM platform.platform_admins
-WHERE email = $1 AND deleted_at IS NULL
+WHERE email = ? AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -829,8 +829,8 @@ func (q *Queries) GetPlatformAdminByEmail(ctx context.Context, email string) (Pl
 
 const getProjectByID = `-- name: GetProjectByID :one
 SELECT id, tenant_id, client_id, lead_id, title, project_type, status, stage, is_confirmed, confirmed_at, address, manager_id, created_at, updated_at, deleted_at
-FROM crm.projects
-WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
+FROM projects
+WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -864,8 +864,8 @@ func (q *Queries) GetProjectByID(ctx context.Context, arg GetProjectByIDParams) 
 
 const getProjectByIDForUpdate = `-- name: GetProjectByIDForUpdate :one
 SELECT id, tenant_id, client_id, lead_id, title, project_type, status, stage, is_confirmed, confirmed_at, address, manager_id, created_at, updated_at, deleted_at
-FROM crm.projects
-WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
+FROM projects
+WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
 LIMIT 1
 FOR UPDATE
 `
@@ -900,8 +900,8 @@ func (q *Queries) GetProjectByIDForUpdate(ctx context.Context, arg GetProjectByI
 
 const getQuotationByID = `-- name: GetQuotationByID :one
 SELECT id, tenant_id, project_id, quote_number, package_name, subtotal_minor, discount_minor, tax_minor, total_minor, status, snapshot, created_at, updated_at
-FROM crm.quotations
-WHERE id = $1 AND tenant_id = $2
+FROM quotations
+WHERE id = ? AND tenant_id = ?
 LIMIT 1
 `
 
@@ -934,7 +934,7 @@ func (q *Queries) GetQuotationByID(ctx context.Context, arg GetQuotationByIDPara
 const getRegistrationRequestByID = `-- name: GetRegistrationRequestByID :one
 SELECT id, business_name, business_type, owner_first_name, owner_last_name, owner_email, password_hash, phone, notes, status, reviewed_by, reviewed_at, created_at, updated_at
 FROM platform.tenant_registration_requests
-WHERE id = $1
+WHERE id = ?
 LIMIT 1
 `
 
@@ -962,8 +962,8 @@ func (q *Queries) GetRegistrationRequestByID(ctx context.Context, id uuid.UUID) 
 
 const getRoleByID = `-- name: GetRoleByID :one
 SELECT id, name, created_at, updated_at, deleted_at
-FROM identity.roles
-WHERE id = $1 AND deleted_at IS NULL
+FROM roles
+WHERE id = ? AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -982,8 +982,8 @@ func (q *Queries) GetRoleByID(ctx context.Context, id uuid.UUID) (IdentityRole, 
 
 const getRoleByName = `-- name: GetRoleByName :one
 SELECT id, name, created_at, updated_at, deleted_at
-FROM identity.roles
-WHERE name = $1 AND deleted_at IS NULL
+FROM roles
+WHERE name = ? AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -1002,8 +1002,8 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (IdentityRole,
 
 const getTenantByID = `-- name: GetTenantByID :one
 SELECT id, name, slug, business_type, status, subscription_status, currency, timezone, created_at, updated_at, deleted_at
-FROM crm.tenants
-WHERE id = $1 AND deleted_at IS NULL
+FROM tenants
+WHERE id = ? AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -1028,8 +1028,8 @@ func (q *Queries) GetTenantByID(ctx context.Context, id uuid.UUID) (CrmTenant, e
 
 const getTenantBySlug = `-- name: GetTenantBySlug :one
 SELECT id, name, slug, business_type, status, subscription_status, currency, timezone, created_at, updated_at, deleted_at
-FROM crm.tenants
-WHERE slug = $1 AND deleted_at IS NULL
+FROM tenants
+WHERE slug = ? AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -1065,9 +1065,9 @@ SELECT
     u.updated_at,
     u.deleted_at,
     r.name AS role_name
-FROM identity.users AS u
-LEFT JOIN identity.roles AS r ON r.id = u.role_id
-WHERE u.email = $1
+FROM users AS u
+LEFT JOIN roles AS r ON r.id = u.role_id
+WHERE u.email = ?
   AND u.deleted_at IS NULL
 LIMIT 1
 `
@@ -1118,9 +1118,9 @@ SELECT
     u.updated_at,
     u.deleted_at,
     r.name AS role_name
-FROM identity.users AS u
-LEFT JOIN identity.roles AS r ON r.id = u.role_id
-WHERE u.id = $1
+FROM users AS u
+LEFT JOIN roles AS r ON r.id = u.role_id
+WHERE u.id = ?
   AND u.deleted_at IS NULL
 LIMIT 1
 `
@@ -1160,8 +1160,8 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (GetUserByIDRow
 
 const listClients = `-- name: ListClients :many
 SELECT id, tenant_id, first_name, last_name, email, phone, address, lead_source, converted_from_lead_id, notes, created_at, updated_at, deleted_at
-FROM crm.clients
-WHERE tenant_id = $1 AND deleted_at IS NULL
+FROM clients
+WHERE tenant_id = ? AND deleted_at IS NULL
 ORDER BY created_at DESC
 `
 
@@ -1204,8 +1204,8 @@ func (q *Queries) ListClients(ctx context.Context, tenantID uuid.UUID) ([]CrmCli
 
 const listFollowups = `-- name: ListFollowups :many
 SELECT id, tenant_id, lead_id, client_id, assigned_user_id, title, due_date, completed_at, status, created_at, updated_at
-FROM crm.followups
-WHERE tenant_id = $1
+FROM followups
+WHERE tenant_id = ?
 ORDER BY due_date ASC
 `
 
@@ -1246,8 +1246,8 @@ func (q *Queries) ListFollowups(ctx context.Context, tenantID uuid.UUID) ([]CrmF
 
 const listLeadStages = `-- name: ListLeadStages :many
 SELECT id, tenant_id, workflow_id, name, color, stage_order, is_won, is_lost, created_at
-FROM crm.lead_stages
-WHERE tenant_id = $1 AND workflow_id = $2
+FROM lead_stages
+WHERE tenant_id = ? AND workflow_id = ?
 ORDER BY stage_order ASC
 `
 
@@ -1291,8 +1291,8 @@ func (q *Queries) ListLeadStages(ctx context.Context, arg ListLeadStagesParams) 
 
 const listLeadWorkflows = `-- name: ListLeadWorkflows :many
 SELECT id, tenant_id, name, is_default, created_at, updated_at
-FROM crm.lead_workflows
-WHERE tenant_id = $1
+FROM lead_workflows
+WHERE tenant_id = ?
 ORDER BY is_default DESC, name ASC
 `
 
@@ -1328,8 +1328,8 @@ func (q *Queries) ListLeadWorkflows(ctx context.Context, tenantID uuid.UUID) ([]
 
 const listLeads = `-- name: ListLeads :many
 SELECT id, tenant_id, workflow_id, stage_id, title, contact_name, contact_email, contact_phone, source, photography_service, estimated_value_minor, assigned_user_id, requested_date, location, notes, status, created_at, updated_at, deleted_at
-FROM crm.leads
-WHERE tenant_id = $1 AND deleted_at IS NULL
+FROM leads
+WHERE tenant_id = ? AND deleted_at IS NULL
 ORDER BY created_at DESC
 `
 
@@ -1378,8 +1378,8 @@ func (q *Queries) ListLeads(ctx context.Context, tenantID uuid.UUID) ([]CrmLead,
 
 const listPackages = `-- name: ListPackages :many
 SELECT id, tenant_id, name, description, price_minor, is_active, created_at, updated_at
-FROM crm.packages
-WHERE tenant_id = $1 AND is_active = TRUE
+FROM packages
+WHERE tenant_id = ? AND is_active = TRUE
 ORDER BY created_at DESC
 `
 
@@ -1462,8 +1462,8 @@ func (q *Queries) ListPendingRegistrationRequests(ctx context.Context) ([]Platfo
 
 const listProjectSegments = `-- name: ListProjectSegments :many
 SELECT id, tenant_id, project_id, segment_type, name, start_date, end_date, segment_order, created_at
-FROM crm.project_segments
-WHERE tenant_id = $1 AND project_id = $2
+FROM project_segments
+WHERE tenant_id = ? AND project_id = ?
 ORDER BY segment_order ASC
 `
 
@@ -1507,8 +1507,8 @@ func (q *Queries) ListProjectSegments(ctx context.Context, arg ListProjectSegmen
 
 const listProjects = `-- name: ListProjects :many
 SELECT id, tenant_id, client_id, lead_id, title, project_type, status, stage, is_confirmed, confirmed_at, address, manager_id, created_at, updated_at, deleted_at
-FROM crm.projects
-WHERE tenant_id = $1 AND deleted_at IS NULL
+FROM projects
+WHERE tenant_id = ? AND deleted_at IS NULL
 ORDER BY created_at DESC
 `
 
@@ -1553,8 +1553,8 @@ func (q *Queries) ListProjects(ctx context.Context, tenantID uuid.UUID) ([]CrmPr
 
 const listQuotationsByProject = `-- name: ListQuotationsByProject :many
 SELECT id, tenant_id, project_id, quote_number, package_name, subtotal_minor, discount_minor, tax_minor, total_minor, status, snapshot, created_at, updated_at
-FROM crm.quotations
-WHERE tenant_id = $1 AND project_id = $2
+FROM quotations
+WHERE tenant_id = ? AND project_id = ?
 ORDER BY created_at DESC
 `
 
@@ -1602,8 +1602,8 @@ func (q *Queries) ListQuotationsByProject(ctx context.Context, arg ListQuotation
 
 const listServices = `-- name: ListServices :many
 SELECT id, tenant_id, name, description, price_minor, created_at, updated_at
-FROM crm.services
-WHERE tenant_id = $1
+FROM services
+WHERE tenant_id = ?
 ORDER BY created_at DESC
 `
 
@@ -1640,8 +1640,8 @@ func (q *Queries) ListServices(ctx context.Context, tenantID uuid.UUID) ([]CrmSe
 
 const listSessions = `-- name: ListSessions :many
 SELECT id, tenant_id, project_id, segment_id, title, session_type, start_time, end_time, location, photographer_id, status, created_at, updated_at
-FROM crm.sessions
-WHERE tenant_id = $1
+FROM sessions
+WHERE tenant_id = ?
 ORDER BY start_time ASC
 `
 
@@ -1684,7 +1684,7 @@ func (q *Queries) ListSessions(ctx context.Context, tenantID uuid.UUID) ([]CrmSe
 
 const listTenants = `-- name: ListTenants :many
 SELECT id, name, slug, business_type, status, subscription_status, currency, timezone, created_at, updated_at, deleted_at
-FROM crm.tenants
+FROM tenants
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC
 `
@@ -1738,9 +1738,9 @@ SELECT
     t.business_type AS tenant_business_type,
     t.status AS tenant_status,
     t.subscription_status AS tenant_subscription_status
-FROM identity.memberships AS m
-INNER JOIN crm.tenants AS t ON t.id = m.tenant_id
-WHERE m.user_id = $1
+FROM memberships AS m
+INNER JOIN tenants AS t ON t.id = m.tenant_id
+WHERE m.user_id = ?
   AND m.deleted_at IS NULL
   AND t.deleted_at IS NULL
 ORDER BY m.created_at ASC
@@ -1798,15 +1798,15 @@ func (q *Queries) ListUserMemberships(ctx context.Context, userID uuid.UUID) ([]
 }
 
 const nextTenantCounter = `-- name: NextTenantCounter :one
-INSERT INTO crm.tenant_counters (
+INSERT INTO tenant_counters (
     tenant_id,
     counter_type,
     last_value
 )
-VALUES ($1, $2, 1)
+VALUES (?, ?, 1)
 ON CONFLICT (tenant_id, counter_type)
 DO UPDATE SET
-    last_value = crm.tenant_counters.last_value + 1,
+    last_value = tenant_counters.last_value + 1,
     updated_at = now()
 RETURNING last_value
 `
@@ -1825,10 +1825,10 @@ func (q *Queries) NextTenantCounter(ctx context.Context, arg NextTenantCounterPa
 
 const searchClientsFTS = `-- name: SearchClientsFTS :many
 SELECT id, tenant_id, first_name, last_name, email, phone, address, lead_source, converted_from_lead_id, notes, created_at, updated_at, deleted_at
-FROM crm.clients
-WHERE tenant_id = $1
+FROM clients
+WHERE tenant_id = ?
   AND deleted_at IS NULL
-  AND to_tsvector('simple', coalesce(first_name, '') || ' ' || coalesce(last_name, '') || ' ' || coalesce(email, '') || ' ' || coalesce(phone, '')) @@ websearch_to_tsquery('simple', $2)
+  AND to_tsvector('simple', coalesce(first_name, '') || ' ' || coalesce(last_name, '') || ' ' || coalesce(email, '') || ' ' || coalesce(phone, '')) @@ websearch_to_tsquery('simple', ?)
 ORDER BY created_at DESC
 `
 
@@ -1876,10 +1876,10 @@ func (q *Queries) SearchClientsFTS(ctx context.Context, arg SearchClientsFTSPara
 
 const searchLeadsFTS = `-- name: SearchLeadsFTS :many
 SELECT id, tenant_id, workflow_id, stage_id, title, contact_name, contact_email, contact_phone, source, photography_service, estimated_value_minor, assigned_user_id, requested_date, location, notes, status, created_at, updated_at, deleted_at
-FROM crm.leads
-WHERE tenant_id = $1
+FROM leads
+WHERE tenant_id = ?
   AND deleted_at IS NULL
-  AND to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(contact_name, '') || ' ' || coalesce(notes, '')) @@ websearch_to_tsquery('simple', $2)
+  AND to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(contact_name, '') || ' ' || coalesce(notes, '')) @@ websearch_to_tsquery('simple', ?)
 ORDER BY created_at DESC
 `
 
@@ -1932,9 +1932,9 @@ func (q *Queries) SearchLeadsFTS(ctx context.Context, arg SearchLeadsFTSParams) 
 }
 
 const updateLeadStage = `-- name: UpdateLeadStage :exec
-UPDATE crm.leads
-SET stage_id = $3, updated_at = now()
-WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
+UPDATE leads
+SET stage_id = ?, updated_at = now()
+WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
 `
 
 type UpdateLeadStageParams struct {
@@ -1950,8 +1950,8 @@ func (q *Queries) UpdateLeadStage(ctx context.Context, arg UpdateLeadStageParams
 
 const updateRegistrationRequestStatus = `-- name: UpdateRegistrationRequestStatus :exec
 UPDATE platform.tenant_registration_requests
-SET status = $2, reviewed_by = $3, reviewed_at = now(), updated_at = now()
-WHERE id = $1
+SET status = ?, reviewed_by = ?, reviewed_at = now(), updated_at = now()
+WHERE id = ?
 `
 
 type UpdateRegistrationRequestStatusParams struct {

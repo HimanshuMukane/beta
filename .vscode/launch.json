@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Photography CRM",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/projects/photography_crm/main.go",
+            "cwd": "${workspaceFolder}/projects/photography_crm"
+        },
+        {
+            "name": "Debug All Services (Runner)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/runner/main.go",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Debug Current Package",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${fileDirname}"
+        }
+    ]
+}

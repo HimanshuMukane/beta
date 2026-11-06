@@ -4,15 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	"core/db/schema"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
-	_ "modernc.org/sqlite"
 )
 
 type dbContextKey struct{}
@@ -31,57 +28,21 @@ func InitDBPool(cfg ...Config) (*DBPool, error) {
 		activeCfg = cfg[0]
 	}
 
-	if activeCfg.DatabaseURL != "" {
-		primaryDB, err := OpenDB(activeCfg.DatabaseURL)
-		if err != nil {
-			return nil, fmt.Errorf("open postgres database: %w", err)
+	if activeCfg.DatabaseURL == "" {
+		return nil, fmt.Errorf("DatabaseURL or (DB_NAME and DB_PASSWORD) is required")
+	}
+
+	primaryDB, err := OpenDB(activeCfg.DatabaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("open mysql database: %w", err)
+	}
+
+	testDB := primaryDB
+	if testURL := os.Getenv("DATABASE_TEST_URL"); testURL != "" {
+		tDB, err := OpenDB(testURL)
+		if err == nil {
+			testDB = tDB
 		}
-
-		testDB := primaryDB
-		if testURL := os.Getenv("DATABASE_TEST_URL"); testURL != "" {
-			tDB, err := OpenDB(testURL)
-			if err == nil {
-				testDB = tDB
-			}
-		}
-
-		return &DBPool{
-			Primary: primaryDB,
-			Test:    testDB,
-		}, nil
-	}
-
-	if activeCfg.DBPath == "" {
-		return nil, fmt.Errorf("DB_PATH or DATABASE_URL is required")
-	}
-
-	primaryPath, err := filepath.Abs(activeCfg.DBPath)
-	if err != nil {
-		return nil, fmt.Errorf("resolve DB_PATH: %w", err)
-	}
-
-	testPath := activeCfg.DBTestPath
-	if testPath == "" {
-		testPath = "test.db"
-	}
-	testPathAbs, err := filepath.Abs(testPath)
-	if err != nil {
-		return nil, fmt.Errorf("resolve DB_TEST_PATH: %w", err)
-	}
-
-	if primaryPath == testPathAbs {
-		return nil, fmt.Errorf("test database path must never match primary database path: %s", primaryPath)
-	}
-
-	primaryDB, err := OpenDB(primaryPath)
-	if err != nil {
-		return nil, fmt.Errorf("open primary database: %w", err)
-	}
-
-	testDB, err := OpenDB(testPathAbs)
-	if err != nil {
-		_ = primaryDB.Close()
-		return nil, fmt.Errorf("open test database: %w", err)
 	}
 
 	return &DBPool{
@@ -91,40 +52,19 @@ func InitDBPool(cfg ...Config) (*DBPool, error) {
 }
 
 func OpenDB(pathOrURL string) (*sqlx.DB, error) {
-	if strings.HasPrefix(pathOrURL, "postgres://") || strings.HasPrefix(pathOrURL, "postgresql://") {
-		db, err := sqlx.Open("pgx", pathOrURL)
-		if err != nil {
-			return nil, fmt.Errorf("open postgres: %w", err)
-		}
-
-		db.SetMaxOpenConns(25)
-		db.SetMaxIdleConns(5)
-		db.SetConnMaxLifetime(15 * time.Minute)
-
-		return db, nil
-	}
-
-	if err := os.MkdirAll(filepath.Dir(pathOrURL), 0o755); err != nil {
-		return nil, fmt.Errorf("create database directory: %w", err)
-	}
-
-	dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(5000)&_pragma=foreign_keys(ON)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)", pathOrURL)
-	db, err := sqlx.Open("sqlite", dsn)
+	dsn := strings.TrimPrefix(pathOrURL, "mysql://")
+	db, err := sqlx.Open("mysql", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("open sqlite: %w", err)
+		return nil, fmt.Errorf("open mysql: %w", err)
 	}
 
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(15 * time.Minute)
 
 	if err := db.Ping(); err != nil {
 		_ = db.Close()
-		return nil, fmt.Errorf("ping sqlite: %w", err)
-	}
-
-	if _, err := db.Exec(schema.SchemaSQL); err != nil {
-		_ = db.Close()
-		return nil, fmt.Errorf("apply schema: %w", err)
+		return nil, fmt.Errorf("ping mysql: %w", err)
 	}
 
 	return db, nil
@@ -135,17 +75,32 @@ func (p *DBPool) Close() error {
 	defer p.mu.Unlock()
 
 	var firstErr error
+
 	if p.Primary != nil {
 		if err := p.Primary.Close(); err != nil && firstErr == nil {
 			firstErr = err
 		}
+		p.Primary = nil
 	}
-	if p.Test != nil {
+
+	if p.Test != nil && p.Test != p.Primary {
 		if err := p.Test.Close(); err != nil && firstErr == nil {
 			firstErr = err
 		}
+		p.Test = nil
 	}
+
 	return firstErr
+}
+
+func (p *DBPool) Ping(ctx context.Context) error {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.Primary == nil {
+		return fmt.Errorf("primary database is not initialized")
+	}
+	return p.Primary.PingContext(ctx)
 }
 
 func WithDB(ctx context.Context, db *sqlx.DB) context.Context {
@@ -153,14 +108,11 @@ func WithDB(ctx context.Context, db *sqlx.DB) context.Context {
 }
 
 func DBFromContext(ctx context.Context, fallback ...*sqlx.DB) *sqlx.DB {
-	if ctx != nil {
-		if db, ok := ctx.Value(activeDBKey).(*sqlx.DB); ok && db != nil {
-			return db
-		}
+	if db, ok := ctx.Value(activeDBKey).(*sqlx.DB); ok && db != nil {
+		return db
 	}
-	if len(fallback) > 0 {
+	if len(fallback) > 0 && fallback[0] != nil {
 		return fallback[0]
 	}
 	return nil
 }
-

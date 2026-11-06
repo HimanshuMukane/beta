@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	databasePath := flag.String("db", "", "Path to SQLite database file")
+	databasePath := flag.String("db", "", "MySQL DSN or database URL")
 	roleName := flag.String("role", "", "Role name to create or assign")
 	firstName := flag.String("first", "", "User first name")
 	lastName := flag.String("last", "", "User last name")
