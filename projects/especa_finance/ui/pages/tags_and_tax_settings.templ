@@ -1,0 +1,58 @@
+package pages
+
+import (
+	"fmt"
+	"especa_finance/models"
+	"especa_finance/ui/layouts"
+)
+
+templ TagsAndTaxSettings(tags []models.Tag, taxes []models.TaxConfiguration) {
+	@layouts.MainLayout("Tags & Tax Configuration", "tags", []layouts.Breadcrumb{{Label: "Configuration"}, {Label: "Tags & Tax"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Tags & Tax Configurations</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Manage analytics tags (non-computational) and statutory tax definitions (CGST/SGST/IGST/TDS)</p>
+			</div>
+		</div>
+
+		<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+			<!-- Tags Management -->
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 20px;">
+				<h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 12px;">Categorization & Analytics Tags</h3>
+				<p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Tags do not control financial formulas or calculation logic.</p>
+
+				<form method="POST" action="/settings/tags/new" style="display: flex; gap: 10px; margin-bottom: 18px;">
+					<input type="text" name="name" placeholder="Tag Name (e.g. Enterprise, R&D)" style="flex: 2; background: #141824; border: 1px solid #2d3748; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 13px;" required/>
+					<input type="color" name="color" value="#00cec9" style="flex: 0 0 40px; height: 32px; background: transparent; border: none; cursor: pointer;"/>
+					<button type="submit" class="finance-action-btn" style="flex: 1; justify-content: center;">+ Add Tag</button>
+				</form>
+
+				<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+					for _, t := range tags {
+						<span style={ fmt.Sprintf("display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.06); border: 1px solid %s; color: %s;", t.Color, t.Color) }>
+							<span style={ fmt.Sprintf("width: 8px; height: 8px; border-radius: 50%%; background: %s;", t.Color) }></span>
+							{ t.Name }
+						</span>
+					}
+				</div>
+			</div>
+
+			<!-- Tax Configuration -->
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 20px;">
+				<h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 12px;">Tax Treatments</h3>
+				<p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Configurable statutory tax schedules and component tax items.</p>
+
+				for _, tc := range taxes {
+					<div style="background: #141824; border: 1px solid #2d3748; border-radius: 6px; padding: 14px; margin-bottom: 12px;">
+						<div style="font-weight: 600; color: #fff; font-size: 14px;">{ tc.Name }</div>
+						<div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">{ *tc.Description }</div>
+						<div style="margin-top: 10px; display: flex; gap: 8px;">
+							<span class="finance-badge-pill finance-badge-posted">CGST 9% (acc_2002)</span>
+							<span class="finance-badge-pill finance-badge-posted">SGST 9% (acc_2002)</span>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	}
+}

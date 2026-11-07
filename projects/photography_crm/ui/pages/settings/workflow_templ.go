@@ -9,9 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
-	"components"
+	"ui/components/feedback"
+	"ui/components/icons"
+	"ui/layouts"
 )
 
 func WorkflowSettings() templ.Component {
@@ -47,7 +47,7 @@ func WorkflowSettings() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = crmComponents.PageHeader("Visual Workflow & Pipeline Stages", "Configure stage ordering, color tags, and automated transitions across leads, projects, and orders.").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.PageHeader("Visual Workflow & Pipeline Stages", "Configure stage ordering, color tags, and automated transitions across leads, projects, and orders.").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -71,7 +71,7 @@ func WorkflowSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconArrowRight().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconArrowRight().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -79,7 +79,7 @@ func WorkflowSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconArrowRight().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconArrowRight().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -87,7 +87,7 @@ func WorkflowSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconArrowRight().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconArrowRight().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -95,7 +95,7 @@ func WorkflowSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconArrowRight().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconArrowRight().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -103,7 +103,7 @@ func WorkflowSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Active", "green").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Active", "green").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -111,7 +111,7 @@ func WorkflowSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Active", "green").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Active", "green").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -119,7 +119,7 @@ func WorkflowSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Active", "green").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Active", "green").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -127,7 +127,7 @@ func WorkflowSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Active", "green").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Active", "green").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -135,7 +135,7 @@ func WorkflowSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Active", "green").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Active", "green").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

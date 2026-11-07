@@ -1,8 +1,8 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
 )
 
 templ OrderPresetsSettings() {
@@ -10,7 +10,7 @@ templ OrderPresetsSettings() {
 		{Label: "Settings", URL: "/settings"},
 		{Label: "Orders"},
 	}) {
-		@crmComponents.PageHeader("Orders Line Items & Expenses", "Configure all studio Orders items with pricing and expenses for easy billing.") {
+		@feedback.PageHeader("Orders Line Items & Expenses", "Configure all studio Orders items with pricing and expenses for easy billing.") {
 			<button class="c-btn c-btn-primary" onclick="openAddOrderItemRow()">+ Add Item</button>
 		}
 

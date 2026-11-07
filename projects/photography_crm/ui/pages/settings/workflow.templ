@@ -1,9 +1,9 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/icons"
 )
 
 templ WorkflowSettings() {
@@ -11,7 +11,7 @@ templ WorkflowSettings() {
 		{Label: "Settings", URL: "/settings"},
 		{Label: "Workflow"},
 	}) {
-		@crmComponents.PageHeader("Visual Workflow & Pipeline Stages", "Configure stage ordering, color tags, and automated transitions across leads, projects, and orders.")
+		@feedback.PageHeader("Visual Workflow & Pipeline Stages", "Configure stage ordering, color tags, and automated transitions across leads, projects, and orders.")
 
 		@layouts.SettingsLayout("workflow") {
 			<div style="margin-bottom: 24px;">
@@ -26,7 +26,7 @@ templ WorkflowSettings() {
 					<span class="status-pill pill-blue" style="font-size: 9px; margin-top: 6px;">#0984e3</span>
 				</div>
 				<span style="color: var(--text-dim); display: flex; align-items: center;">
-					@components.IconArrowRight()
+					@icons.IconArrowRight()
 				</span>
 
 				<div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; min-width: 130px;">
@@ -35,7 +35,7 @@ templ WorkflowSettings() {
 					<span class="status-pill pill-yellow" style="font-size: 9px; margin-top: 6px;">#fdcb6e</span>
 				</div>
 				<span style="color: var(--text-dim); display: flex; align-items: center;">
-					@components.IconArrowRight()
+					@icons.IconArrowRight()
 				</span>
 
 				<div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; min-width: 130px;">
@@ -44,7 +44,7 @@ templ WorkflowSettings() {
 					<span class="status-pill pill-purple" style="font-size: 9px; margin-top: 6px;">#7c5dfa</span>
 				</div>
 				<span style="color: var(--text-dim); display: flex; align-items: center;">
-					@components.IconArrowRight()
+					@icons.IconArrowRight()
 				</span>
 
 				<div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; min-width: 130px;">
@@ -53,7 +53,7 @@ templ WorkflowSettings() {
 					<span class="status-pill pill-yellow" style="font-size: 9px; margin-top: 6px;">#e17055</span>
 				</div>
 				<span style="color: var(--text-dim); display: flex; align-items: center;">
-					@components.IconArrowRight()
+					@icons.IconArrowRight()
 				</span>
 
 				<div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; min-width: 130px;">
@@ -85,35 +85,35 @@ templ WorkflowSettings() {
 							<td style="font-weight: 600;">Pre-Production & Moodboard</td>
 							<td><span class="status-pill pill-blue">Blue</span></td>
 							<td>Shot list signed off by client</td>
-							<td>@crmComponents.StatusPill("Active", "green")</td>
+							<td>@feedback.StatusPill("Active", "green")</td>
 						</tr>
 						<tr>
 							<td>2</td>
 							<td style="font-weight: 600;">Shoot Day Execution</td>
 							<td><span class="status-pill pill-purple">Purple</span></td>
 							<td>On-location capture complete</td>
-							<td>@crmComponents.StatusPill("Active", "green")</td>
+							<td>@feedback.StatusPill("Active", "green")</td>
 						</tr>
 						<tr>
 							<td>3</td>
 							<td style="font-weight: 600;">Film C-41 / E-6 Lab Development</td>
 							<td><span class="status-pill pill-yellow">Yellow</span></td>
 							<td>Negative scans uploaded to server</td>
-							<td>@crmComponents.StatusPill("Active", "green")</td>
+							<td>@feedback.StatusPill("Active", "green")</td>
 						</tr>
 						<tr>
 							<td>4</td>
 							<td style="font-weight: 600;">Retouching & Color Grading</td>
 							<td><span class="status-pill pill-blue">Cyan</span></td>
 							<td>Hero selection retouched</td>
-							<td>@crmComponents.StatusPill("Active", "green")</td>
+							<td>@feedback.StatusPill("Active", "green")</td>
 						</tr>
 						<tr>
 							<td>5</td>
 							<td style="font-weight: 600;">Delivered & Archived</td>
 							<td><span class="status-pill pill-green">Green</span></td>
 							<td>High-Res gallery delivered</td>
-							<td>@crmComponents.StatusPill("Active", "green")</td>
+							<td>@feedback.StatusPill("Active", "green")</td>
 						</tr>
 					</tbody>
 				</table>

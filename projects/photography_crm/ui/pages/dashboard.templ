@@ -1,8 +1,9 @@
 package pages
 
 import (
-"chi-mysql-server/ui/layouts"
-"components"
+"ui/layouts"
+	"ui/components/icons"
+	"ui/components/tables"
 )
 
 type TaskRow struct {
@@ -33,19 +34,19 @@ templ Dashboard(title string, rows []TaskRow) {
 
             <div class="view-tabs-bar">
                 <a href="/" class="view-tab">
-                    @components.IconList()
+                    @icons.IconList()
                     <span>List</span>
                     </a>
                     <a href="/leads" class="view-tab">
-                        @components.IconKanban()
+                        @icons.IconKanban()
                         <span>Board</span>
                         </a>
                         <a href="/" class="view-tab active">
-                            @components.IconTable()
+                            @icons.IconTable()
                             <span>Table</span>
                             </a>
                             <div class="view-tab" style="color: var(--text-dim);">
-                                @components.IconPlus()
+                                @icons.IconPlus()
                                 <span>View</span>
                                 </div>
                             </div>
@@ -53,35 +54,35 @@ templ Dashboard(title string, rows []TaskRow) {
                                 <div class="table-meta-bar">
                                     <div class="meta-bar-left">
                                         <div class="crm-badge-shown">
-                                            @components.IconCircleDot()
+                                            @icons.IconCircleDot()
                                             <span>Shown</span>
                                             </div>
                                         </div>
                                         <div class="meta-bar-right">
                                             <button class="header-icon-btn" title="Filter">
-                                                @components.IconFilter()
+                                                @icons.IconFilter()
                                             </button>
                                             <button class="header-icon-btn" title="Group">
-                                                @components.IconSlidersHorizontal()
+                                                @icons.IconSlidersHorizontal()
                                             </button>
                                             <button class="header-icon-btn" title="Zap">
-                                                @components.IconZap()
+                                                @icons.IconZap()
                                             </button>
                                             <button class="header-icon-btn" title="Check">
-                                                @components.IconCheck()
+                                                @icons.IconCheck()
                                             </button>
                                             <button class="header-icon-btn" title="Search">
-                                                @components.IconSearch()
+                                                @icons.IconSearch()
                                             </button>
                                             <button class="btn-add-task">
-                                                @components.IconPlus()
+                                                @icons.IconPlus()
                                                 <span>Task</span>
                                                 </button>
                                             </div>
                                         </div>
 
                                             <div class="table-workspace-container">
-                                                @components.Table() {
+                                                @tables.Table() {
                                                     <thead>
                                                         <tr>
                                                             <th style="width: 32px; text-align: center;"><input type="checkbox"/></th>

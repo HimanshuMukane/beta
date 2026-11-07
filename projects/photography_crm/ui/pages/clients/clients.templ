@@ -1,27 +1,28 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/icons"
+	"ui/components/navigation"
 )
 
 templ Clients() {
 	@layouts.DashboardLayout("Clients Directory - Aperture CRM", "clients", []layouts.BreadcrumbItem{
 		{Label: "Clients"},
 	}) {
-		@crmComponents.PageHeader("Clients Directory", "Manage client profiles, shoot histories, contracts, and booked sessions.") {
+		@feedback.PageHeader("Clients Directory", "Manage client profiles, shoot histories, contracts, and booked sessions.") {
 			<button class="c-btn c-btn-primary">
-				@components.IconUserPlus()
+				@icons.IconUserPlus()
 				<span>Add Client</span>
 			</button>
 		}
 
 		<div class="crm-stats-grid">
-			@crmComponents.StatCard("Total Clients", "126", "+8% this month", true, "users")
-			@crmComponents.StatCard("Active Clients", "34", "With ongoing bookings", true, "sparkles")
-			@crmComponents.StatCard("Recent Clients", "9", "Joined last 30 days", true, "user-plus")
-			@crmComponents.StatCard("Client Lifetime Value", "$3,620", "+12% avg", true, "dollar")
+			@feedback.StatCard("Total Clients", "126", "+8% this month", true, "users")
+			@feedback.StatCard("Active Clients", "34", "With ongoing bookings", true, "sparkles")
+			@feedback.StatCard("Recent Clients", "9", "Joined last 30 days", true, "user-plus")
+			@feedback.StatCard("Client Lifetime Value", "$3,620", "+12% avg", true, "dollar")
 		</div>
 
 		<div class="crm-filter-bar">
@@ -61,7 +62,7 @@ templ Clients() {
 						<td>2 Orders</td>
 						<td style="font-weight: 600;">$5,800.00</td>
 						<td>1 Active Shoot</td>
-						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td>@feedback.StatusPill("Active", "green")</td>
 						<td style="text-align: right;">
 							<a href="/clients/details?id=1" class="crm-page-btn" style="text-decoration: none;">View Profile</a>
 						</td>
@@ -76,7 +77,7 @@ templ Clients() {
 						<td>4 Orders</td>
 						<td style="font-weight: 600;">$14,200.00</td>
 						<td>2 Active Shoots</td>
-						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td>@feedback.StatusPill("Active", "green")</td>
 						<td style="text-align: right;">
 							<a href="/clients/details?id=2" class="crm-page-btn" style="text-decoration: none;">View Profile</a>
 						</td>
@@ -91,7 +92,7 @@ templ Clients() {
 						<td>1 Order</td>
 						<td style="font-weight: 600;">$3,400.00</td>
 						<td>1 Active Shoot</td>
-						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td>@feedback.StatusPill("Active", "green")</td>
 						<td style="text-align: right;">
 							<a href="/clients/details?id=3" class="crm-page-btn" style="text-decoration: none;">View Profile</a>
 						</td>
@@ -99,7 +100,7 @@ templ Clients() {
 				</tbody>
 			</table>
 
-			@crmComponents.Pagination(1, 3, 24)
+			@navigation.Pagination(1, 3, 24)
 		</div>
 	}
 }

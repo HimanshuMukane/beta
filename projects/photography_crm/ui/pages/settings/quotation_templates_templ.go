@@ -9,8 +9,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
+	"ui/components/feedback"
+	"ui/layouts"
 )
 
 func QuotationTemplatesSettings() templ.Component {
@@ -46,7 +46,7 @@ func QuotationTemplatesSettings() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = crmComponents.PageHeader("Quotation PDF & Proposal Templates", "Design editorial quotation layouts, typography, and cover letter branding.").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.PageHeader("Quotation PDF & Proposal Templates", "Design editorial quotation layouts, typography, and cover letter branding.").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -70,7 +70,7 @@ func QuotationTemplatesSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Active Default", "green").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Active Default", "green").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

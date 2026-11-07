@@ -1,8 +1,8 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
 )
 
 templ LeadDetails(id string) {
@@ -10,7 +10,7 @@ templ LeadDetails(id string) {
 		{Label: "Leads", URL: "/leads"},
 		{Label: "Jessica Parker"},
 	}) {
-		@crmComponents.PageHeader("Jessica Parker", "Inquiry for Destination Wedding (Villa Monticello, Lake Como)") {
+		@feedback.PageHeader("Jessica Parker", "Inquiry for Destination Wedding (Villa Monticello, Lake Como)") {
 			<a href="/orders?action=new&client=Jessica+Parker" class="c-btn c-btn-primary">⚡ Convert to Client / Order</a>
 			<button class="c-btn" style="background: var(--bg-surface-subtle); color: var(--text-main);">📧 Send Quotation</button>
 			<a href="/leads" class="c-btn" style="background: var(--bg-surface-subtle); color: var(--text-main);">← Back</a>
@@ -76,7 +76,7 @@ templ LeadDetails(id string) {
 								<td>Lake Como 2-Day Signature Film & Digital</td>
 								<td style="font-weight: 600;">$4,500.00</td>
 								<td style="color: var(--text-muted);">Oct 29, 2026</td>
-								<td>@crmComponents.StatusPill("Viewed by Client", "blue")</td>
+								<td>@feedback.StatusPill("Viewed by Client", "blue")</td>
 							</tr>
 						</tbody>
 					</table>

@@ -1,0 +1,33 @@
+package chart
+
+import (
+	"context"
+	"io"
+	"strings"
+)
+
+templ Defs() {
+	{ children... }
+}
+
+func LinearGradient(props ...LinearGradientProps) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		var p LinearGradientProps
+		if len(props) > 0 {
+			p = props[0]
+		}
+		st := stateFrom(ctx)
+		if st == nil {
+			return nil
+		}
+		var sb strings.Builder
+		if children := templ.GetChildren(ctx); children != nil {
+			if err := children.Render(templ.ClearChildren(ctx), &sb); err != nil {
+				return err
+			}
+		}
+		p.Stops = strings.TrimSpace(sb.String())
+		st.defs = append(st.defs, p)
+		return nil
+	})
+}

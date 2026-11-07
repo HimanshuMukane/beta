@@ -1,0 +1,13 @@
+package chart
+
+templ PolarGrid(props ...PolarGridProps) {
+	{{ var p PolarGridProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.polarGrid = &p
+	}
+	}}
+}

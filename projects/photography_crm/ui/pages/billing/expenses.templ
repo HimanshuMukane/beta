@@ -1,8 +1,8 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/navigation"
 )
 
 templ Expenses() {
@@ -87,7 +87,7 @@ templ Expenses() {
 						</tr>
 					</tbody>
 				</table>
-				@crmComponents.Pagination(1, 2, 19)
+				@navigation.Pagination(1, 2, 19)
 			</div>
 		</div>
 

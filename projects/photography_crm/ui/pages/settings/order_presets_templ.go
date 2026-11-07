@@ -9,8 +9,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
+	"ui/components/feedback"
+	"ui/layouts"
 )
 
 func OrderPresetsSettings() templ.Component {
@@ -64,7 +64,7 @@ func OrderPresetsSettings() templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = crmComponents.PageHeader("Orders Line Items & Expenses", "Configure all studio Orders items with pricing and expenses for easy billing.").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.PageHeader("Orders Line Items & Expenses", "Configure all studio Orders items with pricing and expenses for easy billing.").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -9,8 +9,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
+	"ui/components/buttons"
+	"ui/layouts"
 )
 
 func SignIn() templ.Component {
@@ -50,7 +50,7 @@ func SignIn() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.Button("Sign In", "c-btn-primary").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = buttons.Button("Sign In", "c-btn-primary").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -1,0 +1,22 @@
+package tables
+
+import (
+	"ui/utils"
+)
+
+templ Table(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div data-slot="table-container" class={ utils.CN("crm-table-container relative w-full overflow-x-auto", extraClass) }>
+		<table
+			data-slot="table"
+			class="crm-table w-full caption-bottom text-sm"
+		>
+			{ children... }
+		</table>
+	</div>
+}

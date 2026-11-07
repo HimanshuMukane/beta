@@ -9,9 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
-	"components"
+	"ui/components/feedback"
+	"ui/components/icons"
+	"ui/layouts"
 )
 
 func SequenceIDsSettings() templ.Component {
@@ -65,7 +65,7 @@ func SequenceIDsSettings() templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = crmComponents.PageHeader("Sequence ID Formats", "Standardize reference IDs across inquiries, clients, contracts, and financial documents.").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.PageHeader("Sequence ID Formats", "Standardize reference IDs across inquiries, clients, contracts, and financial documents.").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -89,7 +89,7 @@ func SequenceIDsSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconSlidersHorizontal().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconSlidersHorizontal().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -97,7 +97,7 @@ func SequenceIDsSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconSlidersHorizontal().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconSlidersHorizontal().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -105,7 +105,7 @@ func SequenceIDsSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconClock().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconClock().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

@@ -9,9 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
-	"components"
+	"ui/components/feedback"
+	"ui/components/icons"
+	"ui/layouts"
 )
 
 func IntegrationsSettings() templ.Component {
@@ -47,7 +47,7 @@ func IntegrationsSettings() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = crmComponents.PageHeader("Connected Inquiries & Messaging Channels", "Connect social media channels to receive client inquiries and unified direct messages.").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.PageHeader("Connected Inquiries & Messaging Channels", "Connect social media channels to receive client inquiries and unified direct messages.").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -71,7 +71,7 @@ func IntegrationsSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconMessageSquare().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconMessageSquare().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -79,7 +79,7 @@ func IntegrationsSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -87,7 +87,7 @@ func IntegrationsSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconCamera().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconCamera().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -95,7 +95,7 @@ func IntegrationsSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -103,7 +103,7 @@ func IntegrationsSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconUser().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconUser().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -111,7 +111,7 @@ func IntegrationsSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -119,7 +119,7 @@ func IntegrationsSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconMegaphone().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconMegaphone().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -127,7 +127,7 @@ func IntegrationsSettings() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

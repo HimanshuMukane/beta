@@ -1,22 +1,22 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/icons"
 )
 
 templ Reports() {
 	@layouts.DashboardLayout("Studio Analytics & Financial Reports", "reports", []layouts.BreadcrumbItem{
 		{Label: "Reports"},
 	}) {
-		@crmComponents.PageHeader("Performance & Analytics", "Revenue metrics, conversion tracking, shooter margins, and booking channels.") {
+		@feedback.PageHeader("Performance & Analytics", "Revenue metrics, conversion tracking, shooter margins, and booking channels.") {
 			<button class="c-btn" style="background: var(--bg-surface-subtle); color: var(--text-main);">
-				@components.IconFileText()
+				@icons.IconFileText()
 				<span>Export PDF</span>
 			</button>
 			<button class="c-btn c-btn-primary">
-				@components.IconBarChart3()
+				@icons.IconBarChart3()
 				<span>Customize Report</span>
 			</button>
 		}
@@ -39,10 +39,10 @@ templ Reports() {
 		</div>
 
 		<div class="crm-stats-grid">
-			@crmComponents.StatCard("Net Studio Profit", "$59,400", "+24.5% vs 2025", true, "trending-up")
-			@crmComponents.StatCard("Booking Conversion Rate", "68.4%", "+4.2% overall", true, "target")
-			@crmComponents.StatCard("Highest Channel ROI", "Instagram DM", "48% of total bookings", true, "sparkles")
-			@crmComponents.StatCard("Average Shoot Margin", "78.2%", "After assistant & lab cost", true, "dollar")
+			@feedback.StatCard("Net Studio Profit", "$59,400", "+24.5% vs 2025", true, "trending-up")
+			@feedback.StatCard("Booking Conversion Rate", "68.4%", "+4.2% overall", true, "target")
+			@feedback.StatCard("Highest Channel ROI", "Instagram DM", "48% of total bookings", true, "sparkles")
+			@feedback.StatCard("Average Shoot Margin", "78.2%", "After assistant & lab cost", true, "dollar")
 		</div>
 
 		<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">

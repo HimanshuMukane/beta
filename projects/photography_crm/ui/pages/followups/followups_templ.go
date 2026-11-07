@@ -9,8 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
+	"ui/components/feedback"
+	"ui/components/navigation"
+	"ui/layouts"
 )
 
 func Followups(filter string) templ.Component {
@@ -64,7 +65,7 @@ func Followups(filter string) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = crmComponents.PageHeader("Follow-ups Management", "Keep track of scheduled calls, client reminders, and proposal follow-ups.").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.PageHeader("Follow-ups Management", "Keep track of scheduled calls, client reminders, and proposal follow-ups.").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -182,7 +183,7 @@ func Followups(filter string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.StatusPill("Pending", "yellow").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.StatusPill("Pending", "yellow").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -190,7 +191,7 @@ func Followups(filter string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.StatusPill("Scheduled", "blue").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.StatusPill("Scheduled", "blue").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -198,7 +199,7 @@ func Followups(filter string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.StatusPill("Scheduled", "blue").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.StatusPill("Scheduled", "blue").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -206,7 +207,7 @@ func Followups(filter string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.StatusPill("Overdue", "red").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.StatusPill("Overdue", "red").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -214,7 +215,7 @@ func Followups(filter string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.Pagination(1, 2, 14).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = navigation.Pagination(1, 2, 14).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

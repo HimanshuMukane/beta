@@ -1,6 +1,3 @@
-/* =========================================================
-   Auth Layout & Forms (ClickUp / Kentucky Aesthetic)
-   ========================================================= */
 
 .auth-container {
   display: flex;
@@ -116,7 +113,6 @@
   text-decoration: underline;
 }
 
-/* Responsive: Hide Left Image Panel on Mobile */
 @media (max-width: 768px) {
   .auth-image-panel {
     display: none;

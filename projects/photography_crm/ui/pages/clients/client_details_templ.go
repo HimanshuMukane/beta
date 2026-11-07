@@ -9,9 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
-	"components"
+	"ui/components/feedback"
+	"ui/components/icons"
+	"ui/layouts"
 )
 
 func ClientDetails(id string) templ.Component {
@@ -63,7 +63,7 @@ func ClientDetails(id string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconPlus().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconPlus().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -71,7 +71,7 @@ func ClientDetails(id string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconCamera().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconCamera().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -81,7 +81,7 @@ func ClientDetails(id string) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = crmComponents.PageHeader("Olivia & James Thornton", "Client since March 2025 • Lifetime Value: $5,800.00").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.PageHeader("Olivia & James Thornton", "Client since March 2025 • Lifetime Value: $5,800.00").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -89,7 +89,7 @@ func ClientDetails(id string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.StatusPill("Confirmed", "blue").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.StatusPill("Confirmed", "blue").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -97,7 +97,7 @@ func ClientDetails(id string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.StatusPill("Completed", "green").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.StatusPill("Completed", "green").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

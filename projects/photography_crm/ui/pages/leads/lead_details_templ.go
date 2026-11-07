@@ -9,8 +9,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
+	"ui/components/feedback"
+	"ui/layouts"
 )
 
 func LeadDetails(id string) templ.Component {
@@ -64,7 +64,7 @@ func LeadDetails(id string) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = crmComponents.PageHeader("Jessica Parker", "Inquiry for Destination Wedding (Villa Monticello, Lake Como)").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.PageHeader("Jessica Parker", "Inquiry for Destination Wedding (Villa Monticello, Lake Como)").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -72,7 +72,7 @@ func LeadDetails(id string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.StatusPill("Viewed by Client", "blue").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.StatusPill("Viewed by Client", "blue").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

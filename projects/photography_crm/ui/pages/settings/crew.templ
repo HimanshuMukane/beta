@@ -1,9 +1,9 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/icons"
 )
 
 templ CrewSettings() {
@@ -11,10 +11,10 @@ templ CrewSettings() {
 		{Label: "Settings", URL: "/settings"},
 		{Label: "Crew"},
 	}) {
-		@crmComponents.PageHeader("Studio Crew & Team", "Manage photographers, cinematographers, second shooters, and team designations.") {
+		@feedback.PageHeader("Studio Crew & Team", "Manage photographers, cinematographers, second shooters, and team designations.") {
 			<div class="crew-header-actions">
 				<button class="crm-page-btn" onclick="openDesignationModal()" style="display: inline-flex; align-items: center; gap: 6px;">
-					@components.IconTag()
+					@icons.IconTag()
 					<span>Manage Designations</span>
 				</button>
 				<button class="c-btn c-btn-primary" onclick="openAddCrewModal()">+ Add Crew Member</button>
@@ -48,7 +48,7 @@ templ CrewSettings() {
 						<td><span class="status-pill pill-purple">Lead Photographer</span></td>
 						<td>+1 (555) 019-2831</td>
 						<td>himanshu@aperture.com</td>
-						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td>@feedback.StatusPill("Active", "green")</td>
 						<td style="color: var(--text-muted); font-size: 11.5px;">Sony A1 & Hasselblad 500CM Film Specialist</td>
 						<td style="text-align: right;"><button class="crm-page-btn">Edit</button></td>
 					</tr>
@@ -65,7 +65,7 @@ templ CrewSettings() {
 						<td><span class="status-pill pill-blue">Cinematographer</span></td>
 						<td>+1 (555) 774-9021</td>
 						<td>aniket@aperture.com</td>
-						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td>@feedback.StatusPill("Active", "green")</td>
 						<td style="color: var(--text-muted); font-size: 11.5px;">Gimbal op & drone licensed</td>
 						<td style="text-align: right;"><button class="crm-page-btn">Edit</button></td>
 					</tr>
@@ -82,7 +82,7 @@ templ CrewSettings() {
 						<td><span class="status-pill pill-yellow">Candid Photographer</span></td>
 						<td>+1 (555) 662-1109</td>
 						<td>vanshita@aperture.com</td>
-						<td>@crmComponents.StatusPill("Active", "green")</td>
+						<td>@feedback.StatusPill("Active", "green")</td>
 						<td style="color: var(--text-muted); font-size: 11.5px;">Maternity & family portraits specialist</td>
 						<td style="text-align: right;"><button class="crm-page-btn">Edit</button></td>
 					</tr>
@@ -95,7 +95,7 @@ templ CrewSettings() {
 				<div class="session-modal-header">
 					<h3 style="font-size: 15px; font-weight: 600; color: var(--text-main);">Add Crew Member</h3>
 					<button class="crm-page-btn" onclick="closeAddCrewModal()" aria-label="Close">
-						@components.IconX()
+						@icons.IconX()
 					</button>
 				</div>
 				<div class="session-modal-body">
@@ -104,7 +104,7 @@ templ CrewSettings() {
 						<label class="session-field-label">Profile Photo</label>
 						<div style="display: flex; align-items: center; gap: 16px; padding: 12px; background: var(--bg-surface-subtle); border-radius: var(--radius-sm); border: 1px dashed var(--border-color);">
 							<div style="width: 48px; height: 48px; border-radius: 50%; background: var(--bg-surface-hover); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
-								@components.IconCamera()
+								@icons.IconCamera()
 							</div>
 							<div>
 								<button class="crm-page-btn" style="margin-bottom: 4px;">Choose File</button>
@@ -161,7 +161,7 @@ templ CrewSettings() {
 				<div class="session-modal-header">
 					<h3 style="font-size: 15px; font-weight: 600; color: var(--text-main);">Manage Designations</h3>
 					<button class="crm-page-btn" onclick="closeDesignationModal()" aria-label="Close">
-						@components.IconX()
+						@icons.IconX()
 					</button>
 				</div>
 				<div class="session-modal-body">
@@ -174,19 +174,19 @@ templ CrewSettings() {
 						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
 							<span>Lead Photographer</span>
 							<button class="service-remove-btn" aria-label="Remove">
-								@components.IconX()
+								@icons.IconX()
 							</button>
 						</div>
 						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
 							<span>Cinematographer</span>
 							<button class="service-remove-btn" aria-label="Remove">
-								@components.IconX()
+								@icons.IconX()
 							</button>
 						</div>
 						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
 							<span>Candid Photographer</span>
 							<button class="service-remove-btn" aria-label="Remove">
-								@components.IconX()
+								@icons.IconX()
 							</button>
 						</div>
 					</div>

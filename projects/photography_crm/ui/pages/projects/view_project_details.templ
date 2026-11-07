@@ -1,0 +1,214 @@
+package pages
+
+import (
+	"ui/layouts"
+)
+
+templ ViewProjectDetails(id string) {
+	@layouts.DashboardLayout("Kavya Rajendran Wedding - Aperture CRM", "projects", []layouts.BreadcrumbItem{
+		{Label: "Projects", URL: "/projects"},
+		{Label: "Kavya Rajendran Wedding"},
+	}) {
+		<div class="projects-layout">
+
+			<div class="project-details-header">
+				<div class="project-details-header-left">
+					<a href="/projects" class="new-project-back-btn" title="Back to projects">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="19" y1="12" x2="5" y2="12"></line>
+							<polyline points="12 19 5 12 12 5"></polyline>
+						</svg>
+					</a>
+					<div class="project-details-avatar">
+						KW
+					</div>
+					<div class="project-title-wrapper">
+						<div class="project-title-row">
+							<span class="project-title">Kavya Rajendran Wedding</span>
+							<button type="button" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px;" title="Edit Name">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M12 20h9"></path>
+									<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+								</svg>
+							</button>
+						</div>
+						<div class="project-client-sub">Kavya Rajendran</div>
+					</div>
+				</div>
+
+				<div class="project-details-header-center">
+
+					<div class="project-dropdown-selector" id="status-selector-container">
+						<span class="selector-label">Status</span>
+						<button class="selector-pill-btn status-pill-gray" type="button" onclick="document.getElementById('status-menu').classList.toggle('show'); document.getElementById('stage-menu').classList.remove('show'); event.stopPropagation();">
+							<span id="current-status-text">New</span>
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="6 9 12 15 18 9"></polyline>
+							</svg>
+						</button>
+						<div class="dropdown-menu-list" id="status-menu">
+							<button class="dropdown-item active" type="button" onclick="setStatus('New')">New</button>
+							<button class="dropdown-item" type="button" onclick="setStatus('Booked')">Booked</button>
+							<button class="dropdown-item" type="button" onclick="setStatus('Active')">Active</button>
+							<button class="dropdown-item" type="button" onclick="setStatus('On Hold')">On Hold</button>
+							<button class="dropdown-item" type="button" onclick="setStatus('Completed')">Completed</button>
+							<button class="dropdown-item" type="button" onclick="setStatus('Cancelled')">Cancelled</button>
+						</div>
+					</div>
+
+					<div class="project-dropdown-selector" id="stage-selector-container">
+						<span class="selector-label">Stage</span>
+						<button class="selector-pill-btn stage-pill-blue" type="button" onclick="document.getElementById('stage-menu').classList.toggle('show'); document.getElementById('status-menu').classList.remove('show'); event.stopPropagation();">
+							<span id="current-stage-text">Booked</span>
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="6 9 12 15 18 9"></polyline>
+							</svg>
+						</button>
+						<div class="dropdown-menu-list" id="stage-menu">
+							<button class="dropdown-item active" type="button" onclick="setStage('Booked')">Booked</button>
+							<button class="dropdown-item" type="button" onclick="setStage('Shoot Planning')">Shoot Planning</button>
+							<button class="dropdown-item" type="button" onclick="setStage('Shoot Completed')">Shoot Completed</button>
+							<button class="dropdown-item" type="button" onclick="setStage('Editing')">Editing</button>
+							<button class="dropdown-item" type="button" onclick="setStage('Delivery')">Delivery</button>
+							<button class="dropdown-item" type="button" onclick="setStage('Closure')">Closure</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="project-details-header-right">
+					<button class="action-dropdown-btn" type="button">
+						<span>Action</span>
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="6 9 12 15 18 9"></polyline>
+						</svg>
+					</button>
+					<button class="delete-icon-btn" type="button" title="Delete Project">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="3 6 5 6 21 6"></polyline>
+							<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+						</svg>
+					</button>
+				</div>
+			</div>
+
+			<div class="project-subnav-tabs">
+				<a href="#" class="project-subnav-tab active">Documents</a>
+				<a href="#" class="project-subnav-tab">Insights</a>
+				<a href="#" class="project-subnav-tab">Sessions</a>
+				<a href="#" class="project-subnav-tab">Tasks</a>
+				<a href="#" class="project-subnav-tab">Printing</a>
+				<a href="#" class="project-subnav-tab">Deliverables</a>
+				<a href="#" class="project-subnav-tab">Expense</a>
+				<a href="#" class="project-subnav-tab">Notes</a>
+			</div>
+
+			<div class="project-details-grid">
+
+				<div class="crm-table-container">
+					<div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+						<h2 style="font-size: 15px; font-weight: 700; color: var(--text-main); margin: 0;">Documents</h2>
+						<button class="projects-new-btn" style="padding: 5px 14px; font-size: 12px;">Create</button>
+					</div>
+
+					<table class="crm-table">
+						<tbody>
+							<tr>
+								<td style="width: 70px;">
+									<span class="doc-type-badge">Form</span>
+								</td>
+								<td style="font-weight: 500; color: var(--text-main); font-size: 13px;">Lead Form</td>
+								<td style="color: var(--text-dim); font-size: 13px;">—</td>
+								<td>
+									<span class="doc-status-submitted">• Submitted</span>
+								</td>
+								<td style="color: var(--text-muted); font-size: 12px;">01/11/2026</td>
+								<td style="text-align: right; color: var(--text-dim); cursor: pointer; font-size: 15px;">•••</td>
+							</tr>
+							<tr>
+								<td>
+									<span class="doc-type-badge">Lead</span>
+								</td>
+								<td style="font-weight: 500; color: var(--text-main); font-size: 13px;">Kavya Rajendran</td>
+								<td style="color: var(--text-muted); font-size: 12.5px;">ESPE/LQuote/101</td>
+								<td>
+									<span class="doc-status-converted">• Converted</span>
+								</td>
+								<td style="color: var(--text-muted); font-size: 12px;">01/11/2026</td>
+								<td style="text-align: right; color: var(--text-dim); cursor: pointer; font-size: 15px;">•••</td>
+							</tr>
+							<tr>
+								<td>
+									<span class="doc-type-badge">Invoice</span>
+								</td>
+								<td style="font-weight: 500; color: var(--text-main); font-size: 13px;">Invoice - Kavya Rajendr...</td>
+								<td style="color: var(--text-muted); font-size: 12.5px;">
+									ESPE/INVOICE/101 &nbsp; <span style="font-weight: 600; color: var(--text-main);">INR 54,000</span>
+								</td>
+								<td>
+									<span class="doc-status-pending">• Pending</span>
+								</td>
+								<td style="color: var(--text-muted); font-size: 12px;">01/11/2026</td>
+								<td style="text-align: right; color: var(--text-dim); cursor: pointer; font-size: 15px;">•••</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="gallery-card">
+					<div class="gallery-header">
+						<h2 style="font-size: 15px; font-weight: 700; color: var(--text-main); margin: 0;">Gallery</h2>
+						<button class="projects-toolbar-btn" style="font-size: 11.5px; padding: 4px 10px;">Add</button>
+					</div>
+
+					<div class="gallery-empty-box">
+						<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.35;">
+							<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+							<polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+							<line x1="12" y1="22.08" x2="12" y2="12"></line>
+						</svg>
+						<span>No Data</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			function setStatus(status) {
+				const label = document.getElementById('current-status-text');
+				if (label) label.textContent = status;
+				const menu = document.getElementById('status-menu');
+				if (menu) {
+					menu.classList.remove('show');
+					menu.querySelectorAll('.dropdown-item').forEach(el => {
+						if (el.textContent.trim() === status) el.classList.add('active');
+						else el.classList.remove('active');
+					});
+				}
+			}
+
+			function setStage(stage) {
+				const label = document.getElementById('current-stage-text');
+				if (label) label.textContent = stage;
+				const menu = document.getElementById('stage-menu');
+				if (menu) {
+					menu.classList.remove('show');
+					menu.querySelectorAll('.dropdown-item').forEach(el => {
+						if (el.textContent.trim() === stage) el.classList.add('active');
+						else el.classList.remove('active');
+					});
+				}
+			}
+
+			window.addEventListener('click', function(e) {
+				const statusMenu = document.getElementById('status-menu');
+				const stageMenu = document.getElementById('stage-menu');
+				if (statusMenu && !e.target.closest('#status-selector-container')) {
+					statusMenu.classList.remove('show');
+				}
+				if (stageMenu && !e.target.closest('#stage-selector-container')) {
+					stageMenu.classList.remove('show');
+				}
+			});
+		</script>
+	}
+}

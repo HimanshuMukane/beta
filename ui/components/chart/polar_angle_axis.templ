@@ -1,0 +1,13 @@
+package chart
+
+templ PolarAngleAxis(props ...PolarAngleAxisProps) {
+	{{ var p PolarAngleAxisProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.angleAxis = &p
+	}
+	}}
+}

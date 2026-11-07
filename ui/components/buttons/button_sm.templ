@@ -1,0 +1,11 @@
+package buttons
+
+import (
+	"ui/utils"
+)
+
+templ ButtonSm(label string, variant string) {
+	<button class={ utils.CN(buttonBaseClasses, "c-btn c-btn-sm", variant) } type="button" data-slot="button">
+		{ label }
+	</button>
+}

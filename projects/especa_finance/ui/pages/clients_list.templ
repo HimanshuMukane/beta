@@ -1,0 +1,71 @@
+package pages
+
+import (
+	"especa_finance/models"
+	"especa_finance/ui/layouts"
+)
+
+templ ClientsList(clients []models.Client) {
+	@layouts.MainLayout("Clients Directory", "clients", []layouts.Breadcrumb{{Label: "Clients"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Client Companies</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Manage accounts, billing details, GSTIN, and company contracts</p>
+			</div>
+			<div>
+				<a href="/clients/new" class="finance-action-btn">+ Add Client</a>
+			</div>
+		</div>
+
+		if len(clients) == 0 {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 40px; text-align: center;">
+				<p style="color: var(--text-muted); margin-bottom: 15px;">No clients added yet.</p>
+				<a href="/clients/new" class="finance-action-btn">+ Add First Client</a>
+			</div>
+		} else {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; overflow: hidden;">
+				<table class="finance-table" style="margin-top: 0;">
+					<thead>
+						<tr>
+							<th>Company</th>
+							<th>Contact Person</th>
+							<th>Email</th>
+							<th>Phone</th>
+							<th>GSTIN</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, c := range clients {
+							<tr>
+								<td>
+									<strong style="color: #74b9ff;">{ c.CompanyName }</strong>
+									if c.BillingAddress != nil {
+										<div style="font-size: 11px; color: var(--text-muted);">{ *c.BillingAddress }</div>
+									}
+								</td>
+								<td>{ c.Name }</td>
+								<td>{ c.Email }</td>
+								<td>
+									if c.Phone != nil {
+										{ *c.Phone }
+									} else {
+										<span>-</span>
+									}
+								</td>
+								<td>
+									if c.GSTIN != nil {
+										<code>{ *c.GSTIN }</code>
+									} else {
+										<span>-</span>
+									}
+								</td>
+								<td><span class="finance-badge-pill finance-badge-active">{ c.Status }</span></td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}

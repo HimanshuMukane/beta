@@ -1,0 +1,22 @@
+package tables
+
+import (
+	"ui/utils"
+)
+
+templ TableHead(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<thead
+		data-slot="table-header"
+		class={ utils.CN("[&_tr]:border-b", extraClass) }
+	>
+		<tr>
+			{ children... }
+		</tr>
+	</thead>
+}

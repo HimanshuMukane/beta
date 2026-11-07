@@ -1,9 +1,8 @@
 package calendar
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
 )
 
 type CalendarFilterOption struct {
@@ -29,7 +28,7 @@ templ CalendarLayout(initialView string, filters []CalendarFilterOption, upcomin
 		<link rel="stylesheet" href="/static/css/pages/calendar.css"/>
 		<script src="/static/js/fullcalendar.min.js"></script>
 
-		@crmComponents.PageHeader("Studio Calendar & Booking", "Manage studio sessions, Google Meet appointments, client calls, and busy availability blocks.") {
+		@feedback.PageHeader("Studio Calendar & Booking", "Manage studio sessions, Google Meet appointments, client calls, and busy availability blocks.") {
 			<div style="display: flex; gap: 8px;">
 				<button class="c-btn c-btn-secondary" onclick="openBookingModal('busy')">
 					<span>🚫 Mark Busy Time</span>
@@ -86,7 +85,7 @@ templ CalendarLayout(initialView string, filters []CalendarFilterOption, upcomin
 									<span>{ f.Label }</span>
 								</div>
 								if f.Count > 0 {
-									@components.Badge(components.BadgeProps{Variant: "secondary"}) {
+									@feedback.Badge(feedback.BadgeProps{Variant: "secondary"}) {
 										{ string(rune('0' + f.Count)) }
 									}
 								}

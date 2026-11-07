@@ -1,0 +1,20 @@
+package tables
+
+import (
+	"ui/utils"
+)
+
+templ TableRow(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<tr
+		data-slot="table-row"
+		class={ utils.CN("hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors has-aria-expanded:bg-muted/50", extraClass) }
+	>
+		{ children... }
+	</tr>
+}

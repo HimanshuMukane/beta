@@ -9,9 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
-	"components"
+	"ui/components/feedback"
+	"ui/components/icons"
+	"ui/layouts"
 )
 
 func Reports() templ.Component {
@@ -63,7 +63,7 @@ func Reports() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconFileText().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconFileText().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -71,7 +71,7 @@ func Reports() templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.IconBarChart3().Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.IconBarChart3().Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -81,7 +81,7 @@ func Reports() templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = crmComponents.PageHeader("Performance & Analytics", "Revenue metrics, conversion tracking, shooter margins, and booking channels.").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.PageHeader("Performance & Analytics", "Revenue metrics, conversion tracking, shooter margins, and booking channels.").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -89,19 +89,19 @@ func Reports() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.StatCard("Net Studio Profit", "$59,400", "+24.5% vs 2025", true, "trending-up").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.StatCard("Net Studio Profit", "$59,400", "+24.5% vs 2025", true, "trending-up").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.StatCard("Booking Conversion Rate", "68.4%", "+4.2% overall", true, "target").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.StatCard("Booking Conversion Rate", "68.4%", "+4.2% overall", true, "target").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.StatCard("Highest Channel ROI", "Instagram DM", "48% of total bookings", true, "sparkles").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.StatCard("Highest Channel ROI", "Instagram DM", "48% of total bookings", true, "sparkles").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.StatCard("Average Shoot Margin", "78.2%", "After assistant & lab cost", true, "dollar").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.StatCard("Average Shoot Margin", "78.2%", "After assistant & lab cost", true, "dollar").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

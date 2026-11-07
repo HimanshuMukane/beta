@@ -1,8 +1,8 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/navigation"
 )
 
 type PaymentRow struct {
@@ -116,7 +116,7 @@ templ Payments() {
 						</tr>
 					</tbody>
 				</table>
-				@crmComponents.Pagination(1, 3, 24)
+				@navigation.Pagination(1, 3, 24)
 			</div>
 		</div>
 

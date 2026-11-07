@@ -1,0 +1,60 @@
+package pages
+
+import (
+	"especa_finance/models"
+	"especa_finance/ui/layouts"
+	"core/utils"
+)
+
+templ ChartOfAccountsView(accounts []models.ChartOfAccount) {
+	@layouts.MainLayout("Chart of Accounts", "coa", []layouts.Breadcrumb{{Label: "Accounting"}, {Label: "Chart of Accounts"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Chart of Accounts</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Double-entry general ledger accounts: Assets, Liabilities, Equity, Income, Expenses</p>
+			</div>
+			<div>
+				<a href="/accounting/journal/new" class="finance-action-btn">+ New Journal Entry</a>
+			</div>
+		</div>
+
+		<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; overflow: hidden;">
+			<table class="finance-table" style="margin-top: 0;">
+				<thead>
+					<tr>
+						<th>Code</th>
+						<th>Account Name</th>
+						<th>Type</th>
+						<th>Total Debits</th>
+						<th>Total Credits</th>
+						<th>Current Balance</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, a := range accounts {
+						<tr>
+							<td><code>{ a.Code }</code></td>
+							<td><strong style="color: #fff;">{ a.Name }</strong></td>
+							<td>
+								if a.AccountType == "asset" {
+									<span class="finance-badge-pill finance-badge-active">ASSET</span>
+								} else if a.AccountType == "liability" {
+									<span class="finance-badge-pill finance-badge-pending">LIABILITY</span>
+								} else if a.AccountType == "income" {
+									<span class="finance-badge-pill finance-badge-posted">INCOME</span>
+								} else if a.AccountType == "expense" {
+									<span class="finance-badge-pill finance-badge-draft">EXPENSE</span>
+								} else {
+									<span class="finance-badge-pill finance-badge-posted">EQUITY</span>
+								}
+							</td>
+							<td>{ utils.FormatINR(a.DebitTotalMinor) }</td>
+							<td>{ utils.FormatINR(a.CreditTotalMinor) }</td>
+							<td><strong>{ utils.FormatINR(a.BalanceMinor) }</strong></td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}

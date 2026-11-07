@@ -1,8 +1,8 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/navigation"
 )
 
 templ Refunds() {
@@ -87,7 +87,7 @@ templ Refunds() {
 						</tr>
 					</tbody>
 				</table>
-				@crmComponents.Pagination(1, 1, 2)
+				@navigation.Pagination(1, 1, 2)
 			</div>
 		</div>
 

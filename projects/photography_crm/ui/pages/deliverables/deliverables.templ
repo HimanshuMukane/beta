@@ -1,15 +1,16 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/navigation"
 )
 
 templ Deliverables(filter string) {
 	@layouts.DashboardLayout("Client Deliverables - Aperture CRM", "deliverables", []layouts.BreadcrumbItem{
 		{Label: "Deliverables"},
 	}) {
-		@crmComponents.PageHeader("Deliverables & Asset Delivery", "Track editing, high-resolution online gallery proofing, print labs, and USB deliveries.") {
+		@feedback.PageHeader("Deliverables & Asset Delivery", "Track editing, high-resolution online gallery proofing, print labs, and USB deliveries.") {
 			<button class="c-btn c-btn-primary">+ New Deliverable</button>
 		}
 
@@ -50,7 +51,7 @@ templ Deliverables(filter string) {
 						<td><span class="status-pill pill-blue">Digital Gallery</span></td>
 						<td style="color: #ff7675; font-weight: 600;">Nov 20, 2026</td>
 						<td>Himanshu M.</td>
-						<td>@crmComponents.StatusPill("In Progress", "blue")</td>
+						<td>@feedback.StatusPill("In Progress", "blue")</td>
 						<td style="text-align: right;">
 							<button class="crm-page-btn">Update</button>
 						</td>
@@ -65,7 +66,7 @@ templ Deliverables(filter string) {
 						<td><span class="status-pill pill-purple">Physical Print</span></td>
 						<td style="color: var(--text-muted);">Dec 15, 2026</td>
 						<td>Vanshita S.</td>
-						<td>@crmComponents.StatusPill("Pending Approval", "yellow")</td>
+						<td>@feedback.StatusPill("Pending Approval", "yellow")</td>
 						<td style="text-align: right;">
 							<button class="crm-page-btn">Update</button>
 						</td>
@@ -80,7 +81,7 @@ templ Deliverables(filter string) {
 						<td><span class="status-pill pill-green">Commercial Asset</span></td>
 						<td style="color: var(--text-muted);">Nov 12, 2026</td>
 						<td>Aniket K.</td>
-						<td>@crmComponents.StatusPill("Ready to Deliver", "green")</td>
+						<td>@feedback.StatusPill("Ready to Deliver", "green")</td>
 						<td style="text-align: right;">
 							<button class="crm-page-btn">Send Link</button>
 						</td>
@@ -88,7 +89,7 @@ templ Deliverables(filter string) {
 				</tbody>
 			</table>
 
-			@crmComponents.Pagination(1, 2, 22)
+			@navigation.Pagination(1, 2, 22)
 		</div>
 	}
 }

@@ -9,8 +9,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
+	"ui/components/navigation"
+	"ui/layouts"
 )
 
 func Expenses() templ.Component {
@@ -66,7 +66,7 @@ func Expenses() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.Pagination(1, 2, 19).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = navigation.Pagination(1, 2, 19).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

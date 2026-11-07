@@ -1,0 +1,20 @@
+package tables
+
+import (
+	"ui/utils"
+)
+
+templ TableHeaderCell(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<th
+		data-slot="table-head"
+		class={ utils.CN("text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has([data-slot=checkbox])]:pr-0", extraClass) }
+	>
+		{ children... }
+	</th>
+}

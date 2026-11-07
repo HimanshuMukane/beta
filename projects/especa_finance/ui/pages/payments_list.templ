@@ -1,0 +1,67 @@
+package pages
+
+import (
+	"especa_finance/models"
+	"especa_finance/ui/layouts"
+	"core/utils"
+)
+
+templ PaymentsList(payments []models.Payment) {
+	@layouts.MainLayout("Payments & Cash Receipts", "payments", []layouts.Breadcrumb{{Label: "Finance"}, {Label: "Payments"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Recorded Cash & Bank Payments</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Actual money received or paid. Represents cash basis accounting view.</p>
+			</div>
+			<div>
+				<a href="/payments/new" class="finance-action-btn">+ Record Payment</a>
+			</div>
+		</div>
+
+		if len(payments) == 0 {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 40px; text-align: center;">
+				<p style="color: var(--text-muted); margin-bottom: 15px;">No payments recorded yet.</p>
+				<a href="/payments/new" class="finance-action-btn">+ Record First Payment</a>
+			</div>
+		} else {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; overflow: hidden;">
+				<table class="finance-table" style="margin-top: 0;">
+					<thead>
+						<tr>
+							<th>Date</th>
+							<th>Type</th>
+							<th>Method</th>
+							<th>Reference</th>
+							<th>Amount</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, p := range payments {
+							<tr>
+								<td>{ p.PaymentDate }</td>
+								<td>
+									if p.PaymentType == "incoming" {
+										<span class="finance-badge-pill finance-badge-active">INCOMING (CLIENT)</span>
+									} else {
+										<span class="finance-badge-pill finance-badge-pending">OUTGOING (VENDOR)</span>
+									}
+								</td>
+								<td>{ p.PaymentMethod }</td>
+								<td>
+									if p.Reference != nil {
+										<code>{ *p.Reference }</code>
+									} else {
+										<span>-</span>
+									}
+								</td>
+								<td><strong style="color: #00b894;">{ utils.FormatINR(p.AmountMinor) }</strong></td>
+								<td><span class="finance-badge-pill finance-badge-posted">{ p.Status }</span></td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}

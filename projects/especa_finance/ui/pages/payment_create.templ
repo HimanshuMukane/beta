@@ -1,0 +1,51 @@
+package pages
+
+import (
+	"especa_finance/models"
+	"especa_finance/ui/layouts"
+	"core/utils"
+)
+
+templ PaymentCreate(invoices []models.Invoice, preselectedInvoiceID string) {
+	@layouts.MainLayout("Record Payment", "payments", []layouts.Breadcrumb{{Label: "Payments", URL: "/payments"}, {Label: "Record"}}) {
+		<div style="max-width: 600px; margin: 0 auto; background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 24px;">
+			<h2 style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 16px;">Record Cash / Bank Receipt</h2>
+			<form method="POST" action="/payments/new">
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Allocate To Invoice (Optional)</label>
+					<select name="invoice_id">
+						<option value="">-- No specific invoice (Direct receipt) --</option>
+						for _, inv := range invoices {
+							<option value={ inv.ID } selected?={ inv.ID == preselectedInvoiceID }>{ inv.InvoiceNumber } - { inv.ClientName } ({ utils.FormatINR(inv.TotalMinor) })</option>
+						}
+					</select>
+				</div>
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Payment Date</label>
+					<input type="date" name="payment_date" value="2025-01-05" required/>
+				</div>
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Amount Received (in ₹)</label>
+					<input type="number" name="amount" placeholder="e.g. 59000" step="1" required/>
+				</div>
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Payment Method</label>
+					<select name="payment_method">
+						<option value="bank_transfer">HDFC Bank IMPS / NEFT / RTGS</option>
+						<option value="upi">UPI / QR Code</option>
+						<option value="cheque">Cheque</option>
+						<option value="cash">Cash</option>
+					</select>
+				</div>
+				<div class="finance-form-group" style="margin-bottom: 20px;">
+					<label>Transaction Reference / UTR Number</label>
+					<input type="text" name="reference" placeholder="e.g. UTR-9831827419"/>
+				</div>
+				<div style="display: flex; justify-content: flex-end; gap: 10px;">
+					<a href="/payments" class="finance-action-btn" style="background: #2d3748;">Cancel</a>
+					<button type="submit" class="finance-action-btn">Post Cash Receipt to Bank</button>
+				</div>
+			</form>
+		</div>
+	}
+}

@@ -1,8 +1,8 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
+	"ui/layouts"
+	"ui/components/icons"
 )
 
 type SessionModalData struct {
@@ -30,32 +30,32 @@ templ Sessions(tab string) {
 
 				<div class="crm-filter-tabs">
 					<a href="/sessions?tab=upcoming" class={ "crm-filter-tab", templ.KV("active", tab == "" || tab == "upcoming") }>
-						@components.IconCalendar()
+						@icons.IconCalendar()
 						<span>Upcoming</span>
 					</a>
 					<a href="/sessions?tab=past" class={ "crm-filter-tab", templ.KV("active", tab == "past") }>
-						@components.IconClock()
+						@icons.IconClock()
 						<span>Past</span>
 					</a>
 					<a href="/sessions?tab=tbd" class={ "crm-filter-tab", templ.KV("active", tab == "tbd") }>
-						@components.IconCalendar()
+						@icons.IconCalendar()
 						<span>TBD</span>
 					</a>
 				</div>
 
 				<button class="crm-page-btn" style="display: flex; align-items: center; gap: 6px;">
-					@components.IconClock()
+					@icons.IconClock()
 					<span>Recently Created</span>
 				</button>
 			</div>
 
 			<div style="display: flex; align-items: center; gap: 10px;">
 				<button class="crm-page-btn" style="display: flex; align-items: center; gap: 6px;">
-					@components.IconFilter()
+					@icons.IconFilter()
 					<span>Filters</span>
 				</button>
 				<button class="c-btn c-btn-primary" onclick="openSessionModal('new')">
-					@components.IconPlus()
+					@icons.IconPlus()
 					<span>New Session</span>
 				</button>
 			</div>
@@ -72,15 +72,15 @@ templ Sessions(tab string) {
 
 				<div class="session-info-col">
 					<div class="session-meta-row">
-						<span class="session-meta-icon">@components.IconClock()</span>
+						<span class="session-meta-icon">@icons.IconClock()</span>
 						<span>06:00 PM - 10:00 PM</span>
 					</div>
 					<div class="session-meta-row">
-						<span class="session-meta-icon">@components.IconMapPin()</span>
+						<span class="session-meta-icon">@icons.IconMapPin()</span>
 						<span>Leela Palace</span>
 					</div>
 					<div class="session-meta-row">
-						<span class="session-meta-icon">@components.IconCompass()</span>
+						<span class="session-meta-icon">@icons.IconCompass()</span>
 						<span>Chennai</span>
 					</div>
 				</div>
@@ -107,15 +107,15 @@ templ Sessions(tab string) {
 
 				<div class="session-info-col">
 					<div class="session-meta-row">
-						<span class="session-meta-icon">@components.IconClock()</span>
+						<span class="session-meta-icon">@icons.IconClock()</span>
 						<span>04:30 PM - 08:30 PM</span>
 					</div>
 					<div class="session-meta-row">
-						<span class="session-meta-icon">@components.IconMapPin()</span>
+						<span class="session-meta-icon">@icons.IconMapPin()</span>
 						<span>Leela Palace</span>
 					</div>
 					<div class="session-meta-row">
-						<span class="session-meta-icon">@components.IconCompass()</span>
+						<span class="session-meta-icon">@icons.IconCompass()</span>
 						<span>Chennai</span>
 					</div>
 				</div>
@@ -142,15 +142,15 @@ templ Sessions(tab string) {
 
 				<div class="session-info-col">
 					<div class="session-meta-row">
-						<span class="session-meta-icon">@components.IconClock()</span>
+						<span class="session-meta-icon">@icons.IconClock()</span>
 						<span>02:00 PM - 06:00 PM</span>
 					</div>
 					<div class="session-meta-row">
-						<span class="session-meta-icon">@components.IconMapPin()</span>
+						<span class="session-meta-icon">@icons.IconMapPin()</span>
 						<span>Villa Monticello</span>
 					</div>
 					<div class="session-meta-row">
-						<span class="session-meta-icon">@components.IconCompass()</span>
+						<span class="session-meta-icon">@icons.IconCompass()</span>
 						<span>Lake Como</span>
 					</div>
 				</div>
@@ -214,13 +214,13 @@ templ Sessions(tab string) {
 
 					<div style="display: flex; gap: 6px;">
 						<button class="crm-page-btn" title="Duplicate Session">
-							@components.IconCopy()
+							@icons.IconCopy()
 						</button>
 						<button class="crm-page-btn" title="Delete Session" style="color: #ff7675;">
-							@components.IconTrash2()
+							@icons.IconTrash2()
 						</button>
 						<button class="crm-page-btn" onclick="closeSessionModal()" title="Close">
-							@components.IconX()
+							@icons.IconX()
 						</button>
 					</div>
 				</div>

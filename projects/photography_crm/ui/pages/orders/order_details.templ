@@ -1,8 +1,8 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
 )
 
 templ OrderDetails(id string) {
@@ -10,7 +10,7 @@ templ OrderDetails(id string) {
 		{Label: "Orders", URL: "/orders"},
 		{Label: "ORD-942"},
 	}) {
-		@crmComponents.PageHeader("Order #ORD-942", "Placed on Oct 10, 2026 for Olivia & James Thornton") {
+		@feedback.PageHeader("Order #ORD-942", "Placed on Oct 10, 2026 for Olivia & James Thornton") {
 			<a href="/billing/invoices?action=new&order=ORD-942" class="c-btn c-btn-primary">📄 Generate Invoice</a>
 			<button class="c-btn" style="background: var(--bg-surface-subtle); color: var(--text-main);">📧 Email Receipt</button>
 			<a href="/orders" class="c-btn" style="background: var(--bg-surface-subtle); color: var(--text-main);">← Orders</a>

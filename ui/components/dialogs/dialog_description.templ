@@ -1,0 +1,20 @@
+package dialogs
+
+import (
+	"ui/utils"
+)
+
+templ DialogDescription(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<p
+		data-slot="dialog-description"
+		class={ utils.CN("crm-dialog-desc text-muted-foreground text-sm", extraClass) }
+	>
+		{ children... }
+	</p>
+}

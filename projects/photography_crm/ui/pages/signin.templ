@@ -1,8 +1,8 @@
 package pages
 
 import (
-	"components"
-	"chi-mysql-server/ui/layouts"
+	"ui/layouts"
+	"ui/components/buttons"
 )
 
 templ SignIn() {
@@ -27,7 +27,7 @@ templ SignIn() {
 				<input class="form-input" id="password" name="password" type="password" placeholder="••••••••" required/>
 			</div>
 
-			@components.Button("Sign In", "c-btn-primary")
+			@buttons.Button("Sign In", "c-btn-primary")
 		</form>
 
 		<script>

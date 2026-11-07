@@ -1,9 +1,10 @@
 package pages
 
 import (
-"chi-mysql-server/ui/layouts"
-"components"
-	crmComponents "chi-mysql-server/ui/components"
+"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/navigation"
+	"ui/components/tables"
 )
 
 type LeadRow struct {
@@ -23,36 +24,36 @@ type LeadRow struct {
 
 templ Leads(activeStage string, activeSource string) {
     @layouts.DashboardLayout("Leads Pipeline - Aperture CRM", "leads", []layouts.BreadcrumbItem{{Label: "Leads"}}) {
-        @crmComponents.PageHeader("Leads Management", "Track inquiries, qualify prospects, and convert photography clients.") {
+        @feedback.PageHeader("Leads Management", "Track inquiries, qualify prospects, and convert photography clients.") {
             <button class="c-btn" style="background: var(--bg-surface-subtle); color: var(--text-main);">📥 Export Leads</button>
             <a href="/leads/details?id=new" class="c-btn c-btn-primary">+ Add Lead</a>
         }
 
         <!-- Pipeline Stage Tabs -->
         <div class="crm-filter-bar">
-            @components.Tabs() {
-                @components.TabTrigger(components.TabTriggerProps{Href: "/leads", Active: activeStage == "" || activeStage == "all"}) {
+            @navigation.Tabs() {
+                @navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads", Active: activeStage == "" || activeStage == "all"}) {
                     All Leads (42)
                 }
-                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=new", Active: activeStage == "new"}) {
+                @navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=new", Active: activeStage == "new"}) {
                     New (8)
                 }
-                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=contacted", Active: activeStage == "contacted"}) {
+                @navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=contacted", Active: activeStage == "contacted"}) {
                     Contacted (11)
                 }
-                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=qualified", Active: activeStage == "qualified"}) {
+                @navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=qualified", Active: activeStage == "qualified"}) {
                     Qualified (7)
                 }
-                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=negotiation", Active: activeStage == "negotiation"}) {
+                @navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=negotiation", Active: activeStage == "negotiation"}) {
                     Negotiation (6)
                 }
-                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=ready", Active: activeStage == "ready"}) {
+                @navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=ready", Active: activeStage == "ready"}) {
                     Ready to Book (4)
                 }
-                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=converted", Active: activeStage == "converted"}) {
+                @navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=converted", Active: activeStage == "converted"}) {
                     Converted (5)
                 }
-                @components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=lost", Active: activeStage == "lost"}) {
+                @navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=lost", Active: activeStage == "lost"}) {
                     Lost (1)
                 }
             }
@@ -71,7 +72,7 @@ templ Leads(activeStage string, activeSource string) {
                                                                                     </div>
                                                                                 </div>
 
-                                                                                    @components.Table() {
+                                                                                    @tables.Table() {
                                                                                         <thead>
                                                                                             <tr>
                                                                                                 <th style="width: 20px;"><input type="checkbox"/></th>
@@ -96,7 +97,7 @@ templ Leads(activeStage string, activeSource string) {
                                                                                                                                                     <td><span class="status-pill pill-purple">Instagram</span></td>
                                                                                                                                                         <td>Destination Wedding</td>
                                                                                                                                                             <td>Himanshu M.</td>
-                                                                                                                                                                <td>@crmComponents.StatusPill("Ready to Book", "green")</td>
+                                                                                                                                                                <td>@feedback.StatusPill("Ready to Book", "green")</td>
                                                                                                                                                                     <td style="font-weight: 600;">$4,500</td>
                                                                                                                                                                         <td style="color: var(--text-muted); font-size: 11.5px;">Yesterday 16:40</td>
                                                                                                                                                                             <td style="color: #ff7675; font-size: 11.5px; font-weight: 600;">Today 14:00</td>
@@ -113,7 +114,7 @@ templ Leads(activeStage string, activeSource string) {
                                                                                                                                                                                                 <td><span class="status-pill pill-blue">Website Form</span></td>
                                                                                                                                                                                                     <td>Commercial Lookbook</td>
                                                                                                                                                                                                         <td>Aniket K.</td>
-                                                                                                                                                                                                            <td>@crmComponents.StatusPill("Negotiation", "yellow")</td>
+                                                                                                                                                                                                            <td>@feedback.StatusPill("Negotiation", "yellow")</td>
                                                                                                                                                                                                                 <td style="font-weight: 600;">$3,200</td>
                                                                                                                                                                                                                     <td style="color: var(--text-muted); font-size: 11.5px;">2 days ago</td>
                                                                                                                                                                                                                         <td style="color: var(--text-muted); font-size: 11.5px;">Nov 4, 11:00</td>
@@ -130,7 +131,7 @@ templ Leads(activeStage string, activeSource string) {
                                                                                                                                                                                                                                             <td><span class="status-pill pill-green">WhatsApp</span></td>
                                                                                                                                                                                                                                                 <td>Maternity & Newborn</td>
                                                                                                                                                                                                                                                     <td>Vanshita S.</td>
-                                                                                                                                                                                                                                                        <td>@crmComponents.StatusPill("Qualified", "blue")</td>
+                                                                                                                                                                                                                                                        <td>@feedback.StatusPill("Qualified", "blue")</td>
                                                                                                                                                                                                                                                             <td style="font-weight: 600;">$1,400</td>
                                                                                                                                                                                                                                                                 <td style="color: var(--text-muted); font-size: 11.5px;">3 days ago</td>
                                                                                                                                                                                                                                                                     <td style="color: var(--text-muted); font-size: 11.5px;">Nov 5, 10:00</td>
@@ -147,7 +148,7 @@ templ Leads(activeStage string, activeSource string) {
                                                                                                                                                                                                                                                                                         <td><span class="status-pill pill-purple">Instagram</span></td>
                                                                                                                                                                                                                                                                                             <td>Fine Art Portraiture</td>
                                                                                                                                                                                                                                                                                                 <td>Himanshu M.</td>
-                                                                                                                                                                                                                                                                                                    <td>@crmComponents.StatusPill("New", "blue")</td>
+                                                                                                                                                                                                                                                                                                    <td>@feedback.StatusPill("New", "blue")</td>
                                                                                                                                                                                                                                                                                                         <td style="font-weight: 600;">$2,100</td>
                                                                                                                                                                                                                                                                                                             <td style="color: var(--text-muted); font-size: 11.5px;">Today 09:15</td>
                                                                                                                                                                                                                                                                                                                 <td style="color: #ff7675; font-size: 11.5px; font-weight: 600;">Today 18:00</td>
@@ -164,7 +165,7 @@ templ Leads(activeStage string, activeSource string) {
                                                                                                                                                                                                                                                                                                                                     <td><span class="status-pill pill-gray">Manual Entry</span></td>
                                                                                                                                                                                                                                                                                                                                         <td>Corporate Headshots</td>
                                                                                                                                                                                                                                                                                                                                             <td>Dishita V.</td>
-                                                                                                                                                                                                                                                                                                                                                <td>@crmComponents.StatusPill("Contacted", "yellow")</td>
+                                                                                                                                                                                                                                                                                                                                                <td>@feedback.StatusPill("Contacted", "yellow")</td>
                                                                                                                                                                                                                                                                                                                                                     <td style="font-weight: 600;">$1,850</td>
                                                                                                                                                                                                                                                                                                                                                         <td style="color: var(--text-muted); font-size: 11.5px;">Yesterday 11:30</td>
                                                                                                                                                                                                                                                                                                                                                             <td style="color: var(--text-muted); font-size: 11.5px;">Nov 6, 15:30</td>
@@ -175,7 +176,7 @@ templ Leads(activeStage string, activeSource string) {
                                                                                                                                                                                                                                                                                                                                                             </tbody>
                                                                                                                                                                                                                                                                                                                                                         }
 
-                                                                                                                                                                                                                                                                                                                                                        @crmComponents.Pagination(1, 4, 42)
+                                                                                                                                                                                                                                                                                                                                                        @navigation.Pagination(1, 4, 42)
                                                                                                                                                                                                                                                                                                                                                     }
                                                                                                                                                                                                                                                                                                                                                 }
 

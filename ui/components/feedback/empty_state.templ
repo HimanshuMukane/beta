@@ -1,0 +1,13 @@
+package feedback
+
+import (
+)
+
+templ EmptyState(title string, desc string, icon string) {
+	<div class="crm-empty-state">
+		<div class="empty-state-icon">{ icon }</div>
+		<h3 class="empty-state-title">{ title }</h3>
+		<p class="empty-state-desc">{ desc }</p>
+		{ children... }
+	</div>
+}

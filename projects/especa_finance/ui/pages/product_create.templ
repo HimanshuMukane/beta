@@ -1,0 +1,40 @@
+package pages
+
+import (
+	"especa_finance/ui/layouts"
+)
+
+templ ProductCreate() {
+	@layouts.MainLayout("Create Product", "products", []layouts.Breadcrumb{{Label: "Products", URL: "/products"}, {Label: "New"}}) {
+		<div style="max-width: 600px; margin: 0 auto; background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 24px;">
+			<h2 style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 16px;">Create New Product / Service</h2>
+			<form method="POST" action="/products/new">
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Product Name</label>
+					<input type="text" name="name" placeholder="e.g. Hotel Management CRM" required/>
+				</div>
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Product Code</label>
+					<input type="text" name="code" placeholder="e.g. PROD-CRM-01" required/>
+				</div>
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Category</label>
+					<select name="category">
+						<option value="SaaS License">SaaS License</option>
+						<option value="Custom Software Development">Custom Software Development</option>
+						<option value="Consulting & Support">Consulting & Support</option>
+						<option value="Infrastructure & Maintenance">Infrastructure & Maintenance</option>
+					</select>
+				</div>
+				<div class="finance-form-group" style="margin-bottom: 14px;">
+					<label>Description</label>
+					<textarea name="description" rows="3" placeholder="Brief summary of what this software delivers..."></textarea>
+				</div>
+				<div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+					<a href="/products" class="finance-action-btn" style="background: #2d3748;">Cancel</a>
+					<button type="submit" class="finance-action-btn">Save Product</button>
+				</div>
+			</form>
+		</div>
+	}
+}

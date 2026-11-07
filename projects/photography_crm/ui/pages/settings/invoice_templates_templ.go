@@ -9,8 +9,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
+	"ui/components/feedback"
+	"ui/layouts"
 )
 
 func InvoiceTemplatesSettings() templ.Component {
@@ -46,7 +46,7 @@ func InvoiceTemplatesSettings() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = crmComponents.PageHeader("Invoice PDF Templates", "Configure invoice branding, payment bank details, tax ID display, and footer notes.").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.PageHeader("Invoice PDF Templates", "Configure invoice branding, payment bank details, tax ID display, and footer notes.").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

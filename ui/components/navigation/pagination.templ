@@ -1,0 +1,30 @@
+package navigation
+
+import (
+	"fmt"
+	"ui/components/icons"
+)
+templ Pagination(page int, totalPages int, totalItems int) {
+	<div class="crm-pagination">
+		<span class="crm-pagination-info">Showing <span class="crm-pagination-count">1</span> to <span class="crm-pagination-count">{ fmt.Sprintf("%d", totalItems) }</span> of <span class="crm-pagination-count">{ fmt.Sprintf("%d", totalItems) }</span> entries</span>
+		<div class="crm-pagination-controls">
+			<button class="crm-page-btn crm-page-nav" disabled aria-label="Previous page">
+				@icons.IconChevronLeft()
+				<span>Previous</span>
+			</button>
+			<div class="crm-pagination-pages">
+				<button class="crm-page-btn is-active" aria-current="page">1</button>
+				if totalPages > 1 {
+					<button class="crm-page-btn">2</button>
+				}
+				if totalPages > 2 {
+					<button class="crm-page-btn">3</button>
+				}
+			</div>
+			<button class="crm-page-btn crm-page-nav" disabled?={ totalPages <= 1 } aria-label="Next page">
+				<span>Next</span>
+				@icons.IconChevronRight()
+			</button>
+		</div>
+	</div>
+}

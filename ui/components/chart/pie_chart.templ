@@ -1,0 +1,14 @@
+package chart
+
+import (
+	"context"
+)
+
+templ PieChart(props ...PieChartProps) {
+	{{ st := &chartState{kind: "pie"} }}
+	{{ ctx = context.WithValue(ctx, stateCtxKey, st) }}
+	@responsiveContainer() {
+		{ children... }
+		@chartOutput(st)
+	}
+}

@@ -1,0 +1,21 @@
+package navigation
+
+import (
+	"ui/utils"
+)
+
+templ Tabs(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div
+		role="tablist"
+		data-slot="tabs-list"
+		class={ utils.CN("crm-tabs-list rounded-lg p-[3px] h-8 inline-flex w-fit items-center justify-center text-muted-foreground bg-muted", extraClass) }
+	>
+		{ children... }
+	</div>
+}

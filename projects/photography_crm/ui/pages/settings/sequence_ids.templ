@@ -1,9 +1,9 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/icons"
 )
 
 templ SequenceIDsSettings() {
@@ -11,7 +11,7 @@ templ SequenceIDsSettings() {
 		{Label: "Settings", URL: "/settings"},
 		{Label: "Sequence IDs"},
 	}) {
-		@crmComponents.PageHeader("Sequence ID Formats", "Standardize reference IDs across inquiries, clients, contracts, and financial documents.") {
+		@feedback.PageHeader("Sequence ID Formats", "Standardize reference IDs across inquiries, clients, contracts, and financial documents.") {
 			<button class="c-btn c-btn-primary" onclick="alert('Sequence formatting rules saved successfully.')">Save Changes</button>
 		}
 
@@ -20,7 +20,7 @@ templ SequenceIDsSettings() {
 
 				<div class="seq-token-helper-bar">
 					<div style="font-size: 12px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
-						@components.IconSlidersHorizontal()
+						@icons.IconSlidersHorizontal()
 						<span>Available Dynamic Tokens:</span>
 					</div>
 					<span class="seq-token-tag" title="4-digit Current Year">&#123;YYYY&#125;</span>
@@ -36,7 +36,7 @@ templ SequenceIDsSettings() {
 					<div class="settings-card-header">
 						<div class="settings-card-header-left">
 							<div class="settings-card-title">
-								@components.IconSlidersHorizontal()
+								@icons.IconSlidersHorizontal()
 								<span>Document Numbering Rules</span>
 							</div>
 							<div class="settings-card-subtitle">Define prefix patterns, dynamic dates, zero-padding, and starting increments.</div>
@@ -170,7 +170,7 @@ templ SequenceIDsSettings() {
 					<div class="settings-card-header">
 						<div class="settings-card-header-left">
 							<div class="settings-card-title">
-								@components.IconClock()
+								@icons.IconClock()
 								<span>Sequence Reset & Rollover Rules</span>
 							</div>
 							<div class="settings-card-subtitle">Automate when counters should restart from zero or one.</div>

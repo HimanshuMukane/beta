@@ -1,0 +1,17 @@
+package messages
+
+templ MessageContent(props ...ContentProps) {
+	{{ var p ContentProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		data-slot="message-content"
+		class={ "cn-message-content", p.Class }
+	>
+		{ children... }
+	</div>
+}

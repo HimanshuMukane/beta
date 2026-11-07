@@ -1,9 +1,9 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/icons"
 )
 
 templ ClientDetails(id string) {
@@ -11,13 +11,13 @@ templ ClientDetails(id string) {
 		{Label: "Clients", URL: "/clients"},
 		{Label: "Olivia & James Thornton"},
 	}) {
-		@crmComponents.PageHeader("Olivia & James Thornton", "Client since March 2025 • Lifetime Value: $5,800.00") {
+		@feedback.PageHeader("Olivia & James Thornton", "Client since March 2025 • Lifetime Value: $5,800.00") {
 			<a href="/orders?action=new&client=Olivia+Thornton" class="c-btn c-btn-primary">
-				@components.IconPlus()
+				@icons.IconPlus()
 				<span>New Order</span>
 			</a>
 			<a href="/sessions?action=book&client=Olivia+Thornton" class="c-btn" style="background: var(--bg-surface-subtle); color: var(--text-main);">
-				@components.IconCamera()
+				@icons.IconCamera()
 				<span>Book Session</span>
 			</a>
 			<a href="/clients" class="c-btn" style="background: var(--bg-surface-subtle); color: var(--text-main);">
@@ -67,14 +67,14 @@ templ ClientDetails(id string) {
 								<td>Full Wedding Day Documentation + Album</td>
 								<td style="color: var(--text-muted);">Oct 10, 2026</td>
 								<td style="font-weight: 600;">$3,400.00</td>
-								<td>@crmComponents.StatusPill("Confirmed", "blue")</td>
+								<td>@feedback.StatusPill("Confirmed", "blue")</td>
 							</tr>
 							<tr>
 								<td style="font-weight: 600;"><a href="/orders/details?id=ORD-890" style="color: var(--accent-active-text); text-decoration: none;">ORD-890</a></td>
 								<td>Pre-Wedding Golden Hour Portrait Shoot</td>
 								<td style="color: var(--text-muted);">Apr 14, 2025</td>
 								<td style="font-weight: 600;">$2,400.00</td>
-								<td>@crmComponents.StatusPill("Completed", "green")</td>
+								<td>@feedback.StatusPill("Completed", "green")</td>
 							</tr>
 						</tbody>
 					</table>

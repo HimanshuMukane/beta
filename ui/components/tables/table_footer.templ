@@ -1,0 +1,20 @@
+package tables
+
+import (
+	"ui/utils"
+)
+
+templ TableFooter(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<tfoot
+		data-slot="table-footer"
+		class={ utils.CN("bg-muted/50 border-t font-medium [&>tr]:last:border-b-0", extraClass) }
+	>
+		{ children... }
+	</tfoot>
+}

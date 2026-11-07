@@ -9,9 +9,10 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	crmComponents "chi-mysql-server/ui/components"
-	"chi-mysql-server/ui/layouts"
-	"components"
+	"ui/components/feedback"
+	"ui/components/navigation"
+	"ui/components/tables"
+	"ui/layouts"
 )
 
 type LeadRow struct {
@@ -80,7 +81,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = crmComponents.PageHeader("Leads Management", "Track inquiries, qualify prospects, and convert photography clients.").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = feedback.PageHeader("Leads Management", "Track inquiries, qualify prospects, and convert photography clients.").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -118,7 +119,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = components.TabTrigger(components.TabTriggerProps{Href: "/leads", Active: activeStage == "" || activeStage == "all"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads", Active: activeStage == "" || activeStage == "all"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -144,7 +145,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=new", Active: activeStage == "new"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var6), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=new", Active: activeStage == "new"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var6), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -170,7 +171,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=contacted", Active: activeStage == "contacted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var7), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=contacted", Active: activeStage == "contacted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var7), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -196,7 +197,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=qualified", Active: activeStage == "qualified"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=qualified", Active: activeStage == "qualified"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -222,7 +223,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=negotiation", Active: activeStage == "negotiation"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=negotiation", Active: activeStage == "negotiation"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -248,7 +249,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=ready", Active: activeStage == "ready"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var10), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=ready", Active: activeStage == "ready"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var10), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -274,7 +275,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=converted", Active: activeStage == "converted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var11), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=converted", Active: activeStage == "converted"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var11), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -300,13 +301,13 @@ func Leads(activeStage string, activeSource string) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = components.TabTrigger(components.TabTriggerProps{Href: "/leads?stage=lost", Active: activeStage == "lost"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var12), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = navigation.TabTrigger(navigation.TabTriggerProps{Href: "/leads?stage=lost", Active: activeStage == "lost"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var12), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = components.Tabs().Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = navigation.Tabs().Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -330,7 +331,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Ready to Book", "green").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Ready to Book", "green").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -338,7 +339,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Negotiation", "yellow").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Negotiation", "yellow").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -346,7 +347,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Qualified", "blue").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Qualified", "blue").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -354,7 +355,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("New", "blue").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("New", "blue").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -362,7 +363,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = crmComponents.StatusPill("Contacted", "yellow").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = feedback.StatusPill("Contacted", "yellow").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -372,7 +373,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = components.Table().Render(templ.WithChildren(ctx, templ_7745c5c3_Var13), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = tables.Table().Render(templ.WithChildren(ctx, templ_7745c5c3_Var13), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -380,7 +381,7 @@ func Leads(activeStage string, activeSource string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = crmComponents.Pagination(1, 4, 42).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = navigation.Pagination(1, 4, 42).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

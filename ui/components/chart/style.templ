@@ -1,0 +1,11 @@
+package chart
+
+templ Style(props ...StyleProps) {
+	{{ var p StyleProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	if block := p.Config.styleBlock(p.ID); block != "" {
+		@templ.Raw("<style>" + block + "</style>")
+	}
+}

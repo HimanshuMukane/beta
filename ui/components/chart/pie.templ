@@ -1,0 +1,14 @@
+package chart
+
+templ Pie(props ...PieProps) {
+	{{ var p PieProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.pies = append(st.pies, &pieState{props: p})
+	}
+	}}
+	{ children... }
+}

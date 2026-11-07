@@ -1,15 +1,16 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/navigation"
 )
 
 templ Followups(filter string) {
 	@layouts.DashboardLayout("Follow-ups - Aperture CRM", "followups", []layouts.BreadcrumbItem{
 		{Label: "Follow-ups"},
 	}) {
-		@crmComponents.PageHeader("Follow-ups Management", "Keep track of scheduled calls, client reminders, and proposal follow-ups.") {
+		@feedback.PageHeader("Follow-ups Management", "Keep track of scheduled calls, client reminders, and proposal follow-ups.") {
 			<button class="c-btn c-btn-primary">+ Create Follow-up</button>
 		}
 
@@ -51,7 +52,7 @@ templ Followups(filter string) {
 						<td style="color: #ff7675; font-weight: 600;">Today at 14:00</td>
 						<td>Himanshu M.</td>
 						<td><span class="status-pill pill-red">High</span></td>
-						<td>@crmComponents.StatusPill("Pending", "yellow")</td>
+						<td>@feedback.StatusPill("Pending", "yellow")</td>
 						<td style="color: var(--text-muted); font-size: 11.5px;">Confirm second shooter itinerary and contract signing.</td>
 						<td style="text-align: right;">
 							<button class="crm-page-btn">✓ Done</button>
@@ -64,7 +65,7 @@ templ Followups(filter string) {
 						<td>Nov 4 at 11:00</td>
 						<td>Aniket K.</td>
 						<td><span class="status-pill pill-blue">Medium</span></td>
-						<td>@crmComponents.StatusPill("Scheduled", "blue")</td>
+						<td>@feedback.StatusPill("Scheduled", "blue")</td>
 						<td style="color: var(--text-muted); font-size: 11.5px;">Follow up on commercial license quote.</td>
 						<td style="text-align: right;">
 							<button class="crm-page-btn">✓ Done</button>
@@ -77,7 +78,7 @@ templ Followups(filter string) {
 						<td>Nov 5 at 10:00</td>
 						<td>Vanshita S.</td>
 						<td><span class="status-pill pill-purple">Normal</span></td>
-						<td>@crmComponents.StatusPill("Scheduled", "blue")</td>
+						<td>@feedback.StatusPill("Scheduled", "blue")</td>
 						<td style="color: var(--text-muted); font-size: 11.5px;">Check if maternity wardrobe selection is finalized.</td>
 						<td style="text-align: right;">
 							<button class="crm-page-btn">✓ Done</button>
@@ -90,7 +91,7 @@ templ Followups(filter string) {
 						<td style="color: #ff7675; font-weight: 600;">Oct 31 at 16:00 (Overdue)</td>
 						<td>Dishita V.</td>
 						<td><span class="status-pill pill-red">Urgent</span></td>
-						<td>@crmComponents.StatusPill("Overdue", "red")</td>
+						<td>@feedback.StatusPill("Overdue", "red")</td>
 						<td style="color: var(--text-muted); font-size: 11.5px;">Client requested invoice revision.</td>
 						<td style="text-align: right;">
 							<button class="crm-page-btn">✓ Done</button>
@@ -99,7 +100,7 @@ templ Followups(filter string) {
 				</tbody>
 			</table>
 
-			@crmComponents.Pagination(1, 2, 14)
+			@navigation.Pagination(1, 2, 14)
 		</div>
 	}
 }

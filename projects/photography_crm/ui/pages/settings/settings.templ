@@ -1,15 +1,15 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
 )
 
 templ Settings(activeTab string) {
 	@layouts.DashboardLayout("Studio Settings - Aperture CRM", "settings", []layouts.BreadcrumbItem{
 		{Label: "Settings"},
 	}) {
-		@crmComponents.PageHeader("Studio Settings & Configuration", "Configure photography master data, package pricing, workflow stages, and branding.")
+		@feedback.PageHeader("Studio Settings & Configuration", "Configure photography master data, package pricing, workflow stages, and branding.")
 
 		@layouts.SettingsLayout("photographers") {
 			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -35,19 +35,19 @@ templ Settings(activeTab string) {
 							<td style="font-weight: 600;">Himanshu Mukane</td>
 							<td>Lead Principal</td>
 							<td>Fine Art Weddings, Editorial</td>
-							<td>@crmComponents.StatusPill("Active", "green")</td>
+							<td>@feedback.StatusPill("Active", "green")</td>
 						</tr>
 						<tr>
 							<td style="font-weight: 600;">Aniket K.</td>
 							<td>Senior Associate</td>
 							<td>Commercial, Lookbook</td>
-							<td>@crmComponents.StatusPill("Active", "green")</td>
+							<td>@feedback.StatusPill("Active", "green")</td>
 						</tr>
 						<tr>
 							<td style="font-weight: 600;">Vanshita S.</td>
 							<td>Associate</td>
 							<td>Maternity, Portraiture</td>
-							<td>@crmComponents.StatusPill("Active", "green")</td>
+							<td>@feedback.StatusPill("Active", "green")</td>
 						</tr>
 					</tbody>
 				</table>

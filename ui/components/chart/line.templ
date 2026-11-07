@@ -1,0 +1,14 @@
+package chart
+
+templ Line(props ...LineProps) {
+	{{ var p LineProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	if st := stateFrom(ctx); st != nil {
+		st.lines = append(st.lines, &lineState{props: p})
+	}
+	}}
+	{ children... }
+}

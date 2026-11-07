@@ -1,9 +1,9 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/icons"
 )
 
 templ BusinessSettings() {
@@ -11,7 +11,7 @@ templ BusinessSettings() {
 		{Label: "Settings", URL: "/settings"},
 		{Label: "Business Profile"},
 	}) {
-		@crmComponents.PageHeader("Studio Business Configuration", "Manage studio branding, physical studio address, tax settings, currency, and notifications.") {
+		@feedback.PageHeader("Studio Business Configuration", "Manage studio branding, physical studio address, tax settings, currency, and notifications.") {
 			<button class="c-btn c-btn-primary" onclick="alert('Business profile updated successfully.')">Save All Changes</button>
 		}
 
@@ -22,7 +22,7 @@ templ BusinessSettings() {
 					<div class="settings-card-header">
 						<div class="settings-card-header-left">
 							<div class="settings-card-title">
-								@components.IconCamera()
+								@icons.IconCamera()
 								<span>Studio Profile & Branding</span>
 							</div>
 							<div class="settings-card-subtitle">Public details printed on proposals, contracts, client portals, and watermarks.</div>
@@ -36,7 +36,7 @@ templ BusinessSettings() {
 								<label class="form-label-custom" style="margin-bottom: 8px;">Studio Logo & Mark</label>
 								<div class="biz-logo-uploader" onclick="document.getElementById('studio-logo-input').click()">
 									<div class="biz-logo-preview" style="color: var(--text-muted); display: flex; align-items: center; justify-content: center;">
-										@components.IconCamera()
+										@icons.IconCamera()
 									</div>
 									<div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Upload Studio Mark</div>
 									<div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">PNG, JPG or SVG up to 5MB</div>
@@ -93,7 +93,7 @@ templ BusinessSettings() {
 					<div class="settings-card-header">
 						<div class="settings-card-header-left">
 							<div class="settings-card-title">
-								@components.IconSettings()
+								@icons.IconSettings()
 								<span>Location, Currency & Taxes</span>
 							</div>
 							<div class="settings-card-subtitle">Studio base location used for travel fee calculations and invoice currency.</div>
@@ -149,7 +149,7 @@ templ BusinessSettings() {
 					<div class="settings-card-header">
 						<div class="settings-card-header-left">
 							<div class="settings-card-title">
-								@components.IconZap()
+								@icons.IconZap()
 								<span>Operational Alerts & Automation</span>
 							</div>
 							<div class="settings-card-subtitle">Notify team and clients on crucial booking, payment, and inquiry milestones.</div>

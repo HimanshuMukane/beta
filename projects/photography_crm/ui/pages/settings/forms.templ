@@ -1,8 +1,8 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
 )
 
 templ FormsSettings() {
@@ -10,7 +10,7 @@ templ FormsSettings() {
 		{Label: "Settings", URL: "/settings"},
 		{Label: "Forms"},
 	}) {
-		@crmComponents.PageHeader("Website Inquiry Forms", "Build and embed custom inquiry forms for website and Instagram link-in-bio.")
+		@feedback.PageHeader("Website Inquiry Forms", "Build and embed custom inquiry forms for website and Instagram link-in-bio.")
 
 		@layouts.SettingsLayout("forms") {
 			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -39,7 +39,7 @@ templ FormsSettings() {
 							<td>Name, Email, Phone, Event Date, Venue, Budget, Guest Count</td>
 							<td><span class="status-pill pill-blue">New Lead</span></td>
 							<td style="font-weight: 600;">38</td>
-							<td>@crmComponents.StatusPill("Live", "green")</td>
+							<td>@feedback.StatusPill("Live", "green")</td>
 							<td style="text-align: right;"><button class="crm-page-btn">&lt;/&gt; Embed</button></td>
 						</tr>
 						<tr>
@@ -47,7 +47,7 @@ templ FormsSettings() {
 							<td>Company, Contact, Date, Art Direction, License Type</td>
 							<td><span class="status-pill pill-blue">New Lead</span></td>
 							<td style="font-weight: 600;">14</td>
-							<td>@crmComponents.StatusPill("Live", "green")</td>
+							<td>@feedback.StatusPill("Live", "green")</td>
 							<td style="text-align: right;"><button class="crm-page-btn">&lt;/&gt; Embed</button></td>
 						</tr>
 					</tbody>

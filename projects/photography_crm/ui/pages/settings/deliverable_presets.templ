@@ -1,8 +1,8 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
 )
 
 templ DeliverablePresetsSettings() {
@@ -10,7 +10,7 @@ templ DeliverablePresetsSettings() {
 		{Label: "Settings", URL: "/settings"},
 		{Label: "Deliverable Presets"},
 	}) {
-		@crmComponents.PageHeader("Deliverable Presets", "Configure turn-around deadlines, print lab partnerships, and digital proofing defaults.")
+		@feedback.PageHeader("Deliverable Presets", "Configure turn-around deadlines, print lab partnerships, and digital proofing defaults.")
 
 		@layouts.SettingsLayout("deliverable_presets") {
 			<div style="margin-bottom: 20px;">

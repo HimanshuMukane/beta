@@ -1,0 +1,10 @@
+package feedback
+
+import (
+)
+
+templ StatusPill(label string, color string) {
+	@Badge(BadgeProps{Variant: color}) {
+		{ label }
+	}
+}

@@ -1,8 +1,8 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
 )
 
 templ InvoiceTemplatesSettings() {
@@ -10,7 +10,7 @@ templ InvoiceTemplatesSettings() {
 		{Label: "Settings", URL: "/settings"},
 		{Label: "Invoice PDF"},
 	}) {
-		@crmComponents.PageHeader("Invoice PDF Templates", "Configure invoice branding, payment bank details, tax ID display, and footer notes.")
+		@feedback.PageHeader("Invoice PDF Templates", "Configure invoice branding, payment bank details, tax ID display, and footer notes.")
 
 		@layouts.SettingsLayout("invoice_templates") {
 			<div style="margin-bottom: 20px;">

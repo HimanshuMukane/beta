@@ -1,0 +1,20 @@
+package chart
+
+import (
+	"context"
+)
+
+templ BarChart(props ...BarChartProps) {
+	{{ var p BarChartProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	{{
+	st := &chartState{kind: "bar", data: p.Data, margin: p.Margin, layout: p.Layout, accessibilityLayer: p.AccessibilityLayer}
+	ctx = context.WithValue(ctx, stateCtxKey, st)
+	}}
+	@responsiveContainer() {
+		{ children... }
+		@chartOutput(st)
+	}
+}

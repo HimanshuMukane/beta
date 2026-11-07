@@ -9,7 +9,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"chi-mysql-server/ui/layouts"
+	"ui/layouts"
 )
 
 type ProjectRow struct {

@@ -1,0 +1,11 @@
+package layouts
+
+templ KanbanCard(id string) {
+	<div
+		class="crm-kanban-card"
+		id={ id }
+		data-id={ id }
+	>
+		{ children... }
+	</div>
+}

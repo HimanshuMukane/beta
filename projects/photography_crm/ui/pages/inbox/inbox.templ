@@ -1,16 +1,16 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/messages"
 )
 
 templ Inbox(filter string) {
 	@layouts.DashboardLayout("Unified Studio Inbox - Aperture CRM", "inbox", []layouts.BreadcrumbItem{
 		{Label: "Inbox"},
 	}) {
-		@crmComponents.PageHeader("Unified Studio Inbox", "Consolidated client conversations across WhatsApp, Instagram DM, and Facebook Messenger.") {
+		@feedback.PageHeader("Unified Studio Inbox", "Consolidated client conversations across WhatsApp, Instagram DM, and Facebook Messenger.") {
 			<button class="c-btn c-btn-primary">+ New Message</button>
 		}
 
@@ -79,81 +79,81 @@ templ Inbox(filter string) {
 
 				<!-- Chat Messages Stream using Message, Bubble & Marker Primitives -->
 				<div style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px;">
-					@components.Message() {
-						@components.MessageAvatarSlot() {
-							@components.Avatar(components.AvatarProps{
+					@messages.Message() {
+						@messages.MessageAvatarSlot() {
+							@feedback.Avatar(feedback.AvatarProps{
 								Initials: "JP",
 								BgColor:  "#7c5dfa",
 								Size:     "sm",
 							})
 						}
-						@components.MessageContent() {
-							@components.MessageHeader() {
+						@messages.MessageContent() {
+							@messages.MessageHeader() {
 								<span>Jessica Parker • 13:58</span>
 							}
-							@components.Bubble(components.BubbleProps{Variant: components.BubbleVariantMuted}) {
-								@components.BubbleContent() {
+							@messages.Bubble(messages.BubbleProps{Variant: messages.BubbleVariantMuted}) {
+								@messages.BubbleContent() {
 									Hi Himanshu! We received the quotation for Lake Como. Does the package include the second shooter for the rehearsal dinner as well?
 								}
 							}
 						}
 					}
 
-					@components.Message(components.MessageProps{Align: components.AlignEnd}) {
-						@components.MessageAvatarSlot() {
-							@components.Avatar(components.AvatarProps{
+					@messages.Message(messages.MessageProps{Align: messages.AlignEnd}) {
+						@messages.MessageAvatarSlot() {
+							@feedback.Avatar(feedback.AvatarProps{
 								Initials: "HM",
 								BgColor:  "#00cec9",
 								Size:     "sm",
 							})
 						}
-						@components.MessageContent() {
-							@components.MessageHeader() {
+						@messages.MessageContent() {
+							@messages.MessageHeader() {
 								<span>You • 14:05</span>
 							}
-							@components.Bubble() {
-								@components.BubbleContent() {
+							@messages.Bubble() {
+								@messages.BubbleContent() {
 									Hello Jessica! Yes, the Lake Como Signature proposal includes full coverage with myself and our associate second shooter for both the rehearsal evening and the main wedding day, plus 10 rolls of medium format film!
 								}
 							}
-							@components.MessageFooter() {
+							@messages.MessageFooter() {
 								<span>Delivered</span>
 							}
 						}
 					}
 
-					@components.Message() {
-						@components.MessageAvatarSlot() {
-							@components.Avatar(components.AvatarProps{
+					@messages.Message() {
+						@messages.MessageAvatarSlot() {
+							@feedback.Avatar(feedback.AvatarProps{
 								Initials: "JP",
 								BgColor:  "#7c5dfa",
 								Size:     "sm",
 							})
 						}
-						@components.MessageContent() {
-							@components.BubbleGroup() {
-								@components.Bubble(components.BubbleProps{Variant: components.BubbleVariantMuted}) {
-									@components.BubbleContent() {
+						@messages.MessageContent() {
+							@messages.BubbleGroup() {
+								@messages.Bubble(messages.BubbleProps{Variant: messages.BubbleVariantMuted}) {
+									@messages.BubbleContent() {
 										That is perfect! We are ready to sign the contract once you send it over. Thank you!
 									}
 								}
-								@components.Bubble(components.BubbleProps{Variant: components.BubbleVariantMuted}) {
-									@components.BubbleContent() {
+								@messages.Bubble(messages.BubbleProps{Variant: messages.BubbleVariantMuted}) {
+									@messages.BubbleContent() {
 										Can we also include drone aerial coverage if weather permits?
 									}
-									@components.BubbleReactions() {
+									@messages.BubbleReactions() {
 										<span>👍 1</span>
 									}
 								}
 							}
-							@components.MessageFooter() {
+							@messages.MessageFooter() {
 								<span>Read 14:13</span>
 							}
 						}
 					}
 
-					@components.Marker(components.MarkerProps{Role: "status"}) {
-						@components.MarkerContent(components.MarkerContentProps{Class: "shimmer"}) {
+					@feedback.Marker(feedback.MarkerProps{Role: "status"}) {
+						@feedback.MarkerContent(feedback.MarkerContentProps{Class: "shimmer"}) {
 							<span style="font-weight: 600; color: var(--text-main);">Jessica Parker</span> is typing...
 						}
 					}
@@ -175,7 +175,7 @@ templ Inbox(filter string) {
 
 				<div>
 					<div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;">Lead Stage</div>
-					@crmComponents.StatusPill("Ready to Book", "green")
+					@feedback.StatusPill("Ready to Book", "green")
 				</div>
 
 				<div>

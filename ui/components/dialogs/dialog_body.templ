@@ -1,0 +1,20 @@
+package dialogs
+
+import (
+	"ui/utils"
+)
+
+templ DialogBody(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div
+		data-slot="dialog-body"
+		class={ utils.CN("crm-dialog-body py-2 flex flex-col gap-4", extraClass) }
+	>
+		{ children... }
+	</div>
+}

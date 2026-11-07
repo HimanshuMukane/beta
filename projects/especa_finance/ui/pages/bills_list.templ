@@ -1,0 +1,55 @@
+package pages
+
+import (
+	"especa_finance/models"
+	"especa_finance/ui/layouts"
+	"core/utils"
+)
+
+templ BillsList(bills []models.Bill) {
+	@layouts.MainLayout("Expenses & Bills", "bills", []layouts.Breadcrumb{{Label: "Finance"}, {Label: "Expenses & Bills"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Company Expenses & Vendor Bills</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">AWS, GitHub, Office Rent, Software Tools, and External Services</p>
+			</div>
+			<div>
+				<a href="/bills/new" class="finance-action-btn">+ Record Expense</a>
+			</div>
+		</div>
+
+		if len(bills) == 0 {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 40px; text-align: center;">
+				<p style="color: var(--text-muted); margin-bottom: 15px;">No expense bills recorded yet.</p>
+				<a href="/bills/new" class="finance-action-btn">+ Record First Bill</a>
+			</div>
+		} else {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; overflow: hidden;">
+				<table class="finance-table" style="margin-top: 0;">
+					<thead>
+						<tr>
+							<th>Bill #</th>
+							<th>Vendor Name</th>
+							<th>Bill Date</th>
+							<th>Due Date</th>
+							<th>Total Amount</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, b := range bills {
+							<tr>
+								<td><code>{ b.BillNumber }</code></td>
+								<td><strong style="color: #fff;">{ b.VendorName }</strong></td>
+								<td>{ b.BillDate }</td>
+								<td>{ b.DueDate }</td>
+								<td><strong style="color: #e17055;">{ utils.FormatINR(b.TotalMinor) }</strong></td>
+								<td><span class="finance-badge-pill finance-badge-pending">{ b.Status }</span></td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}

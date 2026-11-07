@@ -1,0 +1,77 @@
+package pages
+
+import (
+	"fmt"
+	"especa_finance/models"
+	"especa_finance/ui/layouts"
+	"core/utils"
+)
+
+templ EmployeeTemplatesList(templates []models.FinancialTemplate) {
+	@layouts.MainLayout("Employee Financial Templates", "employee_templates", []layouts.Breadcrumb{{Label: "Employee Templates"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Employee Financial Templates</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Reusable rules for Basic Salary, HRA, Employee PF, Employer PF, TDS, and Bonuses</p>
+			</div>
+			<div>
+				<a href="/templates/employees/new" class="finance-action-btn">+ Create Template</a>
+			</div>
+		</div>
+
+		if len(templates) == 0 {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 40px; text-align: center;">
+				<p style="color: var(--text-muted); margin-bottom: 15px;">No employee templates configured yet.</p>
+				<a href="/templates/employees/new" class="finance-action-btn">+ Create First Template</a>
+			</div>
+		} else {
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; overflow: hidden;">
+				<table class="finance-table" style="margin-top: 0;">
+					<thead>
+						<tr>
+							<th>Template Name</th>
+							<th>Classification</th>
+							<th>Frequency</th>
+							<th>Calculation Type</th>
+							<th>Default Rate / Value</th>
+							<th>Base</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, t := range templates {
+							<tr>
+								<td>
+									<strong style="color: #fff;">{ t.Name }</strong>
+									if t.Description != nil {
+										<div style="font-size: 11px; color: var(--text-muted);">{ *t.Description }</div>
+									}
+								</td>
+								<td>
+									if t.Classification == "gross_earning" {
+										<span class="finance-badge-pill finance-badge-active">Earnings</span>
+									} else if t.Classification == "payroll_deduction" {
+										<span class="finance-badge-pill finance-badge-pending">Deduction</span>
+									} else {
+										<span class="finance-badge-pill finance-badge-posted">Employer Cost</span>
+									}
+								</td>
+								<td>{ t.DefaultFrequency }</td>
+								<td><span class="finance-badge-pill finance-badge-draft">{ t.CalculationType }</span></td>
+								<td>
+									if t.CalculationType == "percentage" {
+										<strong>{ fmt.Sprintf("%.2f%%", float64(t.DefaultPercentage)/100.0) }</strong>
+									} else {
+										<strong>{ utils.FormatINR(t.DefaultAmountMinor) }</strong>
+									}
+								</td>
+								<td><code>{ t.DefaultCalculationBase }</code></td>
+								<td><span class="finance-badge-pill finance-badge-active">{ t.Status }</span></td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}

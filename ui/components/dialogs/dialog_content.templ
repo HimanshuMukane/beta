@@ -1,0 +1,21 @@
+package dialogs
+
+import (
+	"ui/utils"
+)
+
+templ DialogContent(class ...string) {
+	{{
+		extraClass := ""
+		if len(class) > 0 {
+			extraClass = class[0]
+		}
+	}}
+	<div
+		role="dialog"
+		data-slot="dialog-content"
+		class={ utils.CN("crm-dialog-content bg-popover text-popover-foreground ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-4 rounded-xl p-4 text-sm ring-1 sm:max-w-md fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none", extraClass) }
+	>
+		{ children... }
+	</div>
+}

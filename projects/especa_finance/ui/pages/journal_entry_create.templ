@@ -1,0 +1,71 @@
+package pages
+
+import (
+	"especa_finance/models"
+	"especa_finance/ui/layouts"
+)
+
+templ JournalEntryCreate(accounts []models.ChartOfAccount) {
+	@layouts.MainLayout("New Journal Entry", "journal", []layouts.Breadcrumb{{Label: "Accounting"}, {Label: "Journal", URL: "/accounting/journal"}, {Label: "New"}}) {
+		<div style="max-width: 800px; margin: 0 auto; background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 24px;">
+			<h2 style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px;">Create Balanced Journal Entry</h2>
+			<p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Select a debit account and a credit account with matching amounts to enforce double-entry bookkeeping.</p>
+
+			<form method="POST" action="/accounting/journal/new">
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 18px;">
+					<div class="finance-form-group">
+						<label>Entry Date</label>
+						<input type="date" name="entry_date" value="2025-01-01" required/>
+					</div>
+					<div class="finance-form-group">
+						<label>Description / Reference</label>
+						<input type="text" name="description" placeholder="e.g. Owner Capital Opening Balance or Office Rent" required/>
+					</div>
+				</div>
+
+				<div style="background: #141824; border: 1px solid #2d3748; border-radius: 6px; padding: 16px; margin-bottom: 18px;">
+					<h4 style="font-size: 14px; font-weight: 600; color: #00b894; margin-bottom: 12px;">Debit Leg (Asset increase or Expense incurred)</h4>
+					<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+						<div class="finance-form-group">
+							<label>Debit Account</label>
+							<select name="debit_account_id" required>
+								<option value="">-- Choose Account --</option>
+								for _, a := range accounts {
+									<option value={ a.ID }>[{ a.Code }] { a.Name } ({ a.AccountType })</option>
+								}
+							</select>
+						</div>
+						<div class="finance-form-group">
+							<label>Debit Amount (₹)</label>
+							<input type="number" name="amount" id="debit_amt" placeholder="e.g. 100000" step="1" required/>
+						</div>
+					</div>
+				</div>
+
+				<div style="background: #141824; border: 1px solid #2d3748; border-radius: 6px; padding: 16px; margin-bottom: 20px;">
+					<h4 style="font-size: 14px; font-weight: 600; color: #0984e3; margin-bottom: 12px;">Credit Leg (Liability/Equity increase or Income earned)</h4>
+					<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+						<div class="finance-form-group">
+							<label>Credit Account</label>
+							<select name="credit_account_id" required>
+								<option value="">-- Choose Account --</option>
+								for _, a := range accounts {
+									<option value={ a.ID }>[{ a.Code }] { a.Name } ({ a.AccountType })</option>
+								}
+							</select>
+						</div>
+						<div class="finance-form-group">
+							<label>Credit Amount (Must match Debit)</label>
+							<input type="text" value="Matches Debit Amount" readonly style="color: var(--text-muted);"/>
+						</div>
+					</div>
+				</div>
+
+				<div style="display: flex; justify-content: flex-end; gap: 10px;">
+					<a href="/accounting/journal" class="finance-action-btn" style="background: #2d3748;">Cancel</a>
+					<button type="submit" class="finance-action-btn">Post Balanced Journal Entry</button>
+				</div>
+			</form>
+		</div>
+	}
+}

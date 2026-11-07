@@ -9,8 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
+	"ui/components/icons"
+	"ui/components/tables"
+	"ui/layouts"
 )
 
 type TaskRow struct {
@@ -71,7 +72,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconList().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.IconList().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -79,7 +80,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconKanban().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.IconKanban().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -87,7 +88,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconTable().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.IconTable().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -95,7 +96,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconPlus().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.IconPlus().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -103,7 +104,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconCircleDot().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.IconCircleDot().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -111,7 +112,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconFilter().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.IconFilter().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -119,7 +120,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconSlidersHorizontal().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.IconSlidersHorizontal().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -127,7 +128,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconZap().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.IconZap().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -135,7 +136,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconCheck().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.IconCheck().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -143,7 +144,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconSearch().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.IconSearch().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -151,7 +152,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.IconPlus().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.IconPlus().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -183,7 +184,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 					var templ_7745c5c3_Var4 string
 					templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(templ.EscapeString(string(rune('0' + row.Index))))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 101, Col: 225}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 102, Col: 225}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 					if templ_7745c5c3_Err != nil {
@@ -196,7 +197,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(row.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 103, Col: 150}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 104, Col: 150}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 					if templ_7745c5c3_Err != nil {
@@ -214,7 +215,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 						var templ_7745c5c3_Var6 string
 						templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues("background-color: " + a.BgColor + ";")
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 108, Col: 196}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 109, Col: 196}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 						if templ_7745c5c3_Err != nil {
@@ -227,7 +228,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 						var templ_7745c5c3_Var7 string
 						templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(a.Initials)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 108, Col: 211}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 109, Col: 211}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 						if templ_7745c5c3_Err != nil {
@@ -246,7 +247,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 						var templ_7745c5c3_Var8 string
 						templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(row.Assignees[0].Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 113, Col: 147}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 114, Col: 147}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 						if templ_7745c5c3_Err != nil {
@@ -264,7 +265,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 							var templ_7745c5c3_Var9 string
 							templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(row.Assignees[1].Name)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 115, Col: 153}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 116, Col: 153}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 							if templ_7745c5c3_Err != nil {
@@ -301,7 +302,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 					var templ_7745c5c3_Var12 string
 					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(row.Status)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 123, Col: 136}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 124, Col: 136}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {
@@ -315,7 +316,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 						var templ_7745c5c3_Var13 string
 						templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(row.DueDate)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 128, Col: 137}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 129, Col: 137}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 						if templ_7745c5c3_Err != nil {
@@ -339,7 +340,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 						var templ_7745c5c3_Var14 string
 						templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(row.Priority)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 135, Col: 175}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/photography_crm/ui/pages/dashboard.templ`, Line: 136, Col: 175}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 						if templ_7745c5c3_Err != nil {
@@ -366,7 +367,7 @@ func Dashboard(title string, rows []TaskRow) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = components.Table().Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = tables.Table().Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -1,9 +1,9 @@
 package pages
 
 import (
-	"chi-mysql-server/ui/layouts"
-	"components"
-	crmComponents "chi-mysql-server/ui/components"
+	"ui/layouts"
+	"ui/components/feedback"
+	"ui/components/icons"
 )
 
 templ ServicesSettings() {
@@ -11,10 +11,10 @@ templ ServicesSettings() {
 		{Label: "Settings", URL: "/settings"},
 		{Label: "Services"},
 	}) {
-		@crmComponents.PageHeader("Services & Pricing Configuration", "Configure studio service groups, line-item rates, quantities, and pricing units.") {
+		@feedback.PageHeader("Services & Pricing Configuration", "Configure studio service groups, line-item rates, quantities, and pricing units.") {
 			<div style="display: flex; gap: 10px;">
 				<button class="crm-page-btn" onclick="openServiceGroupModal()" style="display: inline-flex; align-items: center; gap: 6px;">
-					@components.IconFolder()
+					@icons.IconFolder()
 					<span>Manage Service Group</span>
 				</button>
 				<button class="c-btn c-btn-primary" onclick="openAddServiceRow()">+ Add Service Item</button>
@@ -253,7 +253,7 @@ templ ServicesSettings() {
 				<div class="session-modal-header">
 					<h3 style="font-size: 15px; font-weight: 600;">Manage Service Groups</h3>
 					<button class="crm-page-btn" onclick="closeServiceGroupModal()" aria-label="Close">
-						@components.IconX()
+						@icons.IconX()
 					</button>
 				</div>
 				<div class="session-modal-body">
@@ -266,25 +266,25 @@ templ ServicesSettings() {
 						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
 							<span>Basic Service</span>
 							<button class="service-remove-btn" aria-label="Remove">
-								@components.IconX()
+								@icons.IconX()
 							</button>
 						</div>
 						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
 							<span>Advance Service</span>
 							<button class="service-remove-btn" aria-label="Remove">
-								@components.IconX()
+								@icons.IconX()
 							</button>
 						</div>
 						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
 							<span>Delivery</span>
 							<button class="service-remove-btn" aria-label="Remove">
-								@components.IconX()
+								@icons.IconX()
 							</button>
 						</div>
 						<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: 4px;">
 							<span>Other Service</span>
 							<button class="service-remove-btn" aria-label="Remove">
-								@components.IconX()
+								@icons.IconX()
 							</button>
 						</div>
 					</div>

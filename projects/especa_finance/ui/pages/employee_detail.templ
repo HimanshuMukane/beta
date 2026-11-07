@@ -1,0 +1,141 @@
+package pages
+
+import (
+	"fmt"
+	"especa_finance/models"
+	"especa_finance/ui/layouts"
+	"core/utils"
+)
+
+templ EmployeeDetail(emp models.Employee, comp *models.EmployeeCompensation, components []models.EmployeeCompensationComponent, templates []models.FinancialTemplate, gross int64, deductions int64, net int64, employerCost int64) {
+	@layouts.MainLayout(emp.Name, "employees", []layouts.Breadcrumb{{Label: "Employees", URL: "/employees"}, {Label: emp.Name}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<div style="display: flex; align-items: center; gap: 8px;">
+					<h1 style="font-size: 22px; font-weight: 700; color: #fff;">{ emp.Name }</h1>
+					<span class="finance-badge-pill finance-badge-draft">{ emp.Designation }</span>
+					<span class="finance-badge-pill finance-badge-active">{ emp.EmploymentType }</span>
+				</div>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Department: { emp.Department } | Joined: { emp.JoiningDate }</p>
+			</div>
+			<div>
+				<a href="/employees" class="finance-action-btn" style="background: #2d3748;">← Back to Employees</a>
+			</div>
+		</div>
+
+		<div class="finance-card-grid">
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">Base Salary (Monthly)</div>
+				<div style="font-size: 20px; font-weight: 700; color: #fff; margin-top: 4px;">
+					if comp != nil {
+						{ utils.FormatINR(comp.BaseAmountMinor) }
+					} else {
+						<span>₹0</span>
+					}
+				</div>
+			</div>
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">Gross Earnings</div>
+				<div style="font-size: 20px; font-weight: 700; color: #00b894; margin-top: 4px;">{ utils.FormatINR(gross) }</div>
+			</div>
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">Employee Deductions (PF/TDS)</div>
+				<div style="font-size: 20px; font-weight: 700; color: #e17055; margin-top: 4px;">{ utils.FormatINR(deductions) }</div>
+			</div>
+			<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 16px;">
+				<div style="font-size: 12px; color: var(--text-muted);">Net Take-Home Payable</div>
+				<div style="font-size: 20px; font-weight: 700; color: #74b9ff; margin-top: 4px;">{ utils.FormatINR(net) }</div>
+			</div>
+		</div>
+
+		<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px;">
+			<div>
+				<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+					<h3 style="font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 12px;">Applied Compensation Breakdown</h3>
+					if len(components) == 0 {
+						<p style="color: var(--text-muted); font-size: 13px;">No additional components configured. Add HRA, Allowance, PF, or Bonus on the right.</p>
+					} else {
+						<table class="finance-table" style="margin-top: 0;">
+							<thead>
+								<tr>
+									<th>Component</th>
+									<th>Type</th>
+									<th>Calculation</th>
+									<th>Monthly Amount</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody>
+								for _, c := range components {
+									<tr>
+										<td><strong>{ c.NameSnapshot }</strong></td>
+										<td>
+											if c.Classification == "gross_earning" {
+												<span class="finance-badge-pill finance-badge-active">Earnings</span>
+											} else if c.Classification == "payroll_deduction" {
+												<span class="finance-badge-pill finance-badge-pending">Deduction</span>
+											} else {
+												<span class="finance-badge-pill finance-badge-posted">Employer Cost</span>
+											}
+										</td>
+										<td>
+											if c.CalculationType == "percentage" {
+												<span>{ fmt.Sprintf("%.2f%% of Base", float64(c.Percentage)/100.0) }</span>
+											} else {
+												<span>Fixed</span>
+											}
+										</td>
+										<td><strong>{ utils.FormatINR(c.AmountMinor) }</strong></td>
+										<td><span class="finance-badge-pill finance-badge-active">{ c.Status }</span></td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					}
+				</div>
+			</div>
+
+			<div>
+				<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+					<h3 style="font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 12px;">Configure Base Salary</h3>
+					<form method="POST" action="/employees/set-base">
+						<input type="hidden" name="employee_id" value={ emp.ID }/>
+						<div class="finance-form-group" style="margin-bottom: 12px;">
+							<label>Monthly Base Salary (₹)</label>
+							<input type="number" name="amount" placeholder="e.g. 50000" step="1" required/>
+						</div>
+						<div class="finance-form-group" style="margin-bottom: 12px;">
+							<label>Effective From</label>
+							<input type="date" name="effective_from" value="2025-01-01" required/>
+						</div>
+						<button type="submit" class="finance-action-btn" style="width: 100%; justify-content: center;">Save Base Salary</button>
+					</form>
+				</div>
+
+				if comp != nil {
+					<div style="background: #1e2430; border: 1px solid #2d3748; border-radius: 8px; padding: 18px;">
+						<h3 style="font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 12px;">Add Compensation Component</h3>
+						<form method="POST" action="/employees/add-component">
+							<input type="hidden" name="employee_id" value={ emp.ID }/>
+							<input type="hidden" name="compensation_id" value={ comp.ID }/>
+							<div class="finance-form-group" style="margin-bottom: 12px;">
+								<label>Employee Template</label>
+								<select name="template_id" required>
+									<option value="">-- Choose Template --</option>
+									for _, t := range templates {
+										<option value={ t.ID }>{ t.Name } ({ t.Classification })</option>
+									}
+								</select>
+							</div>
+							<div class="finance-form-group" style="margin-bottom: 12px;">
+								<label>Value (Rupees or % if percentage template)</label>
+								<input type="number" name="value" placeholder="10" step="0.1" required/>
+							</div>
+							<button type="submit" class="finance-action-btn" style="width: 100%; justify-content: center;">Add Component</button>
+						</form>
+					</div>
+				}
+			</div>
+		</div>
+	}
+}
