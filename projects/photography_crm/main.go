@@ -1,8 +1,8 @@
 package main
 
 import (
-	"chi-mysql-server/routes"
 	"core"
+	"photography_crm/routes"
 )
 
 func main() {

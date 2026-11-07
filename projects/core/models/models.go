@@ -22,6 +22,7 @@ type User struct {
 	PasswordHash string     `json:"-"`
 	RoleID       uuid.UUID  `json:"role_id"`
 	RoleName     string     `json:"role_name,omitempty"`
+	TokenVersion int        `json:"token_version"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
@@ -56,17 +57,6 @@ type Membership struct {
 	TenantBusinessType       string `json:"tenant_business_type,omitempty"`
 	TenantStatus             string `json:"tenant_status,omitempty"`
 	TenantSubscriptionStatus string `json:"tenant_subscription_status,omitempty"`
-}
-
-type PlatformAdmin struct {
-	ID           uuid.UUID  `json:"id"`
-	Name         string     `json:"name"`
-	Email        string     `json:"email"`
-	PasswordHash string     `json:"-"`
-	Role         string     `json:"role"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
-	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
 }
 
 type TenantRegistrationRequest struct {

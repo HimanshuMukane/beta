@@ -1,13 +1,17 @@
 package middleware
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"core/models"
 	"core/repositories"
-	"core/utils"
 	"core/security"
+	"core/utils"
 )
 
 type Middleware func(http.Handler) http.Handler
@@ -17,6 +21,74 @@ func Chain(handler http.Handler, middlewares ...Middleware) http.Handler {
 		handler = middlewares[i](handler)
 	}
 	return handler
+}
+
+// RequestID injects an X-Request-ID header into request and response.
+func RequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqID := r.Header.Get("X-Request-ID")
+		if reqID == "" {
+			buf := make([]byte, 16)
+			_, _ = rand.Read(buf)
+			reqID = hex.EncodeToString(buf)
+		}
+		w.Header().Set("X-Request-ID", reqID)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// RequestLogger logs incoming HTTP requests using slog.
+func RequestLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		ww := &responseWriterInterceptor{ResponseWriter: w, statusCode: http.StatusOK}
+
+		next.ServeHTTP(ww, r)
+
+		duration := time.Since(start)
+		slog.Info("http request",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", ww.statusCode,
+			"duration_ms", duration.Milliseconds(),
+			"ip", r.RemoteAddr,
+			"request_id", w.Header().Get("X-Request-ID"),
+		)
+	})
+}
+
+type responseWriterInterceptor struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (w *responseWriterInterceptor) WriteHeader(code int) {
+	w.statusCode = code
+	w.ResponseWriter.WriteHeader(code)
+}
+
+// Recoverer catches panics, logs with slog and returns a safe 500 JSON.
+func Recoverer(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rec := recover(); rec != nil {
+				slog.Error("server panic recovered", "error", rec, "path", r.URL.Path)
+				utils.WriteError(w, http.StatusInternalServerError, "Internal server error")
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+// SecurityHeaders applies standard defensive HTTP response headers.
+func SecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-XSS-Protection", "1; mode=block")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func authenticate(r *http.Request, cfg utils.Config) (*models.User, int, string) {
@@ -30,7 +102,7 @@ func authenticate(r *http.Request, cfg utils.Config) (*models.User, int, string)
 		return nil, http.StatusUnauthorized, "Invalid or expired session"
 	}
 
-	db := utils.DBFromContext(r.Context(), nil)
+	db := utils.IdentityDBFromContext(r.Context(), nil)
 	if db == nil {
 		return nil, http.StatusServiceUnavailable, "Database unavailable"
 	}
@@ -39,6 +111,9 @@ func authenticate(r *http.Request, cfg utils.Config) (*models.User, int, string)
 	user, err := userRepo.GetUserByID(r.Context(), session.UserID)
 	if err != nil {
 		return nil, http.StatusUnauthorized, "User not found or inactive"
+	}
+	if user.TokenVersion != session.TokenVersion {
+		return nil, http.StatusUnauthorized, "Session has been revoked"
 	}
 
 	user.PasswordHash = ""
@@ -57,12 +132,15 @@ func DatabaseRoutingMiddleware(pool *utils.DBPool, cfg utils.Config) func(http.H
 
 			if cfg.AllowTestDBHeader && cfg.TestDBHeaderKey != "" {
 				headerVal := strings.TrimSpace(r.Header.Get(cfg.TestDBHeaderKey))
-				if strings.EqualFold(headerVal, "test") {
+				if strings.EqualFold(headerVal, "test") && pool.Test != nil {
 					targetDB = pool.Test
 				}
 			}
 
 			ctx := utils.WithDB(r.Context(), targetDB)
+			if pool.Identity != nil {
+				ctx = utils.WithIdentityDB(ctx, pool.Identity)
+			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

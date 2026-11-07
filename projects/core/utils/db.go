@@ -13,13 +13,16 @@ import (
 )
 
 type dbContextKey struct{}
+type identityDBContextKey struct{}
 
 var activeDBKey = dbContextKey{}
+var identityDBKey = identityDBContextKey{}
 
 type DBPool struct {
-	Primary *sqlx.DB
-	Test    *sqlx.DB
-	mu      sync.RWMutex
+	Primary  *sqlx.DB
+	Identity *sqlx.DB
+	Test     *sqlx.DB
+	mu       sync.RWMutex
 }
 
 func InitDBPool(cfg ...Config) (*DBPool, error) {
@@ -34,7 +37,15 @@ func InitDBPool(cfg ...Config) (*DBPool, error) {
 
 	primaryDB, err := OpenDB(activeCfg.DatabaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("open mysql database: %w", err)
+		return nil, fmt.Errorf("open mysql primary database: %w", err)
+	}
+
+	identityDB := primaryDB
+	if activeCfg.IdentityDBURL != "" && activeCfg.IdentityDBURL != activeCfg.DatabaseURL {
+		idDB, err := OpenDB(activeCfg.IdentityDBURL)
+		if err == nil {
+			identityDB = idDB
+		}
 	}
 
 	testDB := primaryDB
@@ -46,8 +57,9 @@ func InitDBPool(cfg ...Config) (*DBPool, error) {
 	}
 
 	return &DBPool{
-		Primary: primaryDB,
-		Test:    testDB,
+		Primary:  primaryDB,
+		Identity: identityDB,
+		Test:     testDB,
 	}, nil
 }
 
@@ -61,11 +73,6 @@ func OpenDB(pathOrURL string) (*sqlx.DB, error) {
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(5)
 	db.SetConnMaxLifetime(15 * time.Minute)
-
-	if err := db.Ping(); err != nil {
-		_ = db.Close()
-		return nil, fmt.Errorf("ping mysql: %w", err)
-	}
 
 	return db, nil
 }
@@ -83,7 +90,14 @@ func (p *DBPool) Close() error {
 		p.Primary = nil
 	}
 
-	if p.Test != nil && p.Test != p.Primary {
+	if p.Identity != nil && p.Identity != p.Primary {
+		if err := p.Identity.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		p.Identity = nil
+	}
+
+	if p.Test != nil && p.Test != p.Primary && p.Test != p.Identity {
 		if err := p.Test.Close(); err != nil && firstErr == nil {
 			firstErr = err
 		}
@@ -108,8 +122,28 @@ func WithDB(ctx context.Context, db *sqlx.DB) context.Context {
 }
 
 func DBFromContext(ctx context.Context, fallback ...*sqlx.DB) *sqlx.DB {
-	if db, ok := ctx.Value(activeDBKey).(*sqlx.DB); ok && db != nil {
-		return db
+	if ctx != nil {
+		if db, ok := ctx.Value(activeDBKey).(*sqlx.DB); ok && db != nil {
+			return db
+		}
+	}
+	if len(fallback) > 0 && fallback[0] != nil {
+		return fallback[0]
+	}
+	return nil
+}
+
+func WithIdentityDB(ctx context.Context, db *sqlx.DB) context.Context {
+	return context.WithValue(ctx, identityDBKey, db)
+}
+
+// IdentityDBFromContext returns the identity database connection from context.
+// Crucial: It NEVER silently falls back to the application business database.
+func IdentityDBFromContext(ctx context.Context, fallback ...*sqlx.DB) *sqlx.DB {
+	if ctx != nil {
+		if db, ok := ctx.Value(identityDBKey).(*sqlx.DB); ok && db != nil {
+			return db
+		}
 	}
 	if len(fallback) > 0 && fallback[0] != nil {
 		return fallback[0]

@@ -12,15 +12,40 @@ import (
 )
 
 type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=1"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type SignupRequest struct {
-	FirstName string `json:"first_name" validate:"required,min=1,max=50"`
-	LastName  string `json:"last_name" validate:"required,min=1,max=50"`
-	Email     string `json:"email" validate:"required,email,max=254"`
-	Password  string `json:"password" validate:"required,min=8,max=72"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+}
+
+func HealthHandler(pool *utils.DBPool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if pool == nil || pool.Primary == nil {
+			utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"status": "unavailable",
+				"db":     "disconnected",
+			})
+			return
+		}
+
+		if err := pool.Primary.PingContext(r.Context()); err != nil {
+			utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"status": "unavailable",
+				"db":     "unreachable",
+			})
+			return
+		}
+
+		utils.WriteJSON(w, http.StatusOK, map[string]string{
+			"status": "ok",
+			"db":     "connected",
+		})
+	}
 }
 
 func LoginAPIHandler(config utils.Config) http.HandlerFunc {
@@ -37,7 +62,7 @@ func LoginAPIHandler(config utils.Config) http.HandlerFunc {
 			return
 		}
 
-		database := utils.DBFromContext(request.Context())
+		database := utils.IdentityDBFromContext(request.Context())
 		if database == nil {
 			utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Service temporarily unavailable")
 			return
@@ -60,7 +85,7 @@ func LoginAPIHandler(config utils.Config) http.HandlerFunc {
 			return
 		}
 
-		http.SetCookie(responseWriter, &http.Cookie{
+		cookie := &http.Cookie{
 			Name:     config.SessionCookieName,
 			Value:    loginResult.SessionToken,
 			Path:     "/",
@@ -69,7 +94,11 @@ func LoginAPIHandler(config utils.Config) http.HandlerFunc {
 			HttpOnly: true,
 			Secure:   config.SessionSecure,
 			SameSite: http.SameSiteLaxMode,
-		})
+		}
+		if config.SessionCookieDomain != "" {
+			cookie.Domain = config.SessionCookieDomain
+		}
+		http.SetCookie(responseWriter, cookie)
 
 		utils.WriteJSON(responseWriter, http.StatusOK, map[string]any{
 			"message": "Login successful",
@@ -105,7 +134,7 @@ func SignupAPIHandler(config utils.Config, defaultRole ...string) http.HandlerFu
 			return
 		}
 
-		database := utils.DBFromContext(request.Context())
+		database := utils.IdentityDBFromContext(request.Context())
 		if database == nil {
 			utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Service temporarily unavailable")
 			return
@@ -157,7 +186,7 @@ func SignupAPIHandler(config utils.Config, defaultRole ...string) http.HandlerFu
 			return
 		}
 
-		http.SetCookie(responseWriter, &http.Cookie{
+		cookie := &http.Cookie{
 			Name:     config.SessionCookieName,
 			Value:    loginResult.SessionToken,
 			Path:     "/",
@@ -166,7 +195,11 @@ func SignupAPIHandler(config utils.Config, defaultRole ...string) http.HandlerFu
 			HttpOnly: true,
 			Secure:   config.SessionSecure,
 			SameSite: http.SameSiteLaxMode,
-		})
+		}
+		if config.SessionCookieDomain != "" {
+			cookie.Domain = config.SessionCookieDomain
+		}
+		http.SetCookie(responseWriter, cookie)
 
 		utils.WriteJSON(responseWriter, http.StatusCreated, map[string]any{
 			"message": "User registered successfully",
@@ -178,7 +211,7 @@ func SignupAPIHandler(config utils.Config, defaultRole ...string) http.HandlerFu
 func LogoutAPIHandler(config utils.Config) http.HandlerFunc {
 	return func(responseWriter http.ResponseWriter, request *http.Request) {
 		responseWriter.Header().Set("Cache-Control", "no-store")
-		http.SetCookie(responseWriter, &http.Cookie{
+		cookie := &http.Cookie{
 			Name:     config.SessionCookieName,
 			Value:    "",
 			Path:     "/",
@@ -187,7 +220,11 @@ func LogoutAPIHandler(config utils.Config) http.HandlerFunc {
 			HttpOnly: true,
 			Secure:   config.SessionSecure,
 			SameSite: http.SameSiteLaxMode,
-		})
+		}
+		if config.SessionCookieDomain != "" {
+			cookie.Domain = config.SessionCookieDomain
+		}
+		http.SetCookie(responseWriter, cookie)
 
 		utils.WriteJSON(responseWriter, http.StatusOK, map[string]string{
 			"message": "Logout successful",

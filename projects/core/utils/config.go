@@ -13,21 +13,24 @@ type Config struct {
 	AppEnv     string
 	ServerPort string
 
-	DBHost     string
-	DBPort     string
-	DBName     string
-	DBUser     string
-	DBPassword string
+	DBHost      string
+	DBPort      string
+	DBName      string
+	DBUser      string
+	DBPassword  string
 	DatabaseURL string
+
+	IdentityDBName string
+	IdentityDBURL  string
 
 	AllowTestDBHeader bool
 	TestDBHeaderKey   string
 
-	SessionCookieName string
-	SessionTTLHours   int
-	SessionSecure     bool
-	SessionSecret     string
-	LimenSecret       string
+	SessionCookieName   string
+	SessionCookieDomain string
+	SessionTTLHours     int
+	SessionSecure       bool
+	SessionSecret       string
 }
 
 var AppConfig Config
@@ -61,30 +64,42 @@ func LoadConfig(filenames ...string) error {
 			dbUser = "especa"
 		}
 	}
+	if dbPassword == "" {
+		dbPassword = "especa_root_password"
+	}
 
 	databaseURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
 	if databaseURL == "" && dbName != "" {
 		databaseURL = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local",
 			dbUser, dbPassword, dbHost, dbPort, dbName)
 	} else if databaseURL == "" {
-		databaseURL = fmt.Sprintf("especa:especa@tcp(%s:%s)/especa?parseTime=true&loc=Local", dbHost, dbPort)
+		databaseURL = fmt.Sprintf("root:%s@tcp(%s:%s)/platform_identity?parseTime=true&loc=Local", dbPassword, dbHost, dbPort)
+	}
+
+	identityDBName := strings.TrimSpace(getEnv("IDENTITY_DB_NAME", "platform_identity"))
+	identityDBURL := strings.TrimSpace(os.Getenv("IDENTITY_DATABASE_URL"))
+	if identityDBURL == "" {
+		identityDBURL = fmt.Sprintf("root:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local",
+			dbPassword, dbHost, dbPort, identityDBName)
 	}
 
 	cfg := Config{
-		AppEnv:            strings.ToLower(strings.TrimSpace(getEnv("APP_ENV", "development"))),
-		ServerPort:        strings.TrimSpace(getEnv("SERVER_PORT", "8080")),
-		DBHost:            dbHost,
-		DBPort:            dbPort,
-		DBName:            dbName,
-		DBUser:            dbUser,
-		DBPassword:        dbPassword,
-		DatabaseURL:       databaseURL,
-		TestDBHeaderKey:   strings.TrimSpace(getEnv("TEST_DB_HEADER_KEY", "X-Database-Env")),
-		SessionCookieName: strings.TrimSpace(getEnv("SESSION_COOKIE_NAME", "app_session")),
-		SessionSecret:     os.Getenv("SESSION_SECRET"),
-		LimenSecret:       getEnv("LIMEN_SECRET", os.Getenv("SESSION_SECRET")),
-		SessionTTLHours:   24,
-		SessionSecure:     false,
+		AppEnv:              strings.ToLower(strings.TrimSpace(getEnv("APP_ENV", "development"))),
+		ServerPort:          strings.TrimSpace(getEnv("SERVER_PORT", "8080")),
+		DBHost:              dbHost,
+		DBPort:              dbPort,
+		DBName:              dbName,
+		DBUser:              dbUser,
+		DBPassword:          dbPassword,
+		DatabaseURL:         databaseURL,
+		IdentityDBName:      identityDBName,
+		IdentityDBURL:       identityDBURL,
+		TestDBHeaderKey:     strings.TrimSpace(getEnv("TEST_DB_HEADER_KEY", "X-Database-Env")),
+		SessionCookieName:   strings.TrimSpace(getEnv("SESSION_COOKIE_NAME", "app_session")),
+		SessionCookieDomain: strings.TrimSpace(os.Getenv("SESSION_COOKIE_DOMAIN")),
+		SessionSecret:       os.Getenv("SESSION_SECRET"),
+		SessionTTLHours:     24,
+		SessionSecure:       false,
 	}
 
 	switch cfg.AppEnv {
@@ -129,10 +144,6 @@ func LoadConfig(filenames ...string) error {
 	}
 	if len(cfg.SessionSecret) < 32 {
 		return fmt.Errorf("SESSION_SECRET must be at least 32 bytes")
-	}
-
-	if cfg.LimenSecret == "" {
-		cfg.LimenSecret = cfg.SessionSecret
 	}
 
 	AppConfig = cfg

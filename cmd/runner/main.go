@@ -4,26 +4,25 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
-	crmRoutes "chi-mysql-server/routes"
 	cmsRoutes "cms/routes"
 	"core/utils"
 	"github.com/joho/godotenv"
+	crmRoutes "photography_crm/routes"
 	superadminRoutes "superadmin/routes"
 )
 
 type ServiceApp struct {
-	Name    string
-	Port    string
-	DBPath  string
-	Pool    *utils.DBPool
-	Server  *http.Server
+	Name   string
+	Port   string
+	Pool   *utils.DBPool
+	Server *http.Server
 }
 
 func main() {
@@ -33,8 +32,7 @@ func main() {
 		name          string
 		portEnv       string
 		defaultPort   string
-		dbEnv         string
-		defaultDB     string
+		dbName        string
 		cookieName    string
 		routerBuilder func(pool *utils.DBPool, cfg utils.Config) http.Handler
 	}{
@@ -42,8 +40,7 @@ func main() {
 			name:          "CMS",
 			portEnv:       "CMS_PORT",
 			defaultPort:   "8081",
-			dbEnv:         "CMS_DB_PATH",
-			defaultDB:     "cms.db",
+			dbName:        "cms_db",
 			cookieName:    "cms_session",
 			routerBuilder: cmsRoutes.SetupRouter,
 		},
@@ -51,8 +48,7 @@ func main() {
 			name:          "Photography CRM",
 			portEnv:       "CRM_PORT",
 			defaultPort:   "8082",
-			dbEnv:         "CRM_DB_PATH",
-			defaultDB:     "photography_crm.db",
+			dbName:        "photography_crm_db",
 			cookieName:    "photography_session",
 			routerBuilder: crmRoutes.SetupRouter,
 		},
@@ -60,8 +56,7 @@ func main() {
 			name:          "Superadmin",
 			portEnv:       "SUPERADMIN_PORT",
 			defaultPort:   "8083",
-			dbEnv:         "SUPERADMIN_DB_PATH",
-			defaultDB:     "superadmin.db",
+			dbName:        "superadmin_db",
 			cookieName:    "superadmin_session",
 			routerBuilder: superadminRoutes.SetupRouter,
 		},
@@ -77,6 +72,19 @@ func main() {
 		appEnv = "development"
 	}
 
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		dbHost = "127.0.0.1"
+	}
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		dbPort = "3306"
+	}
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		dbPassword = "especa_root_password"
+	}
+
 	activeServices := make([]*ServiceApp, 0, len(apps))
 	defer func() {
 		for _, s := range activeServices {
@@ -88,14 +96,14 @@ func main() {
 
 	for _, a := range apps {
 		port := getEnv(a.portEnv, a.defaultPort)
-		dbPath := getEnv(a.dbEnv, a.defaultDB)
-		dbTestPath := filepath.Join(filepath.Dir(dbPath), "test_"+filepath.Base(dbPath))
+		databaseURL := fmt.Sprintf("root:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local", dbPassword, dbHost, dbPort, a.dbName)
+		identityURL := fmt.Sprintf("root:%s@tcp(%s:%s)/platform_identity?parseTime=true&loc=Local", dbPassword, dbHost, dbPort)
 
 		cfg := utils.Config{
 			AppEnv:            appEnv,
 			ServerPort:        port,
-			DBPath:            dbPath,
-			DBTestPath:        dbTestPath,
+			DatabaseURL:       databaseURL,
+			IdentityDBURL:     identityURL,
 			AllowTestDBHeader: appEnv != "production",
 			TestDBHeaderKey:   "X-Database-Env",
 			SessionCookieName: a.cookieName,
@@ -106,7 +114,8 @@ func main() {
 
 		pool, err := utils.InitDBPool(cfg)
 		if err != nil {
-			panic(fmt.Sprintf("[%s] DB initialization failed: %v", a.name, err))
+			slog.Error("Database pool initialization failed", "service", a.name, "error", err)
+			continue
 		}
 
 		router := a.routerBuilder(pool, cfg)
@@ -118,7 +127,6 @@ func main() {
 		service := &ServiceApp{
 			Name:   a.name,
 			Port:   port,
-			DBPath: dbPath,
 			Pool:   pool,
 			Server: server,
 		}
@@ -127,9 +135,9 @@ func main() {
 
 	for _, s := range activeServices {
 		go func(srv *ServiceApp) {
-			fmt.Printf("➜ [%s] listening on http://localhost:%s (db: %s)\n", srv.Name, srv.Port, srv.DBPath)
+			slog.Info("Service listening", "service", srv.Name, "port", srv.Port)
 			if err := srv.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				fmt.Printf("[%s] server error: %v\n", srv.Name, err)
+				slog.Error("Service error", "service", srv.Name, "error", err)
 			}
 		}(s)
 	}
@@ -138,16 +146,16 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	fmt.Println("\nShutting down multi-listener servers...")
+	slog.Info("Shutting down multi-listener services...")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	for _, s := range activeServices {
 		if err := s.Server.Shutdown(ctx); err != nil {
-			fmt.Printf("[%s] shutdown error: %v\n", s.Name, err)
+			slog.Error("Shutdown error", "service", s.Name, "error", err)
 		}
 	}
-	fmt.Println("All services stopped.")
+	slog.Info("All services stopped.")
 }
 
 func getEnv(key, fallback string) string {
@@ -156,4 +164,3 @@ func getEnv(key, fallback string) string {
 	}
 	return fallback
 }
-

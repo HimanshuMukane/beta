@@ -49,13 +49,12 @@ func NewAuthService(
 	if users == nil {
 		return nil, fmt.Errorf("%w: user repository is required", ErrInvalidAuthConfig)
 	}
+
 	secret := strings.TrimSpace(sessionSecret)
-	if secret == "" {
-		return nil, fmt.Errorf("%w: session secret cannot be empty", ErrInvalidAuthConfig)
-	}
 	if len(secret) < 32 {
-		return nil, fmt.Errorf("%w: session secret must contain at least 32 bytes", ErrInvalidAuthConfig)
+		return nil, fmt.Errorf("%w: session secret must be at least 32 bytes", ErrInvalidAuthConfig)
 	}
+
 	if sessionTTL <= 0 {
 		return nil, fmt.Errorf("%w: session TTL must be positive", ErrInvalidAuthConfig)
 	}
@@ -89,34 +88,48 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (*m
 	if input.Email == "" {
 		return nil, errors.New("email is required")
 	}
-	if len(input.Password) < 8 {
+	if !strings.Contains(input.Email, "@") {
+		return nil, errors.New("invalid email address")
+	}
+
+	trimmedPassword := strings.TrimSpace(input.Password)
+	if len(trimmedPassword) < 8 {
 		return nil, errors.New("password must be at least 8 characters")
 	}
 
-	var roleID uuid.UUID
-	if input.RoleID != uuid.Nil {
-		roleID = input.RoleID
-	} else if input.RoleName != "" && s.roles != nil {
+	roleID := input.RoleID
+	if roleID == uuid.Nil && input.RoleName != "" && s.roles != nil {
 		role, err := s.roles.GetRoleByName(ctx, input.RoleName)
 		if err != nil {
 			if errors.Is(err, repositories.ErrRoleNotFound) {
-				role, err = s.roles.CreateRole(ctx, input.RoleName)
-				if err != nil && !errors.Is(err, repositories.ErrRoleAlreadyExists) {
-					return nil, fmt.Errorf("create role: %w", err)
+				createdRole, createErr := s.roles.CreateRole(ctx, input.RoleName)
+				if createErr != nil {
+					return nil, fmt.Errorf("create requested role: %w", createErr)
 				}
-				if role == nil {
-					role, err = s.roles.GetRoleByName(ctx, input.RoleName)
-					if err != nil {
-						return nil, fmt.Errorf("resolve role: %w", err)
-					}
-				}
+				roleID = createdRole.ID
 			} else {
-				return nil, fmt.Errorf("get role: %w", err)
+				return nil, fmt.Errorf("lookup role: %w", err)
 			}
+		} else {
+			roleID = role.ID
 		}
-		roleID = role.ID
-	} else {
-		return nil, errors.New("valid role ID or role name is required")
+	}
+
+	if roleID == uuid.Nil && s.roles != nil {
+		defaultRole, err := s.roles.GetRoleByName(ctx, "user")
+		if err != nil {
+			if errors.Is(err, repositories.ErrRoleNotFound) {
+				createdRole, createErr := s.roles.CreateRole(ctx, "user")
+				if createErr != nil {
+					return nil, fmt.Errorf("create default role: %w", createErr)
+				}
+				roleID = createdRole.ID
+			} else {
+				return nil, fmt.Errorf("lookup default role: %w", err)
+			}
+		} else {
+			roleID = defaultRole.ID
+		}
 	}
 
 	hashedPassword, err := security.HashPassword(input.Password)
@@ -126,37 +139,31 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (*m
 
 	newUserID, err := uuid.NewV7()
 	if err != nil {
-		return nil, fmt.Errorf("generate user ID: %w", err)
+		return nil, fmt.Errorf("generate user id: %w", err)
 	}
 
-	user := &models.User{
+	param := &repositories.CreateUserParam{
 		ID:           newUserID,
 		FirstName:    input.FirstName,
 		LastName:     input.LastName,
 		Email:        input.Email,
 		PasswordHash: hashedPassword,
-		RoleID:       roleID,
+		TokenVersion: 1,
+	}
+	if roleID != uuid.Nil {
+		param.RoleID = &roleID
 	}
 
-	if err := s.users.CreateUser(ctx, user); err != nil {
+	user, err := s.users.CreateUser(ctx, param)
+	if err != nil {
 		return nil, err
 	}
 
-	createdUser, err := s.users.GetUserByID(ctx, user.ID)
-	if err != nil {
-		user.PasswordHash = ""
-		return user, nil
-	}
-
-	createdUser.PasswordHash = ""
-	return createdUser, nil
+	user.PasswordHash = ""
+	return user, nil
 }
 
-func (s *AuthService) Login(
-	ctx context.Context,
-	email string,
-	password string,
-) (*LoginResult, error) {
+func (s *AuthService) Login(ctx context.Context, email, password string) (*LoginResult, error) {
 	if s == nil || s.users == nil {
 		return nil, ErrInvalidAuthConfig
 	}
@@ -171,25 +178,28 @@ func (s *AuthService) Login(
 		if errors.Is(err, repositories.ErrUserNotFound) {
 			return nil, ErrInvalidCredentials
 		}
-		return nil, fmt.Errorf("retrieve user for authentication: %w", err)
+		return nil, fmt.Errorf("lookup user by email: %w", err)
 	}
 
-	passwordMatches, err := security.VerifyPassword(password, user.PasswordHash)
+	match, err := security.VerifyPassword(password, user.PasswordHash)
 	if err != nil {
-		return nil, fmt.Errorf("verify stored password hash: %w", err)
+		return nil, fmt.Errorf("verify password: %w", err)
 	}
-	if !passwordMatches {
+	if !match {
 		return nil, ErrInvalidCredentials
 	}
 
-	token, err := security.CreateSessionToken(user.ID, s.secret, s.ttl)
+	tokenVersion := user.TokenVersion
+	if tokenVersion <= 0 {
+		tokenVersion = 1
+	}
+
+	token, err := security.CreateSessionToken(user.ID, s.secret, s.ttl, tokenVersion)
 	if err != nil {
-		return nil, fmt.Errorf("create session token: %w", err)
+		return nil, fmt.Errorf("generate session token: %w", err)
 	}
 
 	expiresAt := time.Now().Add(s.ttl)
-	expiresAt = time.Unix(expiresAt.Unix(), 0)
-
 	user.PasswordHash = ""
 
 	return &LoginResult{
@@ -197,34 +207,4 @@ func (s *AuthService) Login(
 		SessionToken: token,
 		ExpiresAt:    expiresAt,
 	}, nil
-}
-
-func (s *AuthService) VerifySession(token string) (security.Session, error) {
-	if s == nil || len(s.secret) < 32 {
-		return security.Session{}, ErrInvalidAuthConfig
-	}
-	return security.VerifySessionToken(token, s.secret)
-}
-
-func (s *AuthService) UserIDFromSession(token string) (uuid.UUID, error) {
-	session, err := s.VerifySession(token)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	return session.UserID, nil
-}
-
-func (s *AuthService) ValidateSession(ctx context.Context, token string) (*models.User, error) {
-	userID, err := s.UserIDFromSession(token)
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := s.users.GetUserByID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	user.PasswordHash = ""
-	return user, nil
 }

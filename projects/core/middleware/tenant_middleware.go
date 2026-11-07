@@ -17,7 +17,7 @@ func TenantContextMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		db := utils.DBFromContext(r.Context(), nil)
+		db := utils.IdentityDBFromContext(r.Context(), nil)
 		if db == nil {
 			next.ServeHTTP(w, r)
 			return

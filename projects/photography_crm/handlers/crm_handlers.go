@@ -3,19 +3,19 @@ package handlers
 import (
 	"net/http"
 
-	billingPages "chi-mysql-server/ui/pages/billing"
-	calendarPages "chi-mysql-server/ui/pages/calendar"
-	clientsPages "chi-mysql-server/ui/pages/clients"
-	contractsPages "chi-mysql-server/ui/pages/contracts"
-	deliverablesPages "chi-mysql-server/ui/pages/deliverables"
-	followupsPages "chi-mysql-server/ui/pages/followups"
-	inboxPages "chi-mysql-server/ui/pages/inbox"
-	leadsPages "chi-mysql-server/ui/pages/leads"
-	ordersPages "chi-mysql-server/ui/pages/orders"
-	projectsPages "chi-mysql-server/ui/pages/projects"
-	reportsPages "chi-mysql-server/ui/pages/reports"
-	sessionsPages "chi-mysql-server/ui/pages/sessions"
-	settingsPages "chi-mysql-server/ui/pages/settings"
+	billingPages "photography_crm/ui/pages/billing"
+	calendarPages "photography_crm/ui/pages/calendar"
+	clientsPages "photography_crm/ui/pages/clients"
+	contractsPages "photography_crm/ui/pages/contracts"
+	deliverablesPages "photography_crm/ui/pages/deliverables"
+	followupsPages "photography_crm/ui/pages/followups"
+	inboxPages "photography_crm/ui/pages/inbox"
+	leadsPages "photography_crm/ui/pages/leads"
+	ordersPages "photography_crm/ui/pages/orders"
+	projectsPages "photography_crm/ui/pages/projects"
+	reportsPages "photography_crm/ui/pages/reports"
+	sessionsPages "photography_crm/ui/pages/sessions"
+	settingsPages "photography_crm/ui/pages/settings"
 )
 
 func LeadsHandler(w http.ResponseWriter, r *http.Request) {

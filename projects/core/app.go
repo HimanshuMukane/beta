@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,13 +18,15 @@ type RouterBuilder func(pool *utils.DBPool, cfg utils.Config) http.Handler
 
 func Run(setupRouter RouterBuilder) {
 	if err := utils.LoadConfig(); err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		slog.Error("Failed to load config", "error", err)
+		os.Exit(1)
 	}
 
 	cfg := utils.AppConfig
 	pool, err := utils.InitDBPool(cfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize database pool: %v", err)
+		slog.Error("Failed to initialize database pool", "error", err)
+		os.Exit(1)
 	}
 	defer pool.Close()
 
@@ -46,9 +48,10 @@ func Run(setupRouter RouterBuilder) {
 	signal.Notify(shutdownChan, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		fmt.Printf("Server running at http://localhost:%s\n", port)
+		slog.Info("Server running", "port", port, "env", cfg.AppEnv)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("Server error: %v", err)
+			slog.Error("Server error", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -59,6 +62,6 @@ func Run(setupRouter RouterBuilder) {
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("Server shutdown error: %v", err)
+		slog.Error("Server shutdown error", "error", err)
 	}
 }

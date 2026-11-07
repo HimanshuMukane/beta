@@ -17,14 +17,16 @@ import (
 var ErrInvalidSession = errors.New("invalid or expired session")
 
 type Session struct {
-	UserID    uuid.UUID
-	ExpiresAt time.Time
+	UserID       uuid.UUID
+	TokenVersion int
+	ExpiresAt    time.Time
 }
 
 func CreateSessionToken(
 	userID uuid.UUID,
 	secret []byte,
 	ttl time.Duration,
+	tokenVersion ...int,
 ) (string, error) {
 	if userID == uuid.Nil {
 		return "", errors.New("user ID cannot be empty")
@@ -36,8 +38,13 @@ func CreateSessionToken(
 		return "", errors.New("session lifetime must be positive")
 	}
 
+	version := 1
+	if len(tokenVersion) > 0 && tokenVersion[0] > 0 {
+		version = tokenVersion[0]
+	}
+
 	expiresAt := time.Now().Add(ttl).Unix()
-	payload := "v1:" + userID.String() + ":" + strconv.FormatInt(expiresAt, 10)
+	payload := fmt.Sprintf("v2:%s:%d:%d", userID.String(), version, expiresAt)
 	encodedPayload := base64.RawURLEncoding.EncodeToString([]byte(payload))
 
 	signature := signPayload(encodedPayload, secret)
@@ -58,10 +65,7 @@ func VerifySessionToken(token string, secret []byte) (Session, error) {
 
 	expectedSignature := signPayload(parts[0], secret)
 
-	if !hmac.Equal(
-		[]byte(parts[1]),
-		[]byte(expectedSignature),
-	) {
+	if !hmac.Equal([]byte(parts[1]), []byte(expectedSignature)) {
 		return session, ErrInvalidSession
 	}
 
@@ -71,29 +75,57 @@ func VerifySessionToken(token string, secret []byte) (Session, error) {
 	}
 
 	claims := strings.Split(string(payloadBytes), ":")
-	if len(claims) != 3 || claims[0] != "v1" {
-		return session, ErrInvalidSession
+
+	// Support v2 (v2:userID:tokenVersion:expiresUnix) and backward compatible v1 (v1:userID:expiresUnix)
+	if len(claims) == 4 && claims[0] == "v2" {
+		userID, err := uuid.Parse(claims[1])
+		if err != nil || userID == uuid.Nil {
+			return session, ErrInvalidSession
+		}
+
+		version, err := strconv.Atoi(claims[2])
+		if err != nil || version <= 0 {
+			return session, ErrInvalidSession
+		}
+
+		expiresUnix, err := strconv.ParseInt(claims[3], 10, 64)
+		if err != nil {
+			return session, ErrInvalidSession
+		}
+
+		expiresAt := time.Unix(expiresUnix, 0)
+		if !time.Now().Before(expiresAt) {
+			return session, ErrInvalidSession
+		}
+
+		session.UserID = userID
+		session.TokenVersion = version
+		session.ExpiresAt = expiresAt
+		return session, nil
+
+	} else if len(claims) == 3 && claims[0] == "v1" {
+		userID, err := uuid.Parse(claims[1])
+		if err != nil || userID == uuid.Nil {
+			return session, ErrInvalidSession
+		}
+
+		expiresUnix, err := strconv.ParseInt(claims[2], 10, 64)
+		if err != nil {
+			return session, ErrInvalidSession
+		}
+
+		expiresAt := time.Unix(expiresUnix, 0)
+		if !time.Now().Before(expiresAt) {
+			return session, ErrInvalidSession
+		}
+
+		session.UserID = userID
+		session.TokenVersion = 1
+		session.ExpiresAt = expiresAt
+		return session, nil
 	}
 
-	userID, err := uuid.Parse(claims[1])
-	if err != nil || userID == uuid.Nil {
-		return session, ErrInvalidSession
-	}
-
-	expiresUnix, err := strconv.ParseInt(claims[2], 10, 64)
-	if err != nil {
-		return session, ErrInvalidSession
-	}
-
-	expiresAt := time.Unix(expiresUnix, 0)
-	if !time.Now().Before(expiresAt) {
-		return session, ErrInvalidSession
-	}
-
-	session.UserID = userID
-	session.ExpiresAt = expiresAt
-
-	return session, nil
+	return session, ErrInvalidSession
 }
 
 func signPayload(payload string, secret []byte) string {
@@ -136,4 +168,3 @@ func ClearSessionCookie(w http.ResponseWriter, name string, secure bool) {
 		SameSite: http.SameSiteLaxMode,
 	})
 }
-

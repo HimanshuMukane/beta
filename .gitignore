@@ -16,14 +16,14 @@ _temp_repos/
 bruno/*
 
 # Root-level compiled binaries
-/chi-mysql-server
+/photography_crm
 /cmd/runner/runner
 /cms
 /finance
 /runner
 /superadmin
 /projects/cms/cms
-/projects/photography_crm/chi-mysql-server
+/projects/photography_crm/photography_crm
 /projects/superadmin/superadmin
 
 merged.go

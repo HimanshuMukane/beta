@@ -48,7 +48,7 @@ func (r *RoleRepository) CreateRole(ctx context.Context, name string) (*models.R
 		Name: name,
 	})
 	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "unique") {
+		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return nil, ErrRoleAlreadyExists
 		}
 		return nil, fmt.Errorf("create role: %w", err)
@@ -116,44 +116,55 @@ func NewUserRepository(db *sqlx.DB) *UserRepository {
 	return &UserRepository{q: sqlc.New(db.DB)}
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) error {
-	if user == nil {
-		return errors.New("user cannot be nil")
+type CreateUserParam struct {
+	ID             uuid.UUID
+	FirstName      string
+	LastName       string
+	Email          string
+	PasswordHash   string
+	AuthProviderID *string
+	RoleID         *uuid.UUID
+	TokenVersion   int
+}
+
+func (r *UserRepository) CreateUser(ctx context.Context, p *CreateUserParam) (*models.User, error) {
+	if p == nil {
+		return nil, errors.New("params cannot be nil")
 	}
 
-	if user.ID == uuid.Nil {
+	if p.ID == uuid.Nil {
 		id, err := uuid.NewV7()
 		if err != nil {
-			return fmt.Errorf("generate user id: %w", err)
+			return nil, fmt.Errorf("generate user id: %w", err)
 		}
-		user.ID = id
+		p.ID = id
 	}
 
-	user.FirstName = strings.TrimSpace(user.FirstName)
-	user.LastName = strings.TrimSpace(user.LastName)
-	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
-
-	var roleID uuid.NullUUID
-	if user.RoleID != uuid.Nil {
-		roleID = uuid.NullUUID{UUID: user.RoleID, Valid: true}
+	arg := sqlc.CreateUserParams{
+		ID:           p.ID,
+		FirstName:    strings.TrimSpace(p.FirstName),
+		LastName:     strings.TrimSpace(p.LastName),
+		Email:        strings.ToLower(strings.TrimSpace(p.Email)),
+		PasswordHash: p.PasswordHash,
+		TokenVersion: p.TokenVersion,
 	}
 
-	err := r.q.CreateUser(ctx, sqlc.CreateUserParams{
-		ID:           user.ID,
-		FirstName:    user.FirstName,
-		LastName:     user.LastName,
-		Email:        user.Email,
-		PasswordHash: user.PasswordHash,
-		RoleID:       roleID,
-	})
+	if p.AuthProviderID != nil {
+		arg.AuthProviderID = sql.NullString{String: *p.AuthProviderID, Valid: true}
+	}
+	if p.RoleID != nil {
+		arg.RoleID = uuid.NullUUID{UUID: *p.RoleID, Valid: true}
+	}
+
+	err := r.q.CreateUser(ctx, arg)
 	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "unique") {
-			return ErrEmailAlreadyExists
+		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
+			return nil, ErrEmailAlreadyExists
 		}
-		return fmt.Errorf("create user: %w", err)
+		return nil, fmt.Errorf("create user: %w", err)
 	}
 
-	return nil
+	return r.GetUserByID(ctx, p.ID)
 }
 
 func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
@@ -170,25 +181,19 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 		return nil, fmt.Errorf("get user by email: %w", err)
 	}
 
-	var roleID uuid.UUID
-	if row.RoleID.Valid {
-		roleID = row.RoleID.UUID
-	}
-	roleName := ""
-	if row.RoleName.Valid {
-		roleName = row.RoleName.String
-	}
-
 	user := &models.User{
 		ID:           row.ID,
 		FirstName:    row.FirstName,
 		LastName:     row.LastName,
 		Email:        row.Email,
 		PasswordHash: row.PasswordHash,
-		RoleID:       roleID,
-		RoleName:     roleName,
+		RoleName:     row.RoleName,
+		TokenVersion: row.TokenVersion,
 		CreatedAt:    row.CreatedAt,
 		UpdatedAt:    row.UpdatedAt,
+	}
+	if row.RoleID.Valid {
+		user.RoleID = row.RoleID.UUID
 	}
 	if row.DeletedAt.Valid {
 		user.DeletedAt = &row.DeletedAt.Time
@@ -209,30 +214,31 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*models
 		return nil, fmt.Errorf("get user by id: %w", err)
 	}
 
-	var roleID uuid.UUID
-	if row.RoleID.Valid {
-		roleID = row.RoleID.UUID
-	}
-	roleName := ""
-	if row.RoleName.Valid {
-		roleName = row.RoleName.String
-	}
-
 	user := &models.User{
 		ID:           row.ID,
 		FirstName:    row.FirstName,
 		LastName:     row.LastName,
 		Email:        row.Email,
 		PasswordHash: row.PasswordHash,
-		RoleID:       roleID,
-		RoleName:     roleName,
+		RoleName:     row.RoleName,
+		TokenVersion: row.TokenVersion,
 		CreatedAt:    row.CreatedAt,
 		UpdatedAt:    row.UpdatedAt,
+	}
+	if row.RoleID.Valid {
+		user.RoleID = row.RoleID.UUID
 	}
 	if row.DeletedAt.Valid {
 		user.DeletedAt = &row.DeletedAt.Time
 	}
 	return user, nil
+}
+
+func (r *UserRepository) IncrementTokenVersion(ctx context.Context, id uuid.UUID) error {
+	if id == uuid.Nil {
+		return ErrUserNotFound
+	}
+	return r.q.IncrementUserTokenVersion(ctx, id)
 }
 
 type TenantRepository struct {
@@ -243,42 +249,43 @@ func NewTenantRepository(db *sqlx.DB) *TenantRepository {
 	return &TenantRepository{q: sqlc.New(db.DB)}
 }
 
-func (r *TenantRepository) CreateTenant(ctx context.Context, t *models.Tenant) error {
-	if t == nil {
+func (r *TenantRepository) CreateTenant(ctx context.Context, tenant *models.Tenant) error {
+	if tenant == nil {
 		return errors.New("tenant cannot be nil")
 	}
-	if t.ID == uuid.Nil {
+	if tenant.ID == uuid.Nil {
 		id, err := uuid.NewV7()
 		if err != nil {
 			return fmt.Errorf("generate tenant id: %w", err)
 		}
-		t.ID = id
+		tenant.ID = id
 	}
-	if t.Currency == "" {
-		t.Currency = "INR"
+
+	if tenant.Status == "" {
+		tenant.Status = "active"
 	}
-	if t.Timezone == "" {
-		t.Timezone = "Asia/Kolkata"
+	if tenant.SubscriptionStatus == "" {
+		tenant.SubscriptionStatus = "trialing"
 	}
-	if t.Status == "" {
-		t.Status = "active"
+	if tenant.Currency == "" {
+		tenant.Currency = "INR"
 	}
-	if t.SubscriptionStatus == "" {
-		t.SubscriptionStatus = "active"
+	if tenant.Timezone == "" {
+		tenant.Timezone = "Asia/Kolkata"
 	}
 
 	err := r.q.CreateTenant(ctx, sqlc.CreateTenantParams{
-		ID:                 t.ID,
-		Name:               strings.TrimSpace(t.Name),
-		Slug:               strings.ToLower(strings.TrimSpace(t.Slug)),
-		BusinessType:       t.BusinessType,
-		Status:             t.Status,
-		SubscriptionStatus: t.SubscriptionStatus,
-		Currency:           t.Currency,
-		Timezone:           t.Timezone,
+		ID:                 tenant.ID,
+		Name:               tenant.Name,
+		Slug:               tenant.Slug,
+		BusinessType:       tenant.BusinessType,
+		Status:             tenant.Status,
+		SubscriptionStatus: tenant.SubscriptionStatus,
+		Currency:           tenant.Currency,
+		Timezone:           tenant.Timezone,
 	})
 	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "unique") {
+		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return ErrTenantAlreadyExists
 		}
 		return fmt.Errorf("create tenant: %w", err)
@@ -287,9 +294,6 @@ func (r *TenantRepository) CreateTenant(ctx context.Context, t *models.Tenant) e
 }
 
 func (r *TenantRepository) GetTenantByID(ctx context.Context, id uuid.UUID) (*models.Tenant, error) {
-	if id == uuid.Nil {
-		return nil, ErrTenantNotFound
-	}
 	row, err := r.q.GetTenantByID(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTenantNotFound
@@ -298,7 +302,7 @@ func (r *TenantRepository) GetTenantByID(ctx context.Context, id uuid.UUID) (*mo
 		return nil, fmt.Errorf("get tenant by id: %w", err)
 	}
 
-	tenant := &models.Tenant{
+	t := &models.Tenant{
 		ID:                 row.ID,
 		Name:               row.Name,
 		Slug:               row.Slug,
@@ -311,9 +315,9 @@ func (r *TenantRepository) GetTenantByID(ctx context.Context, id uuid.UUID) (*mo
 		UpdatedAt:          row.UpdatedAt,
 	}
 	if row.DeletedAt.Valid {
-		tenant.DeletedAt = &row.DeletedAt.Time
+		t.DeletedAt = &row.DeletedAt.Time
 	}
-	return tenant, nil
+	return t, nil
 }
 
 func (r *TenantRepository) CreateMembership(ctx context.Context, m *models.Membership) error {
@@ -327,31 +331,21 @@ func (r *TenantRepository) CreateMembership(ctx context.Context, m *models.Membe
 		}
 		m.ID = id
 	}
-	if m.Role == "" {
-		m.Role = "owner"
-	}
 	if m.Status == "" {
 		m.Status = "active"
 	}
 
-	err := r.q.CreateMembership(ctx, sqlc.CreateMembershipParams{
+	return r.q.CreateMembership(ctx, sqlc.CreateMembershipParams{
 		ID:       m.ID,
 		TenantID: m.TenantID,
 		UserID:   m.UserID,
 		Role:     m.Role,
 		Status:   m.Status,
 	})
-	if err != nil {
-		return fmt.Errorf("create membership: %w", err)
-	}
-	return nil
 }
 
 func (r *TenantRepository) GetMembership(ctx context.Context, tenantID, userID uuid.UUID) (*models.Membership, error) {
-	row, err := r.q.GetMembership(ctx, sqlc.GetMembershipParams{
-		TenantID: tenantID,
-		UserID:   userID,
-	})
+	row, err := r.q.GetMembership(ctx, tenantID, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrMembershipNotFound
 	}
@@ -359,15 +353,24 @@ func (r *TenantRepository) GetMembership(ctx context.Context, tenantID, userID u
 		return nil, fmt.Errorf("get membership: %w", err)
 	}
 
-	return &models.Membership{
-		ID:        row.ID,
-		TenantID:  row.TenantID,
-		UserID:    row.UserID,
-		Role:      row.Role,
-		Status:    row.Status,
-		CreatedAt: row.CreatedAt,
-		UpdatedAt: row.UpdatedAt,
-	}, nil
+	m := &models.Membership{
+		ID:                       row.ID,
+		TenantID:                 row.TenantID,
+		UserID:                   row.UserID,
+		Role:                     row.Role,
+		Status:                   row.Status,
+		CreatedAt:                row.CreatedAt,
+		UpdatedAt:                row.UpdatedAt,
+		TenantName:               row.TenantName,
+		TenantSlug:               row.TenantSlug,
+		TenantBusinessType:       row.TenantBusinessType,
+		TenantStatus:             row.TenantStatus,
+		TenantSubscriptionStatus: row.TenantSubscriptionStatus,
+	}
+	if row.DeletedAt.Valid {
+		m.DeletedAt = &row.DeletedAt.Time
+	}
+	return m, nil
 }
 
 func (r *TenantRepository) ListUserMemberships(ctx context.Context, userID uuid.UUID) ([]models.Membership, error) {
@@ -376,22 +379,25 @@ func (r *TenantRepository) ListUserMemberships(ctx context.Context, userID uuid.
 		return nil, fmt.Errorf("list user memberships: %w", err)
 	}
 
-	memberships := make([]models.Membership, 0, len(rows))
-	for _, row := range rows {
-		memberships = append(memberships, models.Membership{
-			ID:                       row.ID,
-			TenantID:                 row.TenantID,
-			UserID:                   row.UserID,
-			Role:                     row.Role,
-			Status:                   row.Status,
-			CreatedAt:                row.CreatedAt,
-			UpdatedAt:                row.UpdatedAt,
-			TenantName:               row.TenantName,
-			TenantSlug:               row.TenantSlug,
-			TenantBusinessType:       row.TenantBusinessType,
-			TenantStatus:             row.TenantStatus,
-			TenantSubscriptionStatus: row.TenantSubscriptionStatus,
-		})
+	results := make([]models.Membership, len(rows))
+	for i, r := range rows {
+		results[i] = models.Membership{
+			ID:                       r.ID,
+			TenantID:                 r.TenantID,
+			UserID:                   r.UserID,
+			Role:                     r.Role,
+			Status:                   r.Status,
+			CreatedAt:                r.CreatedAt,
+			UpdatedAt:                r.UpdatedAt,
+			TenantName:               r.TenantName,
+			TenantSlug:               r.TenantSlug,
+			TenantBusinessType:       r.TenantBusinessType,
+			TenantStatus:             r.TenantStatus,
+			TenantSubscriptionStatus: r.TenantSubscriptionStatus,
+		}
+		if r.DeletedAt.Valid {
+			results[i].DeletedAt = &r.DeletedAt.Time
+		}
 	}
-	return memberships, nil
+	return results, nil
 }

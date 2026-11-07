@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"chi-mysql-server/ui/pages"
+	"photography_crm/ui/pages"
 )
 
 func SignInHandler(w http.ResponseWriter, r *http.Request) {

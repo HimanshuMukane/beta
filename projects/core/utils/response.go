@@ -43,4 +43,3 @@ func DecodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 	}
 	return true
 }
-

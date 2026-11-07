@@ -5,10 +5,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"chi-mysql-server/handlers"
-	"chi-mysql-server/ui/static"
 	"core/middleware"
 	"core/utils"
+	"photography_crm/handlers"
+	"photography_crm/ui/static"
 )
 
 func RegisterFrontendRoutes(r *chi.Mux, cfg utils.Config) {
