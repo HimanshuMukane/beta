@@ -1,6 +1,11 @@
 (function () {
   const STORAGE_KEY = 'crm_user';
 
+  function getCsrfToken() {
+    const match = document.cookie.match(new RegExp('(^|;\\s*)app_csrf=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : '';
+  }
+
   window.CRMAuth = {
     getUser() {
       try {
@@ -24,11 +29,17 @@
     },
 
     async login(email, password) {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const csrf = getCsrfToken();
+      if (csrf) {
+        headers['X-CSRF-Token'] = csrf;
+      }
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify({ email, password }),
       });
 
@@ -46,11 +57,17 @@
     },
 
     async signup(firstName, lastName, email, password) {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const csrf = getCsrfToken();
+      if (csrf) {
+        headers['X-CSRF-Token'] = csrf;
+      }
+
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify({
           first_name: firstName,
           last_name: lastName,
@@ -74,7 +91,12 @@
 
     async logout() {
       try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        const headers = {};
+        const csrf = getCsrfToken();
+        if (csrf) {
+          headers['X-CSRF-Token'] = csrf;
+        }
+        await fetch('/api/auth/logout', { method: 'POST', headers: headers });
       } finally {
         this.clearUser();
         window.location.href = '/signin';

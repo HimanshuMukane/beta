@@ -1,0 +1,130 @@
+/* HRMS specific theme and styling */
+
+.hrms-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.hrms-badge-active { background: rgba(0, 184, 148, 0.15); color: #00b894; }
+.hrms-badge-probation { background: rgba(253, 203, 110, 0.15); color: #ffeaa7; }
+.hrms-badge-contract { background: rgba(108, 92, 231, 0.15); color: #a29bfe; }
+.hrms-badge-freelance { background: rgba(9, 132, 227, 0.15); color: #74b9ff; }
+.hrms-badge-pending { background: rgba(225, 112, 85, 0.15); color: #fab1a0; }
+.hrms-badge-paid { background: rgba(0, 184, 148, 0.15); color: #00b894; }
+
+.hrms-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 12px;
+}
+
+.hrms-table th {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 12px 16px;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.hrms-table td {
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--text-normal);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.hrms-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.hrms-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.hrms-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--brand-primary, #6c5ce7);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.hrms-action-btn:hover {
+    filter: brightness(1.1);
+}
+
+.hrms-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.hrms-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.hrms-form-group label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.hrms-form-group input, .hrms-form-group select, .hrms-form-group textarea {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+}
+
+.hrms-form-group input:focus, .hrms-form-group select:focus, .hrms-form-group textarea:focus {
+    border-color: var(--brand-primary, #6c5ce7);
+}
+
+/* Tag filter pills */
+.hrms-tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    background: rgba(108, 92, 231, 0.15);
+    color: #a29bfe;
+    border: 1px solid rgba(108, 92, 231, 0.3);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.hrms-tag-pill:hover, .hrms-tag-pill.active {
+    background: #6c5ce7;
+    color: #fff;
+}
+

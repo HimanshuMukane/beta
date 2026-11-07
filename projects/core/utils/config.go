@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -10,6 +12,7 @@ import (
 )
 
 type Config struct {
+	AppName    string
 	AppEnv     string
 	ServerPort string
 
@@ -48,7 +51,18 @@ func LoadConfig(filenames ...string) error {
 			_ = godotenv.Overload(f)
 		}
 	} else {
-		_ = godotenv.Overload(".env")
+		// Automatically check if caller belongs to a specific project directory with a local .env
+		if projectDir := findCallerProjectDir(); projectDir != "" {
+			localEnv := filepath.Join(projectDir, ".env")
+			if info, err := os.Stat(localEnv); err == nil {
+				// Avoid reloading the same root .env if running from that directory
+				if rootInfo, err := os.Stat(".env"); err != nil || !os.SameFile(info, rootInfo) {
+					_ = godotenv.Overload(localEnv)
+				}
+			}
+		} else {
+			_ = godotenv.Overload(".env")
+		}
 	}
 
 	dbHost := getEnv("DB_HOST", "127.0.0.1")
@@ -83,7 +97,17 @@ func LoadConfig(filenames ...string) error {
 			dbPassword, dbHost, dbPort, identityDBName)
 	}
 
+	appName := strings.TrimSpace(os.Getenv("APP_NAME"))
+	if appName == "" {
+		if projectDir := findCallerProjectDir(); projectDir != "" {
+			appName = filepath.Base(projectDir)
+		} else {
+			appName = "default"
+		}
+	}
+
 	cfg := Config{
+		AppName:             appName,
 		AppEnv:              strings.ToLower(strings.TrimSpace(getEnv("APP_ENV", "development"))),
 		ServerPort:          strings.TrimSpace(getEnv("SERVER_PORT", "8080")),
 		DBHost:              dbHost,
@@ -156,4 +180,33 @@ func getEnv(key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func findCallerProjectDir() string {
+	goroot := runtime.GOROOT()
+	for i := 1; i < 20; i++ {
+		_, file, _, ok := runtime.Caller(i)
+		if !ok {
+			break
+		}
+		if goroot != "" && strings.HasPrefix(file, goroot) {
+			continue
+		}
+		dir := filepath.Dir(file)
+		if strings.Contains(dir, filepath.Join("projects", "core")) {
+			continue
+		}
+		curr := dir
+		for {
+			if _, err := os.Stat(filepath.Join(curr, "go.mod")); err == nil {
+				return curr
+			}
+			parent := filepath.Dir(curr)
+			if parent == curr {
+				break
+			}
+			curr = parent
+		}
+	}
+	return ""
 }

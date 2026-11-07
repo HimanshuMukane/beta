@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"core/utils"
@@ -11,6 +12,7 @@ import (
 	"especa_finance/models"
 	"especa_finance/services"
 	"especa_finance/ui/pages"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
@@ -920,11 +922,318 @@ func (h *FinanceHandlers) TagCreateHandler(w http.ResponseWriter, r *http.Reques
 	id := "tag_" + uuid.New().String()
 
 	_, _ = h.DB.ExecContext(ctx, `
-		INSERT OR IGNORE INTO tags (id, company_id, name, color, status)
+		INSERT IGNORE INTO tags (id, company_id, name, color, status)
 		VALUES (?, ?, ?, ?, 'active')
 	`, id, h.CompanyID, name, color)
 
 	http.Redirect(w, r, "/settings/tags", http.StatusSeeOther)
+}
+
+func (h *FinanceHandlers) TagCreateAPIHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	name := r.FormValue("name")
+	color := r.FormValue("color")
+	if color == "" {
+		color = "#00cec9"
+	}
+	id := "tag_" + uuid.New().String()
+
+	_, err := h.DB.ExecContext(ctx, `
+		INSERT IGNORE INTO tags (id, company_id, name, color, status)
+		VALUES (?, ?, ?, ?, 'active')
+	`, id, h.CompanyID, name, color)
+	if err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	var tag models.Tag
+	_ = h.DB.GetContext(ctx, &tag, "SELECT * FROM tags WHERE company_id = ? AND name = ?", h.CompanyID, name)
+	utils.WriteJSON(w, http.StatusOK, tag)
+}
+
+func (h *FinanceHandlers) ProjectFinancialsListHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	selectedTag := r.URL.Query().Get("tag")
+
+	var projects []models.FinanceProject
+	query := `
+		SELECT fp.*, COALESCE(c.name, 'Unknown Client') AS client_name
+		FROM finance_projects fp
+		LEFT JOIN clients c ON fp.client_id = c.id
+		WHERE fp.company_id = ?
+		ORDER BY fp.created_at DESC
+	`
+	_ = h.DB.SelectContext(ctx, &projects, query, h.CompanyID)
+
+	var allTags []models.Tag
+	_ = h.DB.SelectContext(ctx, &allTags, "SELECT * FROM tags WHERE company_id = ? ORDER BY name ASC", h.CompanyID)
+
+	filtered := make([]models.FinanceProject, 0, len(projects))
+	for _, p := range projects {
+		p.TotalGrossMinor = p.UpfrontAmountMinor + p.RecurringAmountMinor
+
+		var deductions []models.FinanceProjectDeduction
+		_ = h.DB.SelectContext(ctx, &deductions, `
+			SELECT amount_minor, id
+			FROM finance_project_deductions
+			WHERE project_id = ?
+		`, p.ID)
+
+		var totalDed int64
+		tagMap := make(map[string]bool)
+		for _, d := range deductions {
+			totalDed += d.AmountMinor
+			var tagNames []string
+			_ = h.DB.SelectContext(ctx, &tagNames, `
+				SELECT t.name
+				FROM tags t
+				JOIN finance_deduction_tags fdt ON t.id = fdt.tag_id
+				WHERE fdt.deduction_id = ?
+			`, d.ID)
+			for _, tn := range tagNames {
+				tagMap[tn] = true
+			}
+		}
+
+		p.TotalDeductions = totalDed
+		p.NetMarginMinor = p.TotalGrossMinor - p.TotalDeductions
+		if p.TotalGrossMinor > 0 {
+			p.NetMarginPercent = (float64(p.NetMarginMinor) / float64(p.TotalGrossMinor)) * 100
+		}
+
+		p.DeductionTags = make([]string, 0, len(tagMap))
+		for tn := range tagMap {
+			p.DeductionTags = append(p.DeductionTags, tn)
+		}
+
+		if selectedTag == "" || tagMap[selectedTag] {
+			filtered = append(filtered, p)
+		}
+	}
+
+	_ = pages.ProjectFinancialsList(filtered, allTags, selectedTag).Render(ctx, w)
+}
+
+func (h *FinanceHandlers) ProjectCreateHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	if r.Method == http.MethodGet {
+		var clients []models.Client
+		_ = h.DB.SelectContext(ctx, &clients, "SELECT * FROM clients WHERE company_id = ? ORDER BY name ASC", h.CompanyID)
+		_ = pages.ProjectCreate(clients).Render(ctx, w)
+		return
+	}
+
+	title := r.FormValue("title")
+	clientID := r.FormValue("client_id")
+	billingType := r.FormValue("billing_type")
+	frequency := r.FormValue("frequency")
+	upfrontRupees, _ := strconv.ParseInt(r.FormValue("upfront_amount"), 10, 64)
+	recurringRupees, _ := strconv.ParseInt(r.FormValue("recurring_amount"), 10, 64)
+
+	projID := "proj_" + uuid.New().String()
+	upfrontMinor := upfrontRupees * 100
+	recurringMinor := recurringRupees * 100
+
+	today := time.Now().Format("2006-01-02")
+	var nextBillDate *string
+	if billingType == "recurring" || billingType == "hybrid" {
+		nextMonth := time.Now().AddDate(0, 1, 0).Format("2006-01-02")
+		nextBillDate = &nextMonth
+	}
+
+	err := db.InTransaction(ctx, h.DB, func(tx *sqlx.Tx) error {
+		_, err := tx.ExecContext(ctx, `
+			INSERT INTO finance_projects (id, company_id, title, client_id, billing_type, frequency, upfront_amount_minor, recurring_amount_minor, next_billing_date, status)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+		`, projID, h.CompanyID, title, clientID, billingType, frequency, upfrontMinor, recurringMinor, nextBillDate)
+		if err != nil {
+			return err
+		}
+
+		if billingType == "recurring" || billingType == "hybrid" {
+			subID := "sub_" + uuid.New().String()
+			_, err = tx.ExecContext(ctx, `
+				INSERT INTO finance_subscriptions (id, company_id, project_id, client_id, frequency, amount_minor, billing_cycle_anchor, next_billing_date, status)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')
+			`, subID, h.CompanyID, projID, clientID, frequency, recurringMinor, today, *nextBillDate)
+			if err != nil {
+				return err
+			}
+		}
+
+		if (billingType == "one_time" || billingType == "hybrid") && upfrontMinor > 0 {
+			invID := "inv_" + uuid.New().String()
+			invNum := fmt.Sprintf("INV-%d", time.Now().UnixNano()/1e6)
+			_, err = tx.ExecContext(ctx, `
+				INSERT INTO invoices (id, company_id, client_id, invoice_number, issue_date, due_date, subtotal_minor, tax_total_minor, total_minor, status, notes)
+				VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, 'issued', ?)
+			`, invID, h.CompanyID, clientID, invNum, today, today, upfrontMinor, upfrontMinor, "Upfront Fee for "+title)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/projects/financials", http.StatusSeeOther)
+}
+
+func (h *FinanceHandlers) ProjectFinancialDetailHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	projectID := chi.URLParam(r, "id")
+
+	var project models.FinanceProject
+	err := h.DB.GetContext(ctx, &project, `
+		SELECT fp.*, COALESCE(c.name, 'Unknown Client') AS client_name
+		FROM finance_projects fp
+		LEFT JOIN clients c ON fp.client_id = c.id
+		WHERE fp.company_id = ? AND fp.id = ?
+	`, h.CompanyID, projectID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	project.TotalGrossMinor = project.UpfrontAmountMinor + project.RecurringAmountMinor
+
+	var deductions []models.FinanceProjectDeduction
+	_ = h.DB.SelectContext(ctx, &deductions, `
+		SELECT fpd.*, COALESCE(coa.name, 'Expense Account') AS account_name
+		FROM finance_project_deductions fpd
+		LEFT JOIN chart_of_accounts coa ON fpd.expense_account_id = coa.id
+		WHERE fpd.project_id = ?
+		ORDER BY fpd.deduction_date DESC
+	`, projectID)
+
+	var totalDed int64
+	for i := range deductions {
+		totalDed += deductions[i].AmountMinor
+		var tags []models.Tag
+		_ = h.DB.SelectContext(ctx, &tags, `
+			SELECT t.*
+			FROM tags t
+			JOIN finance_deduction_tags fdt ON t.id = fdt.tag_id
+			WHERE fdt.deduction_id = ?
+		`, deductions[i].ID)
+		deductions[i].Tags = tags
+	}
+
+	project.TotalDeductions = totalDed
+	project.NetMarginMinor = project.TotalGrossMinor - project.TotalDeductions
+	if project.TotalGrossMinor > 0 {
+		project.NetMarginPercent = (float64(project.NetMarginMinor) / float64(project.TotalGrossMinor)) * 100
+	}
+
+	var allTags []models.Tag
+	_ = h.DB.SelectContext(ctx, &allTags, "SELECT * FROM tags WHERE company_id = ? ORDER BY name ASC", h.CompanyID)
+
+	_ = pages.ProjectFinancialDetail(project, deductions, allTags).Render(ctx, w)
+}
+
+func (h *FinanceHandlers) ProjectDeductionCreateHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	projectID := chi.URLParam(r, "id")
+
+	var project models.FinanceProject
+	err := h.DB.GetContext(ctx, &project, "SELECT * FROM finance_projects WHERE company_id = ? AND id = ?", h.CompanyID, projectID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		var accounts []models.ChartOfAccount
+		_ = h.DB.SelectContext(ctx, &accounts, "SELECT * FROM chart_of_accounts WHERE company_id = ? AND account_type = 'expense' ORDER BY code ASC", h.CompanyID)
+		var tags []models.Tag
+		_ = h.DB.SelectContext(ctx, &tags, "SELECT * FROM tags WHERE company_id = ? ORDER BY name ASC", h.CompanyID)
+		_ = pages.ProjectDeductionCreate(project, accounts, tags).Render(ctx, w)
+		return
+	}
+
+	desc := r.FormValue("description")
+	payee := r.FormValue("payee")
+	dedDate := r.FormValue("deduction_date")
+	amountRupees, _ := strconv.ParseInt(r.FormValue("amount"), 10, 64)
+	amountMinor := amountRupees * 100
+	expAccountID := r.FormValue("expense_account_id")
+	rawTags := r.FormValue("tags")
+
+	dedID := "ded_" + uuid.New().String()
+
+	err = db.InTransaction(ctx, h.DB, func(tx *sqlx.Tx) error {
+		_, err := tx.ExecContext(ctx, `
+			INSERT INTO finance_project_deductions (id, company_id, project_id, amount_minor, description, payee, expense_account_id, deduction_date)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		`, dedID, h.CompanyID, projectID, amountMinor, desc, payee, expAccountID, dedDate)
+		if err != nil {
+			return err
+		}
+
+		if rawTags != "" {
+			parts := strings.Split(rawTags, ",")
+			for _, p := range parts {
+				token := strings.TrimSpace(p)
+				if token == "" {
+					continue
+				}
+				tagID := "tag_" + uuid.New().String()
+				_, _ = tx.ExecContext(ctx, `
+					INSERT IGNORE INTO tags (id, company_id, name, color, status)
+					VALUES (?, ?, ?, '#00cec9', 'active')
+				`, tagID, h.CompanyID, token)
+
+				var resolvedID string
+				_ = tx.GetContext(ctx, &resolvedID, "SELECT id FROM tags WHERE company_id = ? AND name = ?", h.CompanyID, token)
+				if resolvedID != "" {
+					_, _ = tx.ExecContext(ctx, `
+						INSERT IGNORE INTO finance_deduction_tags (deduction_id, tag_id)
+						VALUES (?, ?)
+					`, dedID, resolvedID)
+				}
+			}
+		}
+
+		lines := []models.JournalLine{
+			{AccountID: expAccountID, DebitAmountMinor: amountMinor, Description: strPtr("Project Deduction: " + desc)},
+			{AccountID: "acc_1001", CreditAmountMinor: amountMinor, Description: strPtr("Disbursement to " + payee)},
+		}
+		_, err = h.Accounting.PostJournalEntry(ctx, h.CompanyID, dedDate, "Project Deduction ["+project.Title+"]: "+desc, "project_deduction", dedID, lines)
+		return err
+	})
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/projects/%s/financials", projectID), http.StatusSeeOther)
+}
+
+func (h *FinanceHandlers) SubscriptionsListHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	var subs []models.FinanceSubscription
+	_ = h.DB.SelectContext(ctx, &subs, `
+		SELECT fs.*, COALESCE(fp.title, 'Project') AS project_title, COALESCE(c.name, 'Client') AS client_name
+		FROM finance_subscriptions fs
+		JOIN finance_projects fp ON fs.project_id = fp.id
+		LEFT JOIN clients c ON fs.client_id = c.id
+		WHERE fs.company_id = ?
+		ORDER BY fs.next_billing_date ASC
+	`, h.CompanyID)
+
+	var mrr, arr int64
+	for _, s := range subs {
+		mrr += services.MonthlyEquivalent(s.AmountMinor, s.Frequency)
+		arr += services.AnnualizeAmount(s.AmountMinor, s.Frequency)
+	}
+
+	_ = pages.SubscriptionsList(subs, mrr, arr).Render(ctx, w)
 }
 
 func strPtr(s string) *string {

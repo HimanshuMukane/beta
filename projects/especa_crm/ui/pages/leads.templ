@@ -1,0 +1,205 @@
+package pages
+
+import (
+	"fmt"
+	"especa_crm/models"
+	"especa_crm/ui/layouts"
+	"ui/components/icons"
+)
+
+templ LeadsList(leads []models.Lead) {
+	@layouts.MainLayout("Leads - Especa CRM", "leads", []layouts.Breadcrumb{{Label: "Leads"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Inbound Prospects & Leads</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Capture, score, and qualify prospective customers</p>
+			</div>
+			<div>
+				<a href="/leads/new" class="c-btn c-btn-primary" style="text-decoration: none; padding: 8px 16px; font-size: 13px;">+ Add Lead</a>
+			</div>
+		</div>
+
+		<div class="view-tabs-bar" style="margin-bottom: 16px;">
+			<a href="/leads" class="view-tab active">
+				@icons.IconTable()
+				<span>All Leads ({ fmt.Sprintf("%d", len(leads)) })</span>
+			</a>
+		</div>
+
+		if len(leads) == 0 {
+			<div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 40px; text-align: center;">
+				<p style="color: var(--text-muted); margin-bottom: 12px;">No leads found.</p>
+				<a href="/leads/new" class="c-btn c-btn-primary" style="text-decoration: none;">Create First Lead</a>
+			</div>
+		} else {
+			<div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+				<table class="clickup-table" style="width: 100%;">
+					<thead>
+						<tr>
+							<th>Name / Prospect</th>
+							<th>Company</th>
+							<th>Email</th>
+							<th>Phone</th>
+							<th>Source</th>
+							<th>Status</th>
+							<th style="text-align: right;">Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, l := range leads {
+							<tr>
+								<td>
+									<a href={ templ.SafeURL(fmt.Sprintf("/leads/%s", l.ID)) } style="color: #fff; font-weight: 600; text-decoration: none;">
+										{ l.Name }
+									</a>
+								</td>
+								<td>{ l.CompanyName }</td>
+								<td style="color: var(--text-muted);">{ l.Email }</td>
+								<td style="color: var(--text-muted);">{ l.Phone }</td>
+								<td><span class="status-pill status-todo">{ l.Source }</span></td>
+								<td>
+									if l.Status == "qualified" {
+										<span class="status-pill status-done">Qualified</span>
+									} else if l.Status == "contacted" {
+										<span class="status-pill status-inprogress">Contacted</span>
+									} else {
+										<span class="status-pill status-todo">{ l.Status }</span>
+									}
+								</td>
+								<td style="text-align: right;">
+									<a href={ templ.SafeURL(fmt.Sprintf("/leads/%s", l.ID)) } class="crm-page-btn" style="text-decoration: none; padding: 4px 10px; font-size: 11px;">View Details →</a>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}
+
+templ LeadCreate() {
+	@layouts.MainLayout("Create Lead - Especa CRM", "leads", []layouts.Breadcrumb{{Label: "Leads", URL: "/leads"}, {Label: "New Lead"}}) {
+		<div style="max-width: 600px; margin: 0 auto; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px;">
+			<h2 style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px;">Add New Inbound Lead</h2>
+			<p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Capture contact information and acquisition source</p>
+
+			<form method="POST" action="/leads/new" style="display: flex; flex-direction: column; gap: 16px;">
+				<div class="form-group">
+					<label class="form-label" for="name">Contact Name</label>
+					<input class="form-input" id="name" name="name" type="text" placeholder="e.g. Gordon Freeman" required/>
+				</div>
+
+				<div class="form-group">
+					<label class="form-label" for="company_name">Company / Organization</label>
+					<input class="form-input" id="company_name" name="company_name" type="text" placeholder="e.g. Aperture Science" required/>
+				</div>
+
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+					<div class="form-group">
+						<label class="form-label" for="email">Email</label>
+						<input class="form-input" id="email" name="email" type="email" placeholder="gordon@aperture.io" required/>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="phone">Phone</label>
+						<input class="form-input" id="phone" name="phone" type="text" placeholder="+1-555-0100"/>
+					</div>
+				</div>
+
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+					<div class="form-group">
+						<label class="form-label" for="source">Lead Source</label>
+						<select class="form-input" id="source" name="source" style="background: var(--bg-input);">
+							<option value="web_inbound">Website Form</option>
+							<option value="referral">Referral</option>
+							<option value="direct">Direct Outreach</option>
+							<option value="partner">Partner</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="status">Initial Status</label>
+						<select class="form-input" id="status" name="status" style="background: var(--bg-input);">
+							<option value="new">New</option>
+							<option value="contacted">Contacted</option>
+							<option value="qualified">Qualified</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="form-group">
+					<label class="form-label" for="notes">Notes / Requirements</label>
+					<textarea class="form-input" id="notes" name="notes" rows="3" placeholder="Client requirements, initial scope discussion..."></textarea>
+				</div>
+
+				<div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px;">
+					<a href="/leads" class="c-btn c-btn-secondary" style="text-decoration: none; padding: 8px 16px;">Cancel</a>
+					<button type="submit" class="c-btn c-btn-primary" style="padding: 8px 16px;">Save Lead</button>
+				</div>
+			</form>
+		</div>
+	}
+}
+
+templ LeadDetail(lead models.Lead) {
+	@layouts.MainLayout(lead.Name+" - Lead Detail", "leads", []layouts.Breadcrumb{{Label: "Leads", URL: "/leads"}, {Label: lead.Name}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">{ lead.Name }</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">{ lead.CompanyName } • Source: { lead.Source }</p>
+			</div>
+			<div style="display: flex; gap: 8px;">
+				<a href={ templ.SafeURL(fmt.Sprintf("/deals/new?lead_id=%s&title=%s", lead.ID, lead.CompanyName)) } class="c-btn c-btn-primary" style="text-decoration: none; padding: 8px 16px; font-size: 13px;">
+					Convert to Deal →
+				</a>
+			</div>
+		</div>
+
+		<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+			<div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;">
+				<h3 style="font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 16px;">Prospect Information</h3>
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 13px;">
+					<div>
+						<span style="color: var(--text-dim); display: block; margin-bottom: 4px;">Email</span>
+						<strong style="color: #fff;">{ lead.Email }</strong>
+					</div>
+					<div>
+						<span style="color: var(--text-dim); display: block; margin-bottom: 4px;">Phone</span>
+						<strong style="color: #fff;">{ lead.Phone }</strong>
+					</div>
+					<div>
+						<span style="color: var(--text-dim); display: block; margin-bottom: 4px;">Status</span>
+						<span class="status-pill status-inprogress">{ lead.Status }</span>
+					</div>
+					<div>
+						<span style="color: var(--text-dim); display: block; margin-bottom: 4px;">Captured Date</span>
+						<span style="color: var(--text-muted);">{ lead.CreatedAt.Format("02 Jan 2006") }</span>
+					</div>
+				</div>
+
+				<div style="margin-top: 24px;">
+					<span style="color: var(--text-dim); display: block; margin-bottom: 6px; font-size: 13px;">Notes & Discovery Log</span>
+					<div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; font-size: 13px; color: var(--text-main);">
+						if lead.Notes != "" {
+							{ lead.Notes }
+						} else {
+							<span style="color: var(--text-muted);">No notes recorded yet.</span>
+						}
+					</div>
+				</div>
+			</div>
+
+			<div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;">
+				<h3 style="font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 12px;">Quick Actions</h3>
+				<div style="display: flex; flex-direction: column; gap: 8px;">
+					<a href={ templ.SafeURL(fmt.Sprintf("mailto:%s", lead.Email)) } class="c-btn c-btn-secondary" style="text-decoration: none; text-align: center; padding: 8px;">
+						📧 Send Email
+					</a>
+					<a href={ templ.SafeURL(fmt.Sprintf("/deals/new?lead_id=%s&title=%s", lead.ID, lead.CompanyName)) } class="c-btn c-btn-primary" style="text-decoration: none; text-align: center; padding: 8px;">
+						🚀 Create Pipeline Deal
+					</a>
+				</div>
+			</div>
+		</div>
+	}
+}
+

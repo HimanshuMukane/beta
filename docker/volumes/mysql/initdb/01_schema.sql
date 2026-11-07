@@ -93,16 +93,121 @@ CREATE TABLE IF NOT EXISTS `tenant_registration_requests` (
 CREATE DATABASE IF NOT EXISTS `cms_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `cms_db`;
 
+CREATE TABLE IF NOT EXISTS `cms_tenant_features` (
+    `id` VARCHAR(36) PRIMARY KEY NOT NULL,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `feature_key` VARCHAR(50) NOT NULL,
+    `is_enabled` BOOLEAN NOT NULL DEFAULT TRUE,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    UNIQUE KEY `uk_tenant_feature` (`tenant_id`, `feature_key`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `cms_api_keys` (
+    `id` VARCHAR(36) PRIMARY KEY NOT NULL,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `key_prefix` VARCHAR(16) NOT NULL,
+    `key_hash` VARCHAR(64) NOT NULL,
+    `scopes` VARCHAR(255) NOT NULL DEFAULT 'content:read',
+    `revoked_at` DATETIME(6) DEFAULT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    INDEX `idx_api_keys_lookup` (`key_prefix`, `revoked_at`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `cms_content_types` (
+    `id` VARCHAR(36) PRIMARY KEY NOT NULL,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `slug` VARCHAR(100) NOT NULL,
+    `description` TEXT,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    UNIQUE KEY `uk_tenant_type_slug` (`tenant_id`, `slug`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `cms_content_fields` (
+    `id` VARCHAR(36) PRIMARY KEY NOT NULL,
+    `content_type_id` VARCHAR(36) NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `field_key` VARCHAR(100) NOT NULL,
+    `field_type` VARCHAR(50) NOT NULL,
+    `is_required` BOOLEAN NOT NULL DEFAULT FALSE,
+    `order_index` INT NOT NULL DEFAULT 0,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    UNIQUE KEY `uk_type_field_key` (`content_type_id`, `field_key`),
+    CONSTRAINT `fk_fields_type` FOREIGN KEY (`content_type_id`) REFERENCES `cms_content_types` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `cms_content_entries` (
+    `id` VARCHAR(36) PRIMARY KEY NOT NULL,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `content_type_id` VARCHAR(36) NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `slug` VARCHAR(255) NOT NULL,
+    `data` JSON NOT NULL,
+    `status` VARCHAR(50) NOT NULL DEFAULT 'draft',
+    `published_at` DATETIME(6) DEFAULT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    UNIQUE KEY `uk_tenant_entry_slug` (`tenant_id`, `content_type_id`, `slug`),
+    INDEX `idx_entries_status` (`tenant_id`, `status`),
+    CONSTRAINT `fk_entries_type` FOREIGN KEY (`content_type_id`) REFERENCES `cms_content_types` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS `cms_articles` (
     `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
     `author_id` VARCHAR(36) NOT NULL,
     `title` VARCHAR(255) NOT NULL,
-    `slug` VARCHAR(255) NOT NULL UNIQUE,
+    `slug` VARCHAR(255) NOT NULL,
     `content` LONGTEXT,
     `status` VARCHAR(50) NOT NULL DEFAULT 'draft',
     `published_at` DATETIME(6) DEFAULT NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    UNIQUE KEY `uk_tenant_article_slug` (`tenant_id`, `slug`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `cms_media` (
+    `id` VARCHAR(36) PRIMARY KEY NOT NULL,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `file_name` VARCHAR(255) NOT NULL,
+    `file_path` VARCHAR(500) NOT NULL,
+    `mime_type` VARCHAR(100) NOT NULL,
+    `file_size` BIGINT NOT NULL,
+    `alt_text` VARCHAR(255) DEFAULT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    INDEX `idx_media_tenant` (`tenant_id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `cms_menus` (
+    `id` VARCHAR(36) PRIMARY KEY NOT NULL,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `menu_key` VARCHAR(100) NOT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    UNIQUE KEY `uk_tenant_menu_key` (`tenant_id`, `menu_key`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `cms_menu_items` (
+    `id` VARCHAR(36) PRIMARY KEY NOT NULL,
+    `menu_id` VARCHAR(36) NOT NULL,
+    `label` VARCHAR(100) NOT NULL,
+    `url` VARCHAR(500) NOT NULL,
+    `target` VARCHAR(20) NOT NULL DEFAULT '_self',
+    `order_index` INT NOT NULL DEFAULT 0,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT `fk_menu_items` FOREIGN KEY (`menu_id`) REFERENCES `cms_menus` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `cms_form_submissions` (
+    `id` VARCHAR(36) PRIMARY KEY NOT NULL,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `form_key` VARCHAR(100) NOT NULL,
+    `data` JSON NOT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    INDEX `idx_submissions_tenant` (`tenant_id`, `form_key`)
 ) ENGINE=InnoDB;
 
 -- 4. Photography CRM Database

@@ -4,7 +4,9 @@ use (
 	./cmd/runner
 	./projects/cms
 	./projects/core
-	./projects/finance
+	./projects/especa_crm
+	./projects/especa_finance
+	./projects/hrms
 	./projects/photography_crm
 	./projects/superadmin
 	./tests

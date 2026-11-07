@@ -143,7 +143,7 @@ func IntegrationsSettings() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.DashboardLayout("Integrations & Channels - Settings", "settings", []layouts.BreadcrumbItem{
+		templ_7745c5c3_Err = layouts.DashboardLayout("Integrations & Channels - Settings", "settings_integrations", []layouts.BreadcrumbItem{
 			{Label: "Settings", URL: "/settings"},
 			{Label: "Integrations"},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)

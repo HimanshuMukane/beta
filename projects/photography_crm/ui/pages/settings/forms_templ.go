@@ -94,7 +94,7 @@ func FormsSettings() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.DashboardLayout("Inquiry Form Builder - Settings", "settings", []layouts.BreadcrumbItem{
+		templ_7745c5c3_Err = layouts.DashboardLayout("Inquiry Form Builder - Settings", "settings_forms", []layouts.BreadcrumbItem{
 			{Label: "Settings", URL: "/settings"},
 			{Label: "Forms"},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)

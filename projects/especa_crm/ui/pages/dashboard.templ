@@ -1,0 +1,118 @@
+package pages
+
+import (
+	"fmt"
+	"core/utils"
+	"especa_crm/models"
+	"especa_crm/ui/layouts"
+	"ui/components/feedback"
+)
+
+type DashboardData struct {
+	TotalLeadsCount      int
+	QualifiedLeadsCount  int
+	ActiveDealsCount     int
+	PipelineValueMinor   int64
+	ActiveProjectsCount  int
+	ProjectsDelayedCount int
+	UpcomingMilestones   []models.Milestone
+	RecentDeals          []models.Deal
+}
+
+templ Dashboard(data DashboardData) {
+	@layouts.MainLayout("CRM Dashboard", "overview", []layouts.Breadcrumb{{Label: "Overview"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+			<div>
+				<h1 style="font-size: 24px; font-weight: 700; color: #fff;">Sales & Delivery Operations</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Monitor lead conversion, deal velocity, and project delivery schedules</p>
+			</div>
+			<div style="display: flex; gap: 8px;">
+				<a href="/deals/new" class="c-btn c-btn-primary" style="text-decoration: none; padding: 8px 16px; font-size: 13px;">+ New Deal</a>
+				<a href="/projects/new" class="c-btn c-btn-secondary" style="text-decoration: none; padding: 8px 16px; font-size: 13px;">+ New Project</a>
+			</div>
+		</div>
+
+		<div class="finance-card-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+			@feedback.StatCard("Total Pipeline Value", utils.FormatINR(data.PipelineValueMinor), "Active Deals Forecast", true, "dollar")
+			@feedback.StatCard("Active Deals", fmt.Sprintf("%d Deals", data.ActiveDealsCount), "In Negotiation / Proposal", true, "trending-up")
+			@feedback.StatCard("Active Delivery Projects", fmt.Sprintf("%d Projects", data.ActiveProjectsCount), "Across 4 Project Types", true, "folder")
+			@feedback.StatCard("Qualified Leads", fmt.Sprintf("%d / %d", data.QualifiedLeadsCount, data.TotalLeadsCount), "Ready for Proposal", true, "target")
+		</div>
+
+		<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+			<div style="background: var(--bg-card, #1e2430); border: 1px solid var(--border-color, #2d3748); border-radius: 8px; padding: 20px;">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+					<h3 style="font-size: 16px; font-weight: 600; color: #fff;">Active Deals & Commercial Models</h3>
+					<a href="/deals" style="color: var(--accent-primary, #6c5ce7); font-size: 12px; text-decoration: none;">View Pipeline Board →</a>
+				</div>
+				if len(data.RecentDeals) == 0 {
+					<p style="color: var(--text-muted); padding: 20px 0;">No active deals found. Create a deal to begin tracking pipeline.</p>
+				} else {
+					<div class="table-workspace-container">
+						<table class="clickup-table" style="width: 100%;">
+							<thead>
+								<tr>
+									<th>Deal Title</th>
+									<th>Stage</th>
+									<th>Project Type</th>
+									<th>Billing Model</th>
+									<th style="text-align: right;">Value</th>
+								</tr>
+							</thead>
+							<tbody>
+								for _, d := range data.RecentDeals {
+									<tr>
+										<td>
+											<a href={ templ.SafeURL(fmt.Sprintf("/deals/%s", d.ID)) } style="color: #fff; font-weight: 600; text-decoration: none;">
+												{ d.Title }
+											</a>
+										</td>
+										<td>
+											<span class="status-pill status-inprogress">{ d.Stage }</span>
+										</td>
+										<td style="color: var(--text-muted); font-size: 12px;">{ d.ProjectType }</td>
+										<td>
+											<span class="crm-badge-shown" style="font-size: 10.5px; padding: 2px 8px;">{ d.BillingModel }</span>
+										</td>
+										<td style="text-align: right; font-weight: 600; color: #00cec9;">
+											if d.OneTimeFeeMinor > 0 {
+												{ utils.FormatINR(d.OneTimeFeeMinor) }
+											} else {
+												{ utils.FormatINR(d.RecurringFeeMinor) }/mo
+											}
+										</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				}
+			</div>
+
+			<div style="background: var(--bg-card, #1e2430); border: 1px solid var(--border-color, #2d3748); border-radius: 8px; padding: 20px;">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+					<h3 style="font-size: 16px; font-weight: 600; color: #fff;">Upcoming Milestones</h3>
+					<a href="/schedule" style="color: var(--accent-primary, #6c5ce7); font-size: 12px; text-decoration: none;">Full Calendar →</a>
+				</div>
+				<div style="display: flex; flex-direction: column; gap: 12px;">
+					if len(data.UpcomingMilestones) == 0 {
+						<p style="color: var(--text-muted); font-size: 13px;">No pending milestones scheduled.</p>
+					} else {
+						for _, m := range data.UpcomingMilestones {
+							<div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 12px; border-left: 3px solid #6c5ce7;">
+								<div style="font-size: 13px; font-weight: 600; color: #fff;">{ m.Title }</div>
+								<div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between;">
+									<span>Due: { m.DueDate }</span>
+									if m.TriggersBilling {
+										<span style="color: #00cec9; font-weight: 600;">⚡ Triggers Billing</span>
+									}
+								</div>
+							</div>
+						}
+					}
+				</div>
+			</div>
+		</div>
+	}
+}
+

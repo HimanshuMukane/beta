@@ -9,9 +9,11 @@ import (
 
 type userContextKey struct{}
 type tenantContextKey struct{}
+type projectContextKey struct{}
 
 var currentUserKey = userContextKey{}
 var currentTenantKey = tenantContextKey{}
+var currentProjectKey = projectContextKey{}
 
 type TenantContext struct {
 	TenantID           uuid.UUID
@@ -48,4 +50,18 @@ func TenantFromContext(ctx context.Context) *TenantContext {
 		return tc
 	}
 	return nil
+}
+
+func WithProjectName(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, currentProjectKey, name)
+}
+
+func ProjectNameFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	if name, ok := ctx.Value(currentProjectKey).(string); ok {
+		return name
+	}
+	return ""
 }

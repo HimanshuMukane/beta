@@ -111,7 +111,7 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 											<span class="nav-label">Forms</span>
 										</div>
 									</a>
-									<a href="/settings/quotations" class={ "nav-item", templ.KV("active", activeNav == "settings_quotations") } data-tooltip="Quotation Templates">
+									<a href="/settings/quotation-templates" class={ "nav-item", templ.KV("active", activeNav == "settings_quotations" || activeNav == "settings_quotation_templates") } data-tooltip="Quotation Templates">
 										<div class="nav-item-left">
 											<span class="nav-icon">
 												@icons.IconReceipt()
@@ -119,7 +119,7 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 											<span class="nav-label">Quotations</span>
 										</div>
 									</a>
-									<a href="/settings/invoices" class={ "nav-item", templ.KV("active", activeNav == "settings_invoices") } data-tooltip="Invoice Templates">
+									<a href="/settings/invoice-templates" class={ "nav-item", templ.KV("active", activeNav == "settings_invoices" || activeNav == "settings_invoice_templates") } data-tooltip="Invoice Templates">
 										<div class="nav-item-left">
 											<span class="nav-icon">
 												@icons.IconCreditCard()
@@ -127,7 +127,7 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 											<span class="nav-label">Invoices</span>
 										</div>
 									</a>
-									<a href="/settings/contracts" class={ "nav-item", templ.KV("active", activeNav == "settings_contracts") } data-tooltip="Contract Templates">
+									<a href="/settings/contract-templates" class={ "nav-item", templ.KV("active", activeNav == "settings_contracts" || activeNav == "settings_contract_templates") } data-tooltip="Contract Templates">
 										<div class="nav-item-left">
 											<span class="nav-icon">
 												@icons.IconFileText()
@@ -135,7 +135,7 @@ templ DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIt
 											<span class="nav-label">Contracts</span>
 										</div>
 									</a>
-									<a href="/settings/feedback" class={ "nav-item", templ.KV("active", activeNav == "settings_feedback") } data-tooltip="Feedback Templates">
+									<a href="/settings/feedback-templates" class={ "nav-item", templ.KV("active", activeNav == "settings_feedback" || activeNav == "settings_feedback_templates") } data-tooltip="Feedback Templates">
 										<div class="nav-item-left">
 											<span class="nav-icon">
 												@icons.IconSparkles()

@@ -68,6 +68,8 @@ func MainLayout(title string, activeNav string, breadcrumbs []Breadcrumb) templ.
 					Items: []navigation.NavItem{
 						{Label: "Overview", URL: "/", Icon: icons.IconBarChart3(), Active: activeNav == "overview"},
 						{Label: "Products & Licensing", URL: "/products", Icon: icons.IconFolder(), Active: activeNav == "products"},
+						{Label: "Project Financials", URL: "/projects/financials", Icon: icons.IconTarget(), Active: activeNav == "projects_financials"},
+						{Label: "Subscriptions", URL: "/subscriptions", Icon: icons.IconClock(), Active: activeNav == "subscriptions"},
 						{Label: "Clients", URL: "/clients", Icon: icons.IconUsers(), Active: activeNav == "clients"},
 						{Label: "Employees & Payroll", URL: "/employees", Icon: icons.IconUserPlus(), Active: activeNav == "employees"},
 					},
@@ -146,7 +148,7 @@ func MainLayout(title string, activeNav string, breadcrumbs []Breadcrumb) templ.
 				var templ_7745c5c3_Var3 templ.SafeURL
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(b.URL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/especa_finance/ui/layouts/layout.templ`, Line: 103, Col: 41}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/especa_finance/ui/layouts/layout.templ`, Line: 105, Col: 41}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -159,7 +161,7 @@ func MainLayout(title string, activeNav string, breadcrumbs []Breadcrumb) templ.
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(b.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/especa_finance/ui/layouts/layout.templ`, Line: 103, Col: 110}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/especa_finance/ui/layouts/layout.templ`, Line: 105, Col: 110}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -177,7 +179,7 @@ func MainLayout(title string, activeNav string, breadcrumbs []Breadcrumb) templ.
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(b.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/especa_finance/ui/layouts/layout.templ`, Line: 105, Col: 77}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `projects/especa_finance/ui/layouts/layout.templ`, Line: 107, Col: 77}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {

@@ -78,7 +78,7 @@ func InvoiceTemplatesSettings() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.DashboardLayout("Invoice PDF Templates - Settings", "settings", []layouts.BreadcrumbItem{
+		templ_7745c5c3_Err = layouts.DashboardLayout("Invoice PDF Templates - Settings", "settings_invoices", []layouts.BreadcrumbItem{
 			{Label: "Settings", URL: "/settings"},
 			{Label: "Invoice PDF"},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)

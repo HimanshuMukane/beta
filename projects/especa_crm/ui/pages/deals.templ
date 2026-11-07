@@ -1,0 +1,243 @@
+package pages
+
+import (
+	"fmt"
+	"core/utils"
+	"especa_crm/models"
+	"especa_crm/ui/layouts"
+)
+
+templ DealsPipeline(deals []models.Deal) {
+	@layouts.MainLayout("Deals Pipeline - Especa CRM", "deals", []layouts.Breadcrumb{{Label: "Deals"}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">Deals & Pipeline Management</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Track deals by stage, project delivery type, and commercial billing structure</p>
+			</div>
+			<div>
+				<a href="/deals/new" class="c-btn c-btn-primary" style="text-decoration: none; padding: 8px 16px; font-size: 13px;">+ New Deal</a>
+			</div>
+		</div>
+
+		<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start;">
+			<div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+				<div style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 12px; display: flex; justify-content: space-between;">
+					<span>LEAD / DISCOVERY</span>
+					<span style="color: var(--text-dim);">{ fmt.Sprintf("%d", countDealsInStage(deals, "lead")) }</span>
+				</div>
+				<div style="display: flex; flex-direction: column; gap: 10px;">
+					for _, d := range filterDealsByStage(deals, "lead") {
+						@DealCard(d)
+					}
+				</div>
+			</div>
+
+			<div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+				<div style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 12px; display: flex; justify-content: space-between;">
+					<span>PROPOSAL / QUOTE</span>
+					<span style="color: var(--text-dim);">{ fmt.Sprintf("%d", countDealsInStage(deals, "proposal")) }</span>
+				</div>
+				<div style="display: flex; flex-direction: column; gap: 10px;">
+					for _, d := range filterDealsByStage(deals, "proposal") {
+						@DealCard(d)
+					}
+				</div>
+			</div>
+
+			<div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+				<div style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 12px; display: flex; justify-content: space-between;">
+					<span>NEGOTIATION</span>
+					<span style="color: var(--text-dim);">{ fmt.Sprintf("%d", countDealsInStage(deals, "negotiation")) }</span>
+				</div>
+				<div style="display: flex; flex-direction: column; gap: 10px;">
+					for _, d := range filterDealsByStage(deals, "negotiation") {
+						@DealCard(d)
+					}
+				</div>
+			</div>
+
+			<div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+				<div style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 12px; display: flex; justify-content: space-between;">
+					<span>WON / READY FOR PROJECT</span>
+					<span style="color: #00b894;">{ fmt.Sprintf("%d", countDealsInStage(deals, "won")) }</span>
+				</div>
+				<div style="display: flex; flex-direction: column; gap: 10px;">
+					for _, d := range filterDealsByStage(deals, "won") {
+						@DealCard(d)
+					}
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ DealCard(deal models.Deal) {
+	<div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 6px;">
+		<a href={ templ.SafeURL(fmt.Sprintf("/deals/%s", deal.ID)) } style="color: #fff; font-size: 13px; font-weight: 600; text-decoration: none;">
+			{ deal.Title }
+		</a>
+		<div style="display: flex; gap: 6px; flex-wrap: wrap;">
+			<span class="crm-badge-shown" style="font-size: 9.5px; padding: 1px 6px;">{ deal.ProjectType }</span>
+			<span class="crm-badge-shown" style="font-size: 9.5px; padding: 1px 6px; background: rgba(0,206,201,0.2); color: #00cec9;">{ deal.BillingModel }</span>
+		</div>
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 12px;">
+			<span style="font-weight: 700; color: #00cec9;">
+				if deal.OneTimeFeeMinor > 0 {
+					{ utils.FormatINR(deal.OneTimeFeeMinor) }
+				} else {
+					{ utils.FormatINR(deal.RecurringFeeMinor) }/mo
+				}
+			</span>
+			<span style="color: var(--text-dim); font-size: 11px;">{ fmt.Sprintf("%d%%", deal.Probability) }</span>
+		</div>
+	</div>
+}
+
+templ DealCreate() {
+	@layouts.MainLayout("Create Deal - Especa CRM", "deals", []layouts.Breadcrumb{{Label: "Deals", URL: "/deals"}, {Label: "New Deal"}}) {
+		<div style="max-width: 650px; margin: 0 auto; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px;">
+			<h2 style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px;">Initiate Pipeline Deal</h2>
+			<p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Define delivery project type and commercial billing terms</p>
+
+			<form method="POST" action="/deals/new" style="display: flex; flex-direction: column; gap: 16px;">
+				<div class="form-group">
+					<label class="form-label" for="title">Deal Title</label>
+					<input class="form-input" id="title" name="title" type="text" placeholder="e.g. Acme Corp - Enterprise Cloud & Retainer" required/>
+				</div>
+
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+					<div class="form-group">
+						<label class="form-label" for="project_type">Project Delivery Type</label>
+						<select class="form-input" id="project_type" name="project_type" style="background: var(--bg-input);">
+							<option value="licensing">Software / SaaS Licensing</option>
+							<option value="fixed_deliverable">Fixed-Scope Client Deliverables</option>
+							<option value="retainer">Retainer / Consulting</option>
+							<option value="hybrid">Hybrid (Setup + Recurring)</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="stage">Pipeline Stage</label>
+						<select class="form-input" id="stage" name="stage" style="background: var(--bg-input);">
+							<option value="lead">Lead / Discovery</option>
+							<option value="proposal">Proposal / Quote</option>
+							<option value="negotiation">Negotiation</option>
+							<option value="won">Won / Contract Signed</option>
+						</select>
+					</div>
+				</div>
+
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+					<div class="form-group">
+						<label class="form-label" for="billing_model">Commercial Billing Model</label>
+						<select class="form-input" id="billing_model" name="billing_model" style="background: var(--bg-input);">
+							<option value="one_time">One-Time / Milestone Fee</option>
+							<option value="recurring">Recurring Licensing/Retainer</option>
+							<option value="hybrid">Hybrid (Setup + Recurring)</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="recurring_frequency">Recurring Frequency</label>
+						<select class="form-input" id="recurring_frequency" name="recurring_frequency" style="background: var(--bg-input);">
+							<option value="none">None (One-Time Only)</option>
+							<option value="monthly">Monthly</option>
+							<option value="quarterly">Quarterly</option>
+							<option value="yearly">Yearly</option>
+						</select>
+					</div>
+				</div>
+
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+					<div class="form-group">
+						<label class="form-label" for="one_time_fee">Upfront / One-Time Amount (₹)</label>
+						<input class="form-input" id="one_time_fee" name="one_time_fee" type="number" step="1" placeholder="e.g. 250000"/>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="recurring_fee">Recurring Amount (₹ / cadence)</label>
+						<input class="form-input" id="recurring_fee" name="recurring_fee" type="number" step="1" placeholder="e.g. 45000"/>
+					</div>
+				</div>
+
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+					<div class="form-group">
+						<label class="form-label" for="probability">Win Probability (%)</label>
+						<input class="form-input" id="probability" name="probability" type="number" min="0" max="100" value="60"/>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="expected_close_date">Expected Close Date</label>
+						<input class="form-input" id="expected_close_date" name="expected_close_date" type="date"/>
+					</div>
+				</div>
+
+				<div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px;">
+					<a href="/deals" class="c-btn c-btn-secondary" style="text-decoration: none; padding: 8px 16px;">Cancel</a>
+					<button type="submit" class="c-btn c-btn-primary" style="padding: 8px 16px;">Create Deal</button>
+				</div>
+			</form>
+		</div>
+	}
+}
+
+templ DealDetail(deal models.Deal) {
+	@layouts.MainLayout(deal.Title+" - Deal Detail", "deals", []layouts.Breadcrumb{{Label: "Deals", URL: "/deals"}, {Label: deal.Title}}) {
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+			<div>
+				<h1 style="font-size: 22px; font-weight: 700; color: #fff;">{ deal.Title }</h1>
+				<p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Stage: { deal.Stage } • Probability: { fmt.Sprintf("%d%%", deal.Probability) }</p>
+			</div>
+			<div style="display: flex; gap: 8px;">
+				<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/deals/%s/convert-project", deal.ID)) }>
+					<button type="submit" class="c-btn c-btn-primary" style="padding: 8px 16px; font-size: 13px;">
+						Convert to Delivery Project →
+					</button>
+				</form>
+			</div>
+		</div>
+
+		<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+			<div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;">
+				<h3 style="font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 16px;">Commercial Agreement & Terms</h3>
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 13px;">
+					<div>
+						<span style="color: var(--text-dim); display: block; margin-bottom: 4px;">Project Delivery Type</span>
+						<strong style="color: #fff;">{ deal.ProjectType }</strong>
+					</div>
+					<div>
+						<span style="color: var(--text-dim); display: block; margin-bottom: 4px;">Commercial Billing Model</span>
+						<strong style="color: #00cec9;">{ deal.BillingModel }</strong>
+					</div>
+					<div>
+						<span style="color: var(--text-dim); display: block; margin-bottom: 4px;">One-Time / Upfront Fee</span>
+						<strong style="color: #fff;">{ utils.FormatINR(deal.OneTimeFeeMinor) }</strong>
+					</div>
+					<div>
+						<span style="color: var(--text-dim); display: block; margin-bottom: 4px;">Recurring Fee ({ deal.RecurringFrequency })</span>
+						<strong style="color: #fff;">{ utils.FormatINR(deal.RecurringFeeMinor) }</strong>
+					</div>
+				</div>
+			</div>
+
+			<div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;">
+				<h3 style="font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 12px;">Stage Progress</h3>
+				<span class="status-pill status-inprogress" style="display: block; text-align: center; margin-bottom: 16px;">{ deal.Stage }</span>
+				<p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+					When deal is won, converting to a Project will automatically initialize the operational milestones schedule.
+				</p>
+			</div>
+		</div>
+	}
+}
+
+func filterDealsByStage(deals []models.Deal, stage string) []models.Deal {
+	var result []models.Deal
+	for _, d := range deals {
+		if d.Stage == stage {
+			result = append(result, d)
+		}
+	}
+	return result
+}
+
+func countDealsInStage(deals []models.Deal, stage string) int {
+	return len(filterDealsByStage(deals, stage))
+}
+

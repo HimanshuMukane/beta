@@ -37,34 +37,65 @@ func RequestID(next http.Handler) http.Handler {
 	})
 }
 
-// RequestLogger logs incoming HTTP requests using slog.
+// RequestLogger logs incoming HTTP requests using slog and records non-2XX responses to logs/<project>/<domain>/errors.log.
 func RequestLogger(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		ww := &responseWriterInterceptor{ResponseWriter: w, statusCode: http.StatusOK}
+	return RequestLoggerWithProject("")(next)
+}
 
-		next.ServeHTTP(ww, r)
+// RequestLoggerWithProject attaches a specific project name to the request logger.
+func RequestLoggerWithProject(projectName string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if projectName != "" {
+				r = r.WithContext(utils.WithProjectName(r.Context(), projectName))
+			}
+			start := time.Now()
+			ww := &responseWriterInterceptor{ResponseWriter: w, statusCode: http.StatusOK}
 
-		duration := time.Since(start)
-		slog.Info("http request",
-			"method", r.Method,
-			"path", r.URL.Path,
-			"status", ww.statusCode,
-			"duration_ms", duration.Milliseconds(),
-			"ip", r.RemoteAddr,
-			"request_id", w.Header().Get("X-Request-ID"),
-		)
-	})
+			next.ServeHTTP(ww, r)
+
+			duration := time.Since(start)
+			reqID := w.Header().Get("X-Request-ID")
+
+			slog.Info("http request",
+				"method", r.Method,
+				"path", r.URL.Path,
+				"status", ww.statusCode,
+				"duration_ms", duration.Milliseconds(),
+				"ip", r.RemoteAddr,
+				"request_id", reqID,
+			)
+
+			if ww.statusCode < 200 || ww.statusCode >= 300 {
+				utils.LogNonSuccessRequest(r, ww.statusCode, duration, reqID, ww.body)
+			}
+		})
+	}
 }
 
 type responseWriterInterceptor struct {
 	http.ResponseWriter
 	statusCode int
+	body       []byte
 }
 
 func (w *responseWriterInterceptor) WriteHeader(code int) {
 	w.statusCode = code
 	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *responseWriterInterceptor) Write(b []byte) (int, error) {
+	if w.statusCode < 200 || w.statusCode >= 300 {
+		if len(w.body) < 1024 {
+			remaining := 1024 - len(w.body)
+			if len(b) > remaining {
+				w.body = append(w.body, b[:remaining]...)
+			} else {
+				w.body = append(w.body, b...)
+			}
+		}
+	}
+	return w.ResponseWriter.Write(b)
 }
 
 // Recoverer catches panics, logs with slog and returns a safe 500 JSON.

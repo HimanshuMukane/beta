@@ -1,0 +1,85 @@
+package layouts
+
+import (
+	"ui/components/icons"
+	"ui/components/navigation"
+)
+
+type Breadcrumb struct {
+	Label string
+	URL   string
+}
+
+templ MainLayout(title string, activeNav string, breadcrumbs []Breadcrumb) {
+	<!DOCTYPE html>
+	<html lang="en" data-theme="dark">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } - HRMS Workforce OS</title>
+			<link rel="stylesheet" href="/static/css/globals.css"/>
+			<link rel="stylesheet" href="/static/css/style.css"/>
+			<link rel="stylesheet" href="/static/css/dashboard.css"/>
+			<link rel="stylesheet" href="/static/css/crm_shared.css"/>
+			<link rel="stylesheet" href="/static/css/hrms.css"/>
+		</head>
+		<body>
+			<div class="app-root">
+				<div class="app-body">
+					@navigation.AppSidebar(navigation.SidebarProps{
+						Workspace: navigation.WorkspaceSwitcherProps{
+							Name:     "HRMS Workforce OS",
+							Subtitle: "People & Compensation",
+							LogoBg:   "linear-gradient(135deg, #6c5ce7, #a29bfe)",
+						},
+						Groups: []navigation.NavGroup{
+							{
+								Label: "Workforce",
+								Items: []navigation.NavItem{
+									{Label: "Dashboard", URL: "/", Icon: icons.IconBarChart3(), Active: activeNav == "dashboard"},
+									{Label: "Workers Directory", URL: "/workers", Icon: icons.IconUsers(), Active: activeNav == "workers"},
+									{Label: "Employment Types", URL: "/employment-types", Icon: icons.IconFolder(), Active: activeNav == "employment_types"},
+								},
+							},
+							{
+								Label: "Financial Management",
+								Items: []navigation.NavItem{
+									{Label: "Workforce Financials", URL: "/financials", Icon: icons.IconDollarSign(), Active: activeNav == "financials"},
+									{Label: "Payments & Payouts", URL: "/financials/payments", Icon: icons.IconReceipt(), Active: activeNav == "payments"},
+									{Label: "Deduction Tags", URL: "/financials/deductions", Icon: icons.IconTag(), Active: activeNav == "deductions"},
+								},
+							},
+						},
+					})
+					<div class="app-main">
+						<header class="app-header">
+							<div class="header-left">
+								if len(breadcrumbs) > 0 {
+									<div class="breadcrumbs" style="display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text-muted);">
+										for i, b := range breadcrumbs {
+											if i > 0 {
+												<span>/</span>
+											}
+											if b.URL != "" {
+												<a href={ templ.SafeURL(b.URL) } style="color: var(--text-muted); text-decoration: none;">{ b.Label }</a>
+											} else {
+												<span style="color: var(--text-normal); font-weight: 500;">{ b.Label }</span>
+											}
+										}
+									</div>
+								}
+							</div>
+							<div class="header-right" style="display: flex; align-items: center; gap: 12px;">
+								<span class="hrms-badge-pill hrms-badge-active">Workspace Active</span>
+							</div>
+						</header>
+						<main class="main-content" style="padding: 24px;">
+							{ children... }
+						</main>
+					</div>
+				</div>
+			</div>
+		</body>
+	</html>
+}
+

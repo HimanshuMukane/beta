@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"net/http"
+	"strings"
 
 	"core/utils"
 )
@@ -35,7 +36,13 @@ func CSRFProtection(next http.Handler) http.Handler {
 			token = cookie.Value
 		}
 
-		// State-changing HTTP methods require valid CSRF token
+		// State-changing HTTP methods require valid CSRF token.
+		// Bearer API calls (such as Headless Developer APIs) are token-authenticated and exempt from browser cookie CSRF.
+		if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") || r.Header.Get("X-CMS-Key") != "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		switch r.Method {
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
 			submittedToken := r.Header.Get(CSRFHeaderName)

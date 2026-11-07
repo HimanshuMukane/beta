@@ -380,3 +380,61 @@ type TaxConfigurationItem struct {
 	EffectiveTo        *string `db:"effective_to" json:"effective_to"`
 	AccountID          *string `db:"account_id" json:"account_id"`
 }
+
+type FinanceProject struct {
+	ID                   string  `db:"id" json:"id"`
+	CompanyID            string  `db:"company_id" json:"company_id"`
+	CRMProjectID         *string `db:"crm_project_id" json:"crm_project_id"`
+	Title                string  `db:"title" json:"title"`
+	ClientID             *string `db:"client_id" json:"client_id"`
+	BillingType          string  `db:"billing_type" json:"billing_type"` // one_time, recurring, hybrid
+	Frequency            string  `db:"frequency" json:"frequency"`       // monthly, quarterly, yearly, none
+	UpfrontAmountMinor   int64   `db:"upfront_amount_minor" json:"upfront_amount_minor"`
+	RecurringAmountMinor int64   `db:"recurring_amount_minor" json:"recurring_amount_minor"`
+	NextBillingDate      *string `db:"next_billing_date" json:"next_billing_date"`
+	Status               string  `db:"status" json:"status"`
+	Notes                *string `db:"notes" json:"notes"`
+	CreatedAt            string  `db:"created_at" json:"created_at"`
+	UpdatedAt            string  `db:"updated_at" json:"updated_at"`
+
+	ClientName       string                   `db:"client_name" json:"client_name"`
+	TotalGrossMinor  int64                    `json:"total_gross_minor"`
+	TotalDeductions  int64                    `json:"total_deductions_minor"`
+	NetMarginMinor   int64                    `json:"net_margin_minor"`
+	NetMarginPercent float64                  `json:"net_margin_percent"`
+	DeductionTags    []string                 `json:"deduction_tags"`
+	Deductions       []FinanceProjectDeduction `json:"deductions"`
+}
+
+type FinanceSubscription struct {
+	ID                 string  `db:"id" json:"id"`
+	CompanyID          string  `db:"company_id" json:"company_id"`
+	ProjectID          string  `db:"project_id" json:"project_id"`
+	ClientID           *string `db:"client_id" json:"client_id"`
+	Frequency          string  `db:"frequency" json:"frequency"` // monthly, quarterly, yearly
+	AmountMinor        int64   `db:"amount_minor" json:"amount_minor"`
+	BillingCycleAnchor string  `db:"billing_cycle_anchor" json:"billing_cycle_anchor"`
+	NextBillingDate    string  `db:"next_billing_date" json:"next_billing_date"`
+	Status             string  `db:"status" json:"status"` // active, paused, cancelled
+	CreatedAt          string  `db:"created_at" json:"created_at"`
+	UpdatedAt          string  `db:"updated_at" json:"updated_at"`
+
+	ProjectTitle string `db:"project_title" json:"project_title"`
+	ClientName   string `db:"client_name" json:"client_name"`
+}
+
+type FinanceProjectDeduction struct {
+	ID               string   `db:"id" json:"id"`
+	CompanyID        string   `db:"company_id" json:"company_id"`
+	ProjectID        string   `db:"project_id" json:"project_id"`
+	AmountMinor      int64    `db:"amount_minor" json:"amount_minor"`
+	Description      string   `db:"description" json:"description"`
+	Payee            string   `db:"payee" json:"payee"`
+	ExpenseAccountID string   `db:"expense_account_id" json:"expense_account_id"`
+	DeductionDate    string   `db:"deduction_date" json:"deduction_date"`
+	CreatedAt        string   `db:"created_at" json:"created_at"`
+
+	AccountName string   `db:"account_name" json:"account_name"`
+	Tags        []Tag    `json:"tags"`
+	TagNames    []string `json:"tag_names"`
+}

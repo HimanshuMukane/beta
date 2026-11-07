@@ -151,7 +151,7 @@ func WorkflowSettings() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.DashboardLayout("Visual Workflows & Pipelines - Settings", "settings", []layouts.BreadcrumbItem{
+		templ_7745c5c3_Err = layouts.DashboardLayout("Visual Workflows & Pipelines - Settings", "settings_workflow", []layouts.BreadcrumbItem{
 			{Label: "Settings", URL: "/settings"},
 			{Label: "Workflow"},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)

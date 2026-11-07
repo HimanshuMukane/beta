@@ -78,7 +78,7 @@ func DeliverablePresetsSettings() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.DashboardLayout("Deliverable Presets - Settings", "settings", []layouts.BreadcrumbItem{
+		templ_7745c5c3_Err = layouts.DashboardLayout("Deliverable Presets - Settings", "settings_deliverable_presets", []layouts.BreadcrumbItem{
 			{Label: "Settings", URL: "/settings"},
 			{Label: "Deliverable Presets"},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)

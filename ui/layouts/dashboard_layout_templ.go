@@ -280,12 +280,12 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var17 = []any{"nav-item", templ.KV("active", activeNav == "settings_quotations")}
+			var templ_7745c5c3_Var17 = []any{"nav-item", templ.KV("active", activeNav == "settings_quotations" || activeNav == "settings_quotation_templates")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var17...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<a href=\"/settings/quotations\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<a href=\"/settings/quotation-templates\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -310,12 +310,12 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var19 = []any{"nav-item", templ.KV("active", activeNav == "settings_invoices")}
+			var templ_7745c5c3_Var19 = []any{"nav-item", templ.KV("active", activeNav == "settings_invoices" || activeNav == "settings_invoice_templates")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var19...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<a href=\"/settings/invoices\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<a href=\"/settings/invoice-templates\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -340,12 +340,12 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var21 = []any{"nav-item", templ.KV("active", activeNav == "settings_contracts")}
+			var templ_7745c5c3_Var21 = []any{"nav-item", templ.KV("active", activeNav == "settings_contracts" || activeNav == "settings_contract_templates")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var21...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<a href=\"/settings/contracts\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<a href=\"/settings/contract-templates\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -370,12 +370,12 @@ func DashboardLayout(title string, activeNav string, breadcrumbs []BreadcrumbIte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var23 = []any{"nav-item", templ.KV("active", activeNav == "settings_feedback")}
+			var templ_7745c5c3_Var23 = []any{"nav-item", templ.KV("active", activeNav == "settings_feedback" || activeNav == "settings_feedback_templates")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var23...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<a href=\"/settings/feedback\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<a href=\"/settings/feedback-templates\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

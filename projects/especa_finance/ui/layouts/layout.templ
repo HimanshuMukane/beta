@@ -38,6 +38,8 @@ templ MainLayout(title string, activeNav string, breadcrumbs []Breadcrumb) {
 								Items: []navigation.NavItem{
 									{Label: "Overview", URL: "/", Icon: icons.IconBarChart3(), Active: activeNav == "overview"},
 									{Label: "Products & Licensing", URL: "/products", Icon: icons.IconFolder(), Active: activeNav == "products"},
+									{Label: "Project Financials", URL: "/projects/financials", Icon: icons.IconTarget(), Active: activeNav == "projects_financials"},
+									{Label: "Subscriptions", URL: "/subscriptions", Icon: icons.IconClock(), Active: activeNav == "subscriptions"},
 									{Label: "Clients", URL: "/clients", Icon: icons.IconUsers(), Active: activeNav == "clients"},
 									{Label: "Employees & Payroll", URL: "/employees", Icon: icons.IconUserPlus(), Active: activeNav == "employees"},
 								},

@@ -107,6 +107,16 @@ func SetupRouterWithAuth(database *sqlx.DB, companyID string, cfg utils.Config) 
 
 		authRouter.Get("/settings/tags", h.TagsAndTaxSettingsHandler)
 		authRouter.Post("/settings/tags/new", h.TagCreateHandler)
+		authRouter.Post("/api/tags", h.TagCreateAPIHandler)
+
+		authRouter.Get("/projects/financials", h.ProjectFinancialsListHandler)
+		authRouter.Get("/projects/financials/new", h.ProjectCreateHandler)
+		authRouter.Post("/projects/financials/new", h.ProjectCreateHandler)
+		authRouter.Get("/projects/{id}/financials", h.ProjectFinancialDetailHandler)
+		authRouter.Get("/projects/{id}/deductions/new", h.ProjectDeductionCreateHandler)
+		authRouter.Post("/projects/{id}/deductions/new", h.ProjectDeductionCreateHandler)
+
+		authRouter.Get("/subscriptions", h.SubscriptionsListHandler)
 	})
 
 	r.NotFound(h.NotFoundPageHandler)
