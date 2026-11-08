@@ -7,7 +7,6 @@ import (
 	"core/utils"
 	hrmsDB "hrms/db"
 	"hrms/handlers"
-	"hrms/ui/static"
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 )
@@ -28,8 +27,8 @@ func SetupRouterWithDB(db *sqlx.DB, companyID string, cfg utils.Config) http.Han
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.SecurityHeaders)
 
-	fs := http.StripPrefix("/static/", http.FileServer(static.FS()))
-	r.Handle("/static/*", fs)
+	spa := utils.ServeSPA("frontend/apps/hrms/dist")
+	r.Handle("/static/*", spa)
 
 	store := hrmsDB.NewStore(db, companyID)
 	h := handlers.NewHRMSHandler(store)

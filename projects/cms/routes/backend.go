@@ -18,6 +18,7 @@ func RegisterBackendRoutes(
 	r.Get("/api/health", coreHandlers.HealthHandler(pool))
 
 	r.Route("/api/auth", func(r chi.Router) {
+		r.Get("/csrf", coreHandlers.CSRFHandler())
 		r.Post("/login", coreHandlers.LoginAPIHandler(cfg))
 		r.Post("/signup", coreHandlers.SignupAPIHandler(cfg, "editor"))
 		r.Post("/logout", coreHandlers.LogoutAPIHandler(cfg))

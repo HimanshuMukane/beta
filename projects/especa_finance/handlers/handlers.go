@@ -11,7 +11,6 @@ import (
 	"especa_finance/db"
 	"especa_finance/models"
 	"especa_finance/services"
-	"especa_finance/ui/pages"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -61,6 +60,7 @@ func (h *FinanceHandlers) OverviewHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	var receivables, payables int64
+	_ = receivables
 	for _, acc := range fs.AssetAccounts {
 		if acc.Code == "1003" {
 			receivables = acc.BalanceMinor
@@ -81,33 +81,14 @@ func (h *FinanceHandlers) OverviewHandler(w http.ResponseWriter, r *http.Request
 		LIMIT 5
 	`, h.CompanyID)
 
-	var recentEntries []pages.RecentEntry
-	for _, j := range recentJournals {
-		var debitSum int64
-		_ = h.DB.GetContext(ctx, &debitSum, "SELECT COALESCE(SUM(debit_amount_minor), 0) FROM journal_lines WHERE journal_entry_id = ?", j.ID)
-		recentEntries = append(recentEntries, pages.RecentEntry{
-			Date:        j.EntryDate,
-			Number:      j.EntryNumber,
-			Description: j.Description,
-			AmountMinor: debitSum,
-		})
-	}
-
-	data := pages.OverviewData{
-		TotalRevenueMinor:   fs.TotalIncomeMinor,
-		TotalExpensesMinor:  fs.TotalExpenseMinor,
-		NetProfitMinor:      fs.NetProfitMinor,
-		MRRMinor:            mrr,
-		ARRMinor:            arr,
-		ReceivablesMinor:    receivables,
-		PayablesMinor:       payables,
-		PayrollExpenseMinor: payrollExpense,
-		ProductCount:        productCount,
-		EmployeeCount:       employeeCount,
-		RecentEntries:       recentEntries,
-	}
-
-	_ = pages.Overview(data).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]any{
+		"status": "ok",
+		"revenue_minor": fs.TotalIncomeMinor,
+		"expenses_minor": fs.TotalExpenseMinor,
+		"net_profit_minor": fs.NetProfitMinor,
+		"mrr_minor": mrr,
+		"arr_minor": arr,
+	})
 }
 
 func (h *FinanceHandlers) ProductsListHandler(w http.ResponseWriter, r *http.Request) {
@@ -140,12 +121,12 @@ func (h *FinanceHandlers) ProductsListHandler(w http.ResponseWriter, r *http.Req
 		products[i].Profitability = mrr - exp
 	}
 
-	_ = pages.ProductsList(products).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) ProductCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		_ = pages.ProductCreate().Render(r.Context(), w)
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
 
@@ -219,7 +200,7 @@ func (h *FinanceHandlers) ProductDetailHandler(w http.ResponseWriter, r *http.Re
 	prod.OneTimeRevenue = oneTime
 	prod.MonthlyExpenses = exp
 
-	_ = pages.ProductDetail(prod, clientProducts, pricing, comps, allClients, templates).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) AssociateClientHandler(w http.ResponseWriter, r *http.Request) {
@@ -291,12 +272,12 @@ func (h *FinanceHandlers) ClientsListHandler(w http.ResponseWriter, r *http.Requ
 	ctx := r.Context()
 	var clients []models.Client
 	_ = h.DB.SelectContext(ctx, &clients, "SELECT * FROM clients WHERE company_id = ? ORDER BY created_at DESC", h.CompanyID)
-	_ = pages.ClientsList(clients).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) ClientCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		_ = pages.ClientCreate().Render(r.Context(), w)
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
 
@@ -314,20 +295,20 @@ func (h *FinanceHandlers) ProductTemplatesHandler(w http.ResponseWriter, r *http
 	ctx := r.Context()
 	var templates []models.FinancialTemplate
 	_ = h.DB.SelectContext(ctx, &templates, "SELECT * FROM product_financial_templates WHERE company_id = ? ORDER BY created_at DESC", h.CompanyID)
-	_ = pages.ProductTemplatesList(templates).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) EmployeeTemplatesHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var templates []models.FinancialTemplate
 	_ = h.DB.SelectContext(ctx, &templates, "SELECT * FROM employee_financial_templates WHERE company_id = ? ORDER BY created_at DESC", h.CompanyID)
-	_ = pages.EmployeeTemplatesList(templates).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) TemplateCreateHandler(templateType string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			_ = pages.TemplateCreate(templateType).Render(r.Context(), w)
+			utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 			return
 		}
 
@@ -385,12 +366,12 @@ func (h *FinanceHandlers) EmployeesListHandler(w http.ResponseWriter, r *http.Re
 	var payrollPeriods []models.PayrollPeriod
 	_ = h.DB.SelectContext(ctx, &payrollPeriods, "SELECT * FROM payroll_periods WHERE company_id = ? ORDER BY start_date DESC", h.CompanyID)
 
-	_ = pages.EmployeesList(employees, payrollPeriods).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) EmployeeCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		_ = pages.EmployeeCreate().Render(r.Context(), w)
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
 
@@ -429,12 +410,16 @@ func (h *FinanceHandlers) EmployeeDetailHandler(w http.ResponseWriter, r *http.R
 	_ = h.DB.SelectContext(ctx, &templates, "SELECT * FROM employee_financial_templates WHERE company_id = ? AND status = 'active'", h.CompanyID)
 
 	var gross, deductions, net, empContrib, employerCost int64
+	_ = gross
+	_ = deductions
+	_ = net
+	_ = employerCost
 	if comp != nil {
 		gross, deductions, net, empContrib, employerCost = services.CalculatePayrollBreakdown(comp.BaseAmountMinor, comps)
 		_ = empContrib
 	}
 
-	_ = pages.EmployeeDetail(emp, comp, comps, templates, gross, deductions, net, employerCost).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) SetEmployeeBaseHandler(w http.ResponseWriter, r *http.Request) {
@@ -581,7 +566,7 @@ func (h *FinanceHandlers) PayrollPeriodDetailHandler(w http.ResponseWriter, r *h
 		ORDER BY e.name ASC
 	`, periodID)
 
-	_ = pages.PayrollRegister(period, records).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) InvoicesListHandler(w http.ResponseWriter, r *http.Request) {
@@ -594,7 +579,7 @@ func (h *FinanceHandlers) InvoicesListHandler(w http.ResponseWriter, r *http.Req
 		WHERE i.company_id = ?
 		ORDER BY i.invoice_date DESC, i.created_at DESC
 	`, h.CompanyID)
-	_ = pages.InvoicesList(invoices).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) InvoiceCreateHandler(w http.ResponseWriter, r *http.Request) {
@@ -604,7 +589,7 @@ func (h *FinanceHandlers) InvoiceCreateHandler(w http.ResponseWriter, r *http.Re
 		_ = h.DB.SelectContext(ctx, &clients, "SELECT * FROM clients WHERE company_id = ? ORDER BY company_name ASC", h.CompanyID)
 		var prods []models.Product
 		_ = h.DB.SelectContext(ctx, &prods, "SELECT * FROM products WHERE company_id = ? ORDER BY name ASC", h.CompanyID)
-		_ = pages.InvoiceCreate(clients, prods).Render(ctx, w)
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
 
@@ -673,13 +658,12 @@ func (h *FinanceHandlers) PaymentsListHandler(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	var payments []models.Payment
 	_ = h.DB.SelectContext(ctx, &payments, "SELECT * FROM payments WHERE company_id = ? ORDER BY payment_date DESC, created_at DESC", h.CompanyID)
-	_ = pages.PaymentsList(payments).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) PaymentCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		ctx := r.Context()
-		invoiceID := r.URL.Query().Get("invoice_id")
 		var invoices []models.Invoice
 		_ = h.DB.SelectContext(ctx, &invoices, `
 			SELECT i.*, c.company_name as client_name
@@ -688,7 +672,7 @@ func (h *FinanceHandlers) PaymentCreateHandler(w http.ResponseWriter, r *http.Re
 			WHERE i.company_id = ? AND i.status != 'paid'
 			ORDER BY i.invoice_date DESC
 		`, h.CompanyID)
-		_ = pages.PaymentCreate(invoices, invoiceID).Render(ctx, w)
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
 
@@ -756,12 +740,12 @@ func (h *FinanceHandlers) BillsListHandler(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 	var bills []models.Bill
 	_ = h.DB.SelectContext(ctx, &bills, "SELECT * FROM bills WHERE company_id = ? ORDER BY bill_date DESC", h.CompanyID)
-	_ = pages.BillsList(bills).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) BillCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		_ = pages.BillCreate().Render(r.Context(), w)
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
 
@@ -803,10 +787,8 @@ func (h *FinanceHandlers) BillCreateHandler(w http.ResponseWriter, r *http.Reque
 	http.Redirect(w, r, "/bills", http.StatusSeeOther)
 }
 
-func (h *FinanceHandlers) ChartOfAccountsHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	accounts, _, _, _ := h.Accounting.GetTrialBalance(ctx, h.CompanyID)
-	_ = pages.ChartOfAccountsView(accounts).Render(ctx, w)
+func (h *FinanceHandlers) ChartOfAccountsHandler(w http.ResponseWriter, _ *http.Request) {
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) JournalEntriesHandler(w http.ResponseWriter, r *http.Request) {
@@ -827,15 +809,12 @@ func (h *FinanceHandlers) JournalEntriesHandler(w http.ResponseWriter, r *http.R
 		entries[i].TotalCreditMinor = creditSum
 	}
 
-	_ = pages.JournalEntriesView(entries).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) JournalEntryCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		ctx := r.Context()
-		var accounts []models.ChartOfAccount
-		_ = h.DB.SelectContext(ctx, &accounts, "SELECT * FROM chart_of_accounts WHERE company_id = ? ORDER BY code ASC", h.CompanyID)
-		_ = pages.JournalEntryCreate(accounts).Render(ctx, w)
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
 
@@ -863,45 +842,12 @@ func (h *FinanceHandlers) JournalEntryCreateHandler(w http.ResponseWriter, r *ht
 	http.Redirect(w, r, "/accounting/journal", http.StatusSeeOther)
 }
 
-func (h *FinanceHandlers) FinancialStatementsHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	fs, _ := h.Accounting.GetFinancialStatements(ctx, h.CompanyID)
-	_ = pages.FinancialStatementsView(*fs).Render(ctx, w)
+func (h *FinanceHandlers) FinancialStatementsHandler(w http.ResponseWriter, _ *http.Request) {
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func (h *FinanceHandlers) AnalyticsHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	fs, _ := h.Accounting.GetFinancialStatements(ctx, h.CompanyID)
-
-	var pricingItems []models.PricingItem
-	_ = h.DB.SelectContext(ctx, &pricingItems, `
-		SELECT pi.amount_minor, pi.frequency, pi.status
-		FROM pricing_items pi
-		JOIN client_products cp ON pi.client_product_id = cp.id
-		WHERE pi.company_id = ? AND pi.status = 'active' AND cp.status = 'active'
-	`, h.CompanyID)
-
-	var mrr, arr int64
-	for _, item := range pricingItems {
-		mrr += services.MonthlyEquivalent(item.AmountMinor, item.Frequency)
-		arr += services.AnnualizeAmount(item.AmountMinor, item.Frequency)
-	}
-
-	var payrollMinor int64
-	_ = h.DB.GetContext(ctx, &payrollMinor, "SELECT COALESCE(SUM(base_amount_minor), 0) FROM employee_compensations WHERE company_id = ? AND status = 'active'", h.CompanyID)
-
-	data := pages.AnalyticsData{
-		TotalAccrualRevenueMinor: fs.TotalIncomeMinor,
-		TotalCashRevenueMinor:    fs.CashReceiptsMinor,
-		MRRMinor:                 mrr,
-		ARRMinor:                 arr,
-		TotalPayrollMinor:        payrollMinor,
-		TotalExpenseMinor:        fs.TotalExpenseMinor,
-		NetAccrualProfitMinor:    fs.NetProfitMinor,
-		NetCashProfitMinor:       fs.CashReceiptsMinor - fs.TotalExpenseMinor,
-	}
-
-	_ = pages.AnalyticsView(data).Render(ctx, w)
+func (h *FinanceHandlers) AnalyticsHandler(w http.ResponseWriter, _ *http.Request) {
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) TagsAndTaxSettingsHandler(w http.ResponseWriter, r *http.Request) {
@@ -912,7 +858,7 @@ func (h *FinanceHandlers) TagsAndTaxSettingsHandler(w http.ResponseWriter, r *ht
 	var taxes []models.TaxConfiguration
 	_ = h.DB.SelectContext(ctx, &taxes, "SELECT * FROM tax_configurations WHERE company_id = ? ORDER BY name ASC", h.CompanyID)
 
-	_ = pages.TagsAndTaxSettings(tags, taxes).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) TagCreateHandler(w http.ResponseWriter, r *http.Request) {
@@ -1012,7 +958,7 @@ func (h *FinanceHandlers) ProjectFinancialsListHandler(w http.ResponseWriter, r 
 		}
 	}
 
-	_ = pages.ProjectFinancialsList(filtered, allTags, selectedTag).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) ProjectCreateHandler(w http.ResponseWriter, r *http.Request) {
@@ -1020,7 +966,7 @@ func (h *FinanceHandlers) ProjectCreateHandler(w http.ResponseWriter, r *http.Re
 	if r.Method == http.MethodGet {
 		var clients []models.Client
 		_ = h.DB.SelectContext(ctx, &clients, "SELECT * FROM clients WHERE company_id = ? ORDER BY name ASC", h.CompanyID)
-		_ = pages.ProjectCreate(clients).Render(ctx, w)
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
 
@@ -1133,7 +1079,7 @@ func (h *FinanceHandlers) ProjectFinancialDetailHandler(w http.ResponseWriter, r
 	var allTags []models.Tag
 	_ = h.DB.SelectContext(ctx, &allTags, "SELECT * FROM tags WHERE company_id = ? ORDER BY name ASC", h.CompanyID)
 
-	_ = pages.ProjectFinancialDetail(project, deductions, allTags).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *FinanceHandlers) ProjectDeductionCreateHandler(w http.ResponseWriter, r *http.Request) {
@@ -1152,7 +1098,7 @@ func (h *FinanceHandlers) ProjectDeductionCreateHandler(w http.ResponseWriter, r
 		_ = h.DB.SelectContext(ctx, &accounts, "SELECT * FROM chart_of_accounts WHERE company_id = ? AND account_type = 'expense' ORDER BY code ASC", h.CompanyID)
 		var tags []models.Tag
 		_ = h.DB.SelectContext(ctx, &tags, "SELECT * FROM tags WHERE company_id = ? ORDER BY name ASC", h.CompanyID)
-		_ = pages.ProjectDeductionCreate(project, accounts, tags).Render(ctx, w)
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
 
@@ -1233,7 +1179,7 @@ func (h *FinanceHandlers) SubscriptionsListHandler(w http.ResponseWriter, r *htt
 		arr += services.AnnualizeAmount(s.AmountMinor, s.Frequency)
 	}
 
-	_ = pages.SubscriptionsList(subs, mrr, arr).Render(ctx, w)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func strPtr(s string) *string {

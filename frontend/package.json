@@ -1,0 +1,25 @@
+{
+  "name": "especa-frontend-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r --filter './apps/*' run build",
+    "dev:superadmin": "pnpm --filter @apps/superadmin dev",
+    "dev:cms": "pnpm --filter @apps/cms dev",
+    "dev:crm": "pnpm --filter @apps/especa_crm dev",
+    "dev:finance": "pnpm --filter @apps/especa_finance dev",
+    "dev:hrms": "pnpm --filter @apps/hrms dev",
+    "dev:photography": "pnpm --filter @apps/photography_crm dev"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.2.1",
+    "vite": "^8.3.6",
+    "vite-plugin-compression2": "^2.5.4"
+  },
+  "dependencies": {
+    "@tabler/icons-react": "^3.50.0",
+    "@tailwindcss/vite": "4.3.5",
+    "@tanstack/react-table": "^9.3.1",
+    "tailwindcss": "4.3.5",
+    "tailwindcss-animate": "^1.0.7"
+  }
+}

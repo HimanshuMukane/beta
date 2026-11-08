@@ -48,6 +48,20 @@ func HealthHandler(pool *utils.DBPool) http.HandlerFunc {
 	}
 }
 
+func CSRFHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		cookie, _ := r.Cookie("app_csrf")
+		token := ""
+		if cookie != nil {
+			token = cookie.Value
+		}
+		utils.WriteJSON(w, http.StatusOK, map[string]string{
+			"csrf_token": token,
+		})
+	}
+}
+
 func LoginAPIHandler(config utils.Config) http.HandlerFunc {
 	return func(responseWriter http.ResponseWriter, request *http.Request) {
 		responseWriter.Header().Set("Cache-Control", "no-store")

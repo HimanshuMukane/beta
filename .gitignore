@@ -1,29 +1,48 @@
-/target
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+
+# Environment and secrets
 .env
+*.env
+projects/*/.env
+
+# Go binaries & build artifacts
+/target
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
 /bin/
-/dist/
-*.db
-*.db-shm
-*.db-wal
-
-_temp_repos/
-bruno/*
-
-# Root-level compiled binaries
-/photography_crm
+/runner
 /cmd/runner/runner
+/photography_crm
 /cms
 /finance
-/runner
 /superadmin
 /projects/cms/cms
 /projects/photography_crm/photography_crm
 /projects/superadmin/superadmin
-
 merged.go
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Logging and temp directories
+logs/
+*.log
+_temp_repos/
+bruno/*
+
+# Node.js and Frontend dependencies / build artifacts
+node_modules/
+.pnpm-store/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+.turbo/
