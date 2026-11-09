@@ -8,13 +8,11 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     react(),
-    // Pre-compress with Brotli (.br) - highest compression ratio
     compression({
       algorithm: 'brotliCompress',
       exclude: [/\.(br)$/, /\.(gz)$/],
       threshold: 1024,
     }),
-    // Fallback Gzip (.gz)
     compression({
       algorithm: 'gzip',
       exclude: [/\.(br)$/, /\.(gz)$/],
@@ -33,10 +31,11 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
-      '@repo/ui': path.resolve(import.meta.dirname, '../../packages/ui/src'),
-    },
+    alias: [
+      { find: '@', replacement: path.resolve(import.meta.dirname, './src') },
+      { find: /^@repo\/ui\/(.*)$/, replacement: path.resolve(import.meta.dirname, '../../packages/ui/src/$1') },
+      { find: '@repo/ui', replacement: path.resolve(import.meta.dirname, '../../packages/ui/src/index.ts') },
+    ],
   },
   build: {
     rollupOptions: {
@@ -50,6 +49,18 @@ export default defineConfig({
           }
           if (id.includes('node_modules/@tabler/icons-react')) {
             return 'vendor-icons';
+          }
+          if (id.includes('node_modules/@tanstack')) {
+            return 'vendor-tanstack';
+          }
+          if (id.includes('node_modules/echarts') || id.includes('node_modules/zrender')) {
+            return 'vendor-echarts';
+          }
+          if (id.includes('node_modules/@tiptap') || id.includes('node_modules/prosemirror')) {
+            return 'vendor-tiptap';
+          }
+          if (id.includes('node_modules/recharts')) {
+            return 'vendor-recharts';
           }
         },
       },

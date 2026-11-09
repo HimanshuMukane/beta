@@ -4,8 +4,17 @@
   "description": "Shared Shadcn/UI Component Library",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
+    "./charts": "./src/components/charts/chart.tsx",
+    "./rich-text-editor": "./src/components/rich-text-editor/rich-text-editor.tsx",
+    "./combobox": "./src/components/combobox/combobox.tsx",
+    "./command-palette": "./src/components/command-palette/command-palette.tsx",
+    "./date-time-picker": "./src/components/date-time-picker/date-time-picker.tsx",
+    "./kanban": "./src/components/kanban/kanban.tsx",
+    "./login-form": "./src/components/login-form.tsx",
+    "./signup-form": "./src/components/signup-form.tsx",
     "./globals.css": "./src/globals.css"
   },
   "scripts": {

@@ -2,8 +2,6 @@ import { useState, Suspense, lazy } from 'react'
 import {
   DashboardShell,
   SplitAuthLayout,
-  DataTable,
-  Kanban,
   Card,
   CardContent,
   CardHeader,
@@ -14,11 +12,10 @@ import {
   Checkbox,
   Toaster,
   toast,
-  type KanbanTask,
-  type KanbanColumnDef,
 } from '@repo/ui'
+import type { KanbanTask, KanbanColumnDef } from '@repo/ui/components/kanban/kanban'
 import { createColumnHelper } from '@tanstack/react-table'
-import type { DataTableFeatures, DataTableFilterConfig, DataTableBulkAction, DataTableRowAction } from '@repo/ui'
+import type { DataTableFeatures, DataTableFilterConfig, DataTableBulkAction, DataTableRowAction, DataTableProps } from '@repo/ui'
 import {
   IconCopy,
   IconTrash,
@@ -27,8 +24,10 @@ import {
   IconCalendar,
 } from '@tabler/icons-react'
 
-const LoginForm = lazy(() => import('@repo/ui').then(m => ({ default: m.LoginForm })))
-const SignupForm = lazy(() => import('@repo/ui').then(m => ({ default: m.SignupForm })))
+const DataTable = lazy(() => import('@repo/ui/components/data-table').then(m => ({ default: m.DataTable }))) as <TData extends Record<string, any>>(props: DataTableProps<TData>) => React.JSX.Element
+const Kanban = lazy(() => import('@repo/ui/components/kanban/kanban').then(m => ({ default: m.Kanban })))
+const LoginForm = lazy(() => import('@repo/ui/components/login-form').then(m => ({ default: m.LoginForm })))
+const SignupForm = lazy(() => import('@repo/ui/components/signup-form').then(m => ({ default: m.SignupForm })))
 
 type PaymentRecord = {
   id: string
@@ -178,12 +177,12 @@ const paymentColumns = columnHelper.columns([
       const status = row.getValue('status') as PaymentRecord['status']
       const variant =
         status === 'success'
-          ? 'default'
+          ? 'success'
           : status === 'processing'
-          ? 'secondary'
+          ? 'info'
           : status === 'failed'
           ? 'destructive'
-          : 'outline'
+          : 'warning'
       return <Badge variant={variant} className="capitalize text-xs">{status}</Badge>
     },
   }),
@@ -430,20 +429,22 @@ export default function App() {
       {dashboardTab === 'kanban' ? (
         <Card className="border bg-card shadow-xs">
           <CardContent className="p-3">
-            <Kanban
-              title="Sales Opportunities & Bookings"
-              description="Drag and drop deals across stages, track values, and manage clients."
-              columns={kanbanColumns}
-              tasks={kanbanTasks}
-              onTasksChange={setKanbanTasks}
-              onTaskMove={(taskId, targetStatus) => {
-                const updated = kanbanTasks.map(t => t.id === taskId ? { ...t, status: targetStatus } : t)
-                setKanbanTasks(updated)
-                return true
-              }}
-              viewMode={dashboardTab}
-              onViewModeChange={(mode) => setDashboardTab(mode)}
-            />
+            <Suspense fallback={<div className="h-96 flex items-center justify-center text-sm text-muted-foreground">Loading pipeline board...</div>}>
+              <Kanban
+                title="Sales Opportunities & Bookings"
+                description="Drag and drop deals across stages, track values, and manage clients."
+                columns={kanbanColumns}
+                tasks={kanbanTasks}
+                onTasksChange={setKanbanTasks}
+                onTaskMove={(taskId: string, targetStatus: string) => {
+                  const updated = kanbanTasks.map(t => t.id === taskId ? { ...t, status: targetStatus } : t)
+                  setKanbanTasks(updated)
+                  return true
+                }}
+                viewMode={dashboardTab}
+                onViewModeChange={(mode: 'table' | 'kanban') => setDashboardTab(mode)}
+              />
+            </Suspense>
           </CardContent>
         </Card>
       ) : (
@@ -455,83 +456,85 @@ export default function App() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable
-              columns={paymentColumns}
-              data={payments}
-              searchableColumns={['clientName', 'email', 'package', 'id']}
-              searchPlaceholder="Search invoices... (Press ⌘K)"
-              filterConfigs={filterConfigs}
-              bulkActions={bulkActions}
-              rowActions={rowActions}
-              renderDetailDrawer={(row, close) => (
-                <div className="space-y-6">
-                  <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">Status</span>
-                      <Badge
-                        variant={
-                          row.status === 'success'
-                            ? 'default'
-                            : row.status === 'failed'
-                            ? 'destructive'
-                            : 'secondary'
-                        }
-                        className="capitalize text-xs"
+            <Suspense fallback={<div className="h-96 flex items-center justify-center text-sm text-muted-foreground">Loading invoice table...</div>}>
+              <DataTable
+                columns={paymentColumns}
+                data={payments}
+                searchableColumns={['clientName', 'email', 'package', 'id']}
+                searchPlaceholder="Search invoices... (Press ⌘K)"
+                filterConfigs={filterConfigs}
+                bulkActions={bulkActions}
+                rowActions={rowActions}
+                renderDetailDrawer={(row, close) => (
+                  <div className="space-y-6">
+                    <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">Status</span>
+                        <Badge
+                          variant={
+                            row.status === 'success'
+                              ? 'default'
+                              : row.status === 'failed'
+                              ? 'destructive'
+                              : 'secondary'
+                          }
+                          className="capitalize text-xs"
+                        >
+                          {row.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">Invoice Amount</span>
+                        <span className="text-lg font-bold tabular-nums">${row.amount.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Client Details
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between py-1 border-b">
+                          <span className="text-muted-foreground">Client Name</span>
+                          <span className="font-medium">{row.clientName}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b">
+                          <span className="text-muted-foreground">Email</span>
+                          <span className="font-mono text-xs">{row.email}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b">
+                          <span className="text-muted-foreground">Package</span>
+                          <span>{row.package}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b">
+                          <span className="text-muted-foreground">Shoot Date</span>
+                          <span>{row.shootDate}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-4">
+                      <Button
+                        className="flex-1"
+                        onClick={() => {
+                          toast.success(`Sent receipt to ${row.email}`)
+                          close()
+                        }}
                       >
-                        {row.status}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">Invoice Amount</span>
-                      <span className="text-lg font-bold tabular-nums">${row.amount.toLocaleString()}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Client Details
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between py-1 border-b">
-                        <span className="text-muted-foreground">Client Name</span>
-                        <span className="font-medium">{row.clientName}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b">
-                        <span className="text-muted-foreground">Email</span>
-                        <span className="font-mono text-xs">{row.email}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b">
-                        <span className="text-muted-foreground">Package</span>
-                        <span>{row.package}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b">
-                        <span className="text-muted-foreground">Shoot Date</span>
-                        <span>{row.shootDate}</span>
-                      </div>
+                        Send Receipt
+                      </Button>
+                      <Button variant="outline" onClick={close}>
+                        Close
+                      </Button>
                     </div>
                   </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      className="flex-1"
-                      onClick={() => {
-                        toast.success(`Sent receipt to ${row.email}`)
-                        close()
-                      }}
-                    >
-                      Send Receipt
-                    </Button>
-                    <Button variant="outline" onClick={close}>
-                      Close
-                    </Button>
-                  </div>
-                </div>
-              )}
-              detailDrawerTitle={(row) => `Invoice ${row.id}`}
-              detailDrawerDescription={(row) => `Review details and billing status for ${row.clientName}.`}
-              enableExport={true}
-              exportFilename="crm-invoices.csv"
-            />
+                )}
+                detailDrawerTitle={(row) => `Invoice ${row.id}`}
+                detailDrawerDescription={(row) => `Review details and billing status for ${row.clientName}.`}
+                enableExport={true}
+                exportFilename="crm-invoices.csv"
+              />
+            </Suspense>
           </CardContent>
         </Card>
       )}

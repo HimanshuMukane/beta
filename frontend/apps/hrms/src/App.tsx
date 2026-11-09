@@ -16,8 +16,8 @@ import { createColumnHelper } from '@tanstack/react-table'
 import type { DataTableFeatures } from '@repo/ui'
 import { IconArrowsSort } from '@tabler/icons-react'
 
-const LoginForm = lazy(() => import('@repo/ui').then(m => ({ default: m.LoginForm })))
-const SignupForm = lazy(() => import('@repo/ui').then(m => ({ default: m.SignupForm })))
+const LoginForm = lazy(() => import('@repo/ui/components/login-form').then(m => ({ default: m.LoginForm })))
+const SignupForm = lazy(() => import('@repo/ui/components/signup-form').then(m => ({ default: m.SignupForm })))
 
 // Example data model
 type PaymentRecord = {

@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {
   KanbanBoard,
+  KanbanBoardProvider,
   KanbanBoardColumn,
   KanbanBoardColumnHeader,
   KanbanBoardColumnTitle,
@@ -458,26 +459,27 @@ export function Kanban({
 
       {/* 2. Horizontal Scrollable Kanban Columns */}
       <div className="overflow-x-auto pb-4 pt-1">
-        <KanbanBoard>
-          {columns.map((column) => {
-            const colItems = columnTasksMap.get(column.id) || [];
-            const aggregate = columnAggregates.get(column.id);
+        <KanbanBoardProvider>
+          <KanbanBoard>
+            {columns.map((column) => {
+              const colItems = columnTasksMap.get(column.id) || [];
+              const aggregate = columnAggregates.get(column.id);
 
-            return (
-              <KanbanBoardColumn
-                key={column.id}
-                columnId={column.id}
-                onDropOverColumn={(data) => {
-                  try {
-                    const parsed = JSON.parse(data);
-                    if (parsed && parsed.id) {
-                      handleItemMove(parsed.id, column.id, colItems.length);
-                    }
-                  } catch {}
-                }}
-                className="w-72 shrink-0 rounded-md border border-border bg-card/60 p-2 shadow-xs"
-              >
-                <KanbanBoardColumnHeader className="flex items-center justify-between pb-2 border-b border-border/60">
+              return (
+                <KanbanBoardColumn
+                  key={column.id}
+                  columnId={column.id}
+                  onDropOverColumn={(data) => {
+                    try {
+                      const parsed = JSON.parse(data);
+                      if (parsed && parsed.id) {
+                        handleItemMove(parsed.id, column.id, colItems.length);
+                      }
+                    } catch {}
+                  }}
+                  className="w-72 shrink-0 rounded-md border border-border bg-card/60 p-2 shadow-xs"
+                >
+                  <KanbanBoardColumnHeader className="flex items-center justify-between pb-2 border-b border-border/60">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <KanbanColorCircle color={column.color || 'blue'} />
                     <KanbanBoardColumnTitle columnId={column.id} className="text-xs font-semibold truncate text-foreground">
@@ -553,9 +555,20 @@ export function Kanban({
                             )}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                <button className="opacity-0 group-hover:opacity-100 p-0.5 text-muted-foreground hover:text-foreground transition-opacity">
+                                <span
+                                  role="button"
+                                  tabIndex={0}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      e.currentTarget.click();
+                                    }
+                                  }}
+                                  className="opacity-0 group-hover:opacity-100 p-0.5 text-muted-foreground hover:text-foreground transition-opacity cursor-pointer inline-flex items-center justify-center rounded"
+                                >
                                   <IconDotsVertical className="h-3 w-3" />
-                                </button>
+                                </span>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-36 text-xs">
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setActiveTask(task); }}>
@@ -652,7 +665,8 @@ export function Kanban({
           })}
           <KanbanBoardExtraMargin />
         </KanbanBoard>
-      </div>
+      </KanbanBoardProvider>
+    </div>
 
       {/* 3. Detail Drawer (Sheet) */}
       <Sheet open={!!activeTask} onOpenChange={(open) => !open && setActiveTask(null)}>

@@ -4,6 +4,16 @@ import type { EChartsOption } from "echarts"
 import { useTheme } from "next-themes"
 import { cn } from "@repo/ui/lib/utils"
 
+export const CRM_CHART_COLORS = [
+  "#2563EB", // Blue
+  "#16A34A", // Green
+  "#D97706", // Amber
+  "#7C3AED", // Purple
+  "#EC4899", // Pink
+  "#06B6D4", // Cyan
+  "#EA580C", // Orange
+]
+
 export interface ChartProps {
   option: EChartsOption
   height?: number | string
@@ -24,17 +34,18 @@ export function Chart({
 
   const themedOption = React.useMemo(() => {
     return {
+      color: CRM_CHART_COLORS,
       backgroundColor: "transparent",
       textStyle: {
         fontFamily: "inherit",
-        color: isDark ? "#94a3b8" : "#64748b",
+        color: isDark ? "#A1A1AA" : "#64748B",
       },
       tooltip: {
-        backgroundColor: isDark ? "rgba(15, 23, 42, 0.95)" : "rgba(255, 255, 255, 0.95)",
-        borderColor: isDark ? "#334155" : "#e2e8f0",
+        backgroundColor: isDark ? "#18181B" : "#FFFFFF",
+        borderColor: isDark ? "#27272A" : "#E2E8F0",
         borderWidth: 1,
         textStyle: {
-          color: isDark ? "#f8fafc" : "#0f172a",
+          color: isDark ? "#FAFAFA" : "#0F172A",
           fontSize: 12,
         },
         padding: [6, 10],
