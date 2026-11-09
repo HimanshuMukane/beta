@@ -308,14 +308,35 @@ CREATE TABLE IF NOT EXISTS `leads` (
     `contact_name` VARCHAR(255) NOT NULL,
     `contact_email` VARCHAR(255) NOT NULL,
     `contact_phone` VARCHAR(50) DEFAULT NULL,
+    `country_code` VARCHAR(10) DEFAULT '+91',
+    `address` TEXT,
     `source` VARCHAR(50) NOT NULL DEFAULT 'manual',
+    `generate_type` VARCHAR(50) DEFAULT 'Direct Entry',
+    `assignee_name` VARCHAR(100) DEFAULT '',
+    `assignee_initials` VARCHAR(10) DEFAULT '',
+    `lead_pipeline` VARCHAR(100) DEFAULT 'Wedding Inquiries',
+    `status` VARCHAR(50) NOT NULL DEFAULT 'open',
+    `lead_stage` VARCHAR(100) DEFAULT 'New Lead',
+    `quote_amount` BIGINT DEFAULT 0,
+    `followup_date` VARCHAR(50) DEFAULT NULL,
+    `project_type` VARCHAR(100) DEFAULT 'Wedding',
+    `quote_type` VARCHAR(100) DEFAULT 'Standard Package',
+    `project_start_date` VARCHAR(50) DEFAULT NULL,
+    `project_end_date` VARCHAR(50) DEFAULT NULL,
+    `project_name` VARCHAR(255) DEFAULT '',
+    `location` VARCHAR(255) DEFAULT NULL,
+    `project_segments` JSON DEFAULT NULL,
+    `package_name` VARCHAR(150) DEFAULT '',
+    `selected_services` JSON DEFAULT NULL,
+    `selected_deliverables` JSON DEFAULT NULL,
+    `quotation_template` VARCHAR(150) DEFAULT '',
+    `discount_amount` BIGINT DEFAULT 0,
+    `tax_amount` BIGINT DEFAULT 0,
     `photography_service` VARCHAR(100) DEFAULT NULL,
     `estimated_value_minor` BIGINT NOT NULL DEFAULT 0,
     `assigned_user_id` VARCHAR(36) DEFAULT NULL,
     `requested_date` VARCHAR(50) DEFAULT NULL,
-    `location` VARCHAR(255) DEFAULT NULL,
     `notes` TEXT,
-    `status` VARCHAR(50) NOT NULL DEFAULT 'open',
     `converted_client_id` VARCHAR(36) DEFAULT NULL,
     `converted_project_id` VARCHAR(36) DEFAULT NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -340,16 +361,172 @@ CREATE TABLE IF NOT EXISTS `clients` (
 CREATE TABLE IF NOT EXISTS `projects` (
     `id` VARCHAR(36) NOT NULL PRIMARY KEY,
     `tenant_id` VARCHAR(36) NOT NULL,
-    `client_id` VARCHAR(36) NOT NULL,
+    `client_id` VARCHAR(36) DEFAULT NULL,
+    `client_name` VARCHAR(255) NOT NULL DEFAULT '',
+    `client_mobile` VARCHAR(50) DEFAULT '',
+    `client_email` VARCHAR(255) DEFAULT '',
+    `client_address` TEXT,
+    `lead_source` VARCHAR(100) DEFAULT '',
+    `project_manager` VARCHAR(100) DEFAULT '',
+    `project_type` VARCHAR(100) DEFAULT 'Wedding',
+    `project_address` TEXT,
     `title` VARCHAR(255) NOT NULL,
     `status` VARCHAR(50) NOT NULL DEFAULT 'lead',
+    `stage` VARCHAR(100) DEFAULT 'Shoot Planning',
+    `start_date` VARCHAR(50) DEFAULT NULL,
+    `end_date` VARCHAR(50) DEFAULT NULL,
+    `shoot_hours` INT DEFAULT 0,
+    `shoot_members_count` INT DEFAULT 0,
+    `shoot_expense` BIGINT DEFAULT 0,
+    `galleries_count` INT DEFAULT 0,
+    `notes` TEXT,
+    `segments` JSON DEFAULT NULL,
+    `finance_snapshot` JSON DEFAULT NULL,
     `total_amount_minor` BIGINT NOT NULL DEFAULT 0,
     `is_confirmed` BOOLEAN NOT NULL DEFAULT FALSE,
     `confirmed_at` DATETIME(6) DEFAULT NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    INDEX `idx_projects_tenant` (`tenant_id`),
-    CONSTRAINT `fk_projects_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE
+    INDEX `idx_projects_tenant` (`tenant_id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `project_sessions` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `project_name` VARCHAR(255) NOT NULL DEFAULT '',
+    `title` VARCHAR(255) NOT NULL DEFAULT '',
+    `session_manager` VARCHAR(100) NOT NULL DEFAULT 'especa',
+    `project_type` VARCHAR(100) NOT NULL DEFAULT 'Wedding',
+    `shoot_timing` VARCHAR(100) NOT NULL DEFAULT 'Evening',
+    `status` VARCHAR(50) NOT NULL DEFAULT 'scheduled',
+    `session_date` VARCHAR(50) DEFAULT NULL,
+    `start_time` VARCHAR(50) DEFAULT NULL,
+    `duration` VARCHAR(50) DEFAULT '4 hours',
+    `time_range` VARCHAR(100) DEFAULT '',
+    `venue` VARCHAR(255) DEFAULT '',
+    `city` VARCHAR(100) DEFAULT '',
+    `location_link` TEXT,
+    `remarks` TEXT,
+    `members` JSON DEFAULT NULL,
+    `shoots_activity_count` INT DEFAULT 0,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    INDEX `idx_sessions_tenant` (`tenant_id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `orders` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `order_number` VARCHAR(100) NOT NULL,
+    `client_name` VARCHAR(255) NOT NULL,
+    `mobile_no` VARCHAR(50) DEFAULT '',
+    `country_code` VARCHAR(10) DEFAULT '+91',
+    `email` VARCHAR(255) DEFAULT '',
+    `address` TEXT,
+    `lead_source` VARCHAR(100) DEFAULT '',
+    `reference_no` VARCHAR(100) DEFAULT '',
+    `order_date` VARCHAR(50) DEFAULT NULL,
+    `order_type` VARCHAR(100) DEFAULT '',
+    `stage` VARCHAR(100) DEFAULT 'Design',
+    `assignee` VARCHAR(100) DEFAULT '',
+    `notes` TEXT,
+    `discount` DOUBLE DEFAULT 0,
+    `tax_percent` DOUBLE DEFAULT 0,
+    `tax_amount` DOUBLE DEFAULT 0,
+    `sub_total` DOUBLE DEFAULT 0,
+    `total_amount` DOUBLE DEFAULT 0,
+    `paid_amount` DOUBLE DEFAULT 0,
+    `balance_amount` DOUBLE DEFAULT 0,
+    `payment_status` VARCHAR(50) DEFAULT 'Pending',
+    `related_project_id` VARCHAR(36) DEFAULT NULL,
+    `items` JSON DEFAULT NULL,
+    `expenses` JSON DEFAULT NULL,
+    `payments` JSON DEFAULT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    INDEX `idx_orders_tenant` (`tenant_id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `billing_payments` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `payment_date` VARCHAR(50) DEFAULT NULL,
+    `client_name` VARCHAR(255) NOT NULL,
+    `client_avatar` VARCHAR(500) DEFAULT '',
+    `client_initials` VARCHAR(10) DEFAULT '',
+    `payment_type` VARCHAR(100) DEFAULT '',
+    `payment_amount` DOUBLE DEFAULT 0,
+    `payment_status` VARCHAR(50) DEFAULT 'Completed',
+    `project_name` VARCHAR(255) DEFAULT '',
+    `download_url` VARCHAR(500) DEFAULT '',
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    INDEX `idx_billing_payments_tenant` (`tenant_id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `billing_invoices` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `invoice_name` VARCHAR(255) NOT NULL,
+    `client_name` VARCHAR(255) NOT NULL,
+    `client_avatar` VARCHAR(500) DEFAULT '',
+    `client_initials` VARCHAR(10) DEFAULT '',
+    `projects_name` VARCHAR(255) DEFAULT '',
+    `total_amount` DOUBLE DEFAULT 0,
+    `paid_amount` DOUBLE DEFAULT 0,
+    `pending_amount` DOUBLE DEFAULT 0,
+    `payment_status` VARCHAR(50) DEFAULT 'Pending',
+    `invoice_date` VARCHAR(50) DEFAULT NULL,
+    `download_url` VARCHAR(500) DEFAULT '',
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    INDEX `idx_billing_invoices_tenant` (`tenant_id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `billing_expenses` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `expense_name` VARCHAR(255) NOT NULL,
+    `expense_date` VARCHAR(50) DEFAULT NULL,
+    `amount` DOUBLE DEFAULT 0,
+    `expense_type` VARCHAR(100) DEFAULT '',
+    `vendor_or_client` VARCHAR(255) DEFAULT '',
+    `payment_method` VARCHAR(100) DEFAULT '',
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    INDEX `idx_billing_expenses_tenant` (`tenant_id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `billing_cancellations` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `action` VARCHAR(100) DEFAULT '',
+    `cancellation_date` VARCHAR(50) DEFAULT NULL,
+    `payment_date` VARCHAR(50) DEFAULT NULL,
+    `payment_type` VARCHAR(100) DEFAULT '',
+    `client_name` VARCHAR(255) NOT NULL,
+    `client_avatar` VARCHAR(500) DEFAULT '',
+    `client_initials` VARCHAR(10) DEFAULT '',
+    `projects_name` VARCHAR(255) DEFAULT '',
+    `payment_amount` DOUBLE DEFAULT 0,
+    `reason` TEXT,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    INDEX `idx_billing_cancellations_tenant` (`tenant_id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `billing_refunds` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `invoice_name` VARCHAR(255) NOT NULL,
+    `refund_date` VARCHAR(50) DEFAULT NULL,
+    `client_name` VARCHAR(255) NOT NULL,
+    `client_avatar` VARCHAR(500) DEFAULT '',
+    `client_initials` VARCHAR(10) DEFAULT '',
+    `projects_name` VARCHAR(255) DEFAULT '',
+    `payment_amount` DOUBLE DEFAULT 0,
+    `cancellation_charges` DOUBLE DEFAULT 0,
+    `refund_amount` DOUBLE DEFAULT 0,
+    `note` TEXT,
+    `status` VARCHAR(50) DEFAULT 'Completed',
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    INDEX `idx_billing_refunds_tenant` (`tenant_id`)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `quotations` (
@@ -668,4 +845,11 @@ CREATE TABLE IF NOT EXISTS `tags` (
     `status` VARCHAR(50) NOT NULL DEFAULT 'active',
     CONSTRAINT `fk_tags_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+CREATE USER IF NOT EXISTS 'photography_crm_db'@'%' IDENTIFIED BY 'crm_password';
+GRANT ALL PRIVILEGES ON `photography_crm_db`.* TO 'photography_crm_db'@'%';
+CREATE USER IF NOT EXISTS 'photography_crm_db'@'localhost' IDENTIFIED BY 'crm_password';
+GRANT ALL PRIVILEGES ON `photography_crm_db`.* TO 'photography_crm_db'@'localhost';
+FLUSH PRIVILEGES;
+
 

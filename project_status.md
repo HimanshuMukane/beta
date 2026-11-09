@@ -1716,7 +1716,7 @@ Below is the complete, exhaustive catalog of every file across the `BETA` projec
 - **Purpose**: Client-side JavaScript managing client interactions, DOM operations, or library integrations.
 
 
-### 8. Photography CRM (`projects/photography_crm`) (133 files)
+### 8. Photography CRM (`projects/photography_crm`) (15 files)
 
 #### `/home/desktop/especa/beta/projects/photography_crm/go.mod`
 - **Relative Path**: `projects/photography_crm/go.mod`
