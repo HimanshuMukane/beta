@@ -23,10 +23,7 @@ import {
 import {
   IconCheck,
   IconCalendar,
-  IconClock,
   IconUser,
-  IconTag,
-  IconAlertCircle,
 } from '@tabler/icons-react'
 
 export interface TaskDetailData {

@@ -2,6 +2,7 @@ import * as React from 'react'
 import {
   IconPlus,
   IconTrash,
+  IconGitFork,
 } from '@tabler/icons-react'
 import {
   Button,
@@ -87,13 +88,22 @@ export function WorkflowPage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-16">
-      <div className="flex items-center justify-between border-b pb-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Pipeline Stages & Workflow</h1>
-          <p className="text-xs text-muted-foreground">
-            Customize the step-by-step production progression across projects and orders.
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+            <IconGitFork className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Pipeline Stages & Workflow</h1>
+            <p className="text-xs text-muted-foreground">
+              Customize the step-by-step production progression across projects and orders.
+            </p>
+          </div>
         </div>
+
+        <span className="text-xs text-muted-foreground font-medium self-start sm:self-auto">
+          {stages.length} active stages
+        </span>
       </div>
 
       {/* Add Stage Form */}

@@ -186,14 +186,12 @@ func main() {
 		}
 
 		databaseURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local", dbUser, serviceDbPassword, dbHost, dbPort, dbName)
-		identityURL := fmt.Sprintf("root:%s@tcp(%s:%s)/platform_identity?parseTime=true&loc=Local", dbPassword, dbHost, dbPort)
 
 		cfg := utils.Config{
 			AppName:           a.projectID,
 			AppEnv:            appEnv,
 			ServerPort:        port,
 			DatabaseURL:       databaseURL,
-			IdentityDBURL:     identityURL,
 			AllowTestDBHeader: appEnv != "production",
 			TestDBHeaderKey:   "X-Database-Env",
 			SessionCookieName: cookieName,

@@ -11,3 +11,5 @@ trigger: always_on
 - Only run non-server development build/compilation checks (such as `templ generate` or `go build`) when validating code syntax or updating generated templates.
 
 - no comments
+
+- No migrations, No models, use DB querries directly

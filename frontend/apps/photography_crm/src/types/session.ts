@@ -38,20 +38,7 @@ export interface ProjectSession {
   shootsActivityCount?: number
 }
 
-export const PROJECT_TYPES: ProjectType[] = [
-  'Wedding',
-  'Pre-Wedding',
-  'Engagement',
-  'Birthday',
-  'Maternity',
-  'Newborn',
-  'Portrait',
-  'Corporate',
-  'Product',
-  'Fashion',
-  'Event',
-  'Other',
-]
+export { PROJECT_TYPES } from '../lib/formatters'
 
 export const SHOOT_TIMINGS: ShootTiming[] = [
   'Morning',

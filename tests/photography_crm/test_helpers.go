@@ -40,14 +40,12 @@ func setupTestRouter(t *testing.T, cookieName string) http.Handler {
 		dbPassword = "especa_root_password"
 	}
 	databaseURL := fmt.Sprintf("root:%s@tcp(%s:%s)/photography_crm_db?parseTime=true&loc=Local", dbPassword, dbHost, dbPort)
-	identityURL := fmt.Sprintf("root:%s@tcp(%s:%s)/platform_identity?parseTime=true&loc=Local", dbPassword, dbHost, dbPort)
 
 	oldConfig := utils.AppConfig
 	cfg := utils.Config{
 		AppEnv:            "test",
 		ServerPort:        "8080",
 		DatabaseURL:       databaseURL,
-		IdentityDBURL:     identityURL,
 		AllowTestDBHeader: true,
 		TestDBHeaderKey:   "X-Database-Env",
 		SessionCookieName: cookieName,

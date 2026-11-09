@@ -89,6 +89,38 @@ CREATE TABLE IF NOT EXISTS `tenant_registration_requests` (
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS `roles` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `users` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `first_name` VARCHAR(100) NOT NULL,
+    `last_name` VARCHAR(100) NOT NULL,
+    `email` VARCHAR(255) NOT NULL UNIQUE,
+    `password_hash` VARCHAR(255) NOT NULL DEFAULT '',
+    `auth_provider_id` VARCHAR(255) DEFAULT NULL,
+    `role_id` VARCHAR(36) DEFAULT NULL,
+    `token_version` INT NOT NULL DEFAULT 1,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL,
+    CONSTRAINT `fk_superadmin_users_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+INSERT INTO `roles` (`id`, `name`) VALUES
+    ('018e0000-0003-7000-8000-000000000001', 'admin')
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+INSERT INTO `users` (`id`, `first_name`, `last_name`, `email`, `password_hash`, `role_id`) VALUES
+    ('018e0000-0003-7000-8000-000000000010', 'Especa', 'Admin', 'especa', '$argon2id$v=19$m=19456,t=2,p=1$7e3nZArAyeKHlnmEZ7xjDA$pk4WemIF38Wn+OSk/iyUX45Fb1UgDSIKDezhJMsk56A', '018e0000-0003-7000-8000-000000000001'),
+    ('018e0000-0003-7000-8000-000000000011', 'Especa', 'Admin', 'especa@especa.com', '$argon2id$v=19$m=19456,t=2,p=1$7e3nZArAyeKHlnmEZ7xjDA$pk4WemIF38Wn+OSk/iyUX45Fb1UgDSIKDezhJMsk56A', '018e0000-0003-7000-8000-000000000001')
+ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`);
+
 -- 3. CMS Database
 CREATE DATABASE IF NOT EXISTS `cms_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `cms_db`;
@@ -210,6 +242,38 @@ CREATE TABLE IF NOT EXISTS `cms_form_submissions` (
     INDEX `idx_submissions_tenant` (`tenant_id`, `form_key`)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS `roles` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `users` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `first_name` VARCHAR(100) NOT NULL,
+    `last_name` VARCHAR(100) NOT NULL,
+    `email` VARCHAR(255) NOT NULL UNIQUE,
+    `password_hash` VARCHAR(255) NOT NULL DEFAULT '',
+    `auth_provider_id` VARCHAR(255) DEFAULT NULL,
+    `role_id` VARCHAR(36) DEFAULT NULL,
+    `token_version` INT NOT NULL DEFAULT 1,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL,
+    CONSTRAINT `fk_cms_users_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+INSERT INTO `roles` (`id`, `name`) VALUES
+    ('018e0000-0002-7000-8000-000000000001', 'admin')
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+INSERT INTO `users` (`id`, `first_name`, `last_name`, `email`, `password_hash`, `role_id`) VALUES
+    ('018e0000-0002-7000-8000-000000000010', 'Especa', 'Admin', 'especa', '$argon2id$v=19$m=19456,t=2,p=1$7e3nZArAyeKHlnmEZ7xjDA$pk4WemIF38Wn+OSk/iyUX45Fb1UgDSIKDezhJMsk56A', '018e0000-0002-7000-8000-000000000001'),
+    ('018e0000-0002-7000-8000-000000000011', 'Especa', 'Admin', 'especa@especa.com', '$argon2id$v=19$m=19456,t=2,p=1$7e3nZArAyeKHlnmEZ7xjDA$pk4WemIF38Wn+OSk/iyUX45Fb1UgDSIKDezhJMsk56A', '018e0000-0002-7000-8000-000000000001')
+ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`);
+
 -- 4. Photography CRM Database
 CREATE DATABASE IF NOT EXISTS `photography_crm_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `photography_crm_db`;
@@ -318,6 +382,91 @@ CREATE TABLE IF NOT EXISTS `followups` (
     INDEX `idx_followups_tenant` (`tenant_id`),
     INDEX `idx_followups_due` (`due_date`, `status`)
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `roles` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `users` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `first_name` VARCHAR(100) NOT NULL,
+    `last_name` VARCHAR(100) NOT NULL,
+    `email` VARCHAR(255) NOT NULL UNIQUE,
+    `password_hash` VARCHAR(255) NOT NULL DEFAULT '',
+    `auth_provider_id` VARCHAR(255) DEFAULT NULL,
+    `role_id` VARCHAR(36) DEFAULT NULL,
+    `token_version` INT NOT NULL DEFAULT 1,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL,
+    CONSTRAINT `fk_crm_users_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `tenants` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `name` VARCHAR(255) NOT NULL,
+    `slug` VARCHAR(100) NOT NULL UNIQUE,
+    `business_type` VARCHAR(50) NOT NULL DEFAULT 'photography',
+    `status` VARCHAR(50) NOT NULL DEFAULT 'active',
+    `subscription_status` VARCHAR(50) NOT NULL DEFAULT 'trialing',
+    `currency` VARCHAR(3) NOT NULL DEFAULT 'INR',
+    `timezone` VARCHAR(50) NOT NULL DEFAULT 'Asia/Kolkata',
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `memberships` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `user_id` VARCHAR(36) NOT NULL,
+    `role` VARCHAR(50) NOT NULL DEFAULT 'member',
+    `status` VARCHAR(50) NOT NULL DEFAULT 'active',
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL,
+    UNIQUE KEY `uq_crm_memberships_tenant_user` (`tenant_id`, `user_id`),
+    CONSTRAINT `fk_crm_memberships_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_crm_memberships_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `studio_settings` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `setting_key` VARCHAR(100) NOT NULL,
+    `data` JSON NOT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    UNIQUE KEY `uq_studio_settings` (`tenant_id`, `setting_key`)
+) ENGINE=InnoDB;
+
+INSERT INTO `roles` (`id`, `name`) VALUES
+    ('018e0000-0001-7000-8000-000000000001', 'admin'),
+    ('018e0000-0001-7000-8000-000000000002', 'Traditional Photographer'),
+    ('018e0000-0001-7000-8000-000000000003', 'Candid Photographer'),
+    ('018e0000-0001-7000-8000-000000000004', 'Cinematographer'),
+    ('018e0000-0001-7000-8000-000000000005', 'Drone Operator'),
+    ('018e0000-0001-7000-8000-000000000006', 'Editor'),
+    ('018e0000-0001-7000-8000-000000000007', 'Assistant')
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+INSERT INTO `users` (`id`, `first_name`, `last_name`, `email`, `password_hash`, `role_id`) VALUES
+    ('018e0000-0001-7000-8000-000000000010', 'Especa', 'Admin', 'especa', '$argon2id$v=19$m=19456,t=2,p=1$7e3nZArAyeKHlnmEZ7xjDA$pk4WemIF38Wn+OSk/iyUX45Fb1UgDSIKDezhJMsk56A', '018e0000-0001-7000-8000-000000000001'),
+    ('018e0000-0001-7000-8000-000000000011', 'Especa', 'Admin', 'especa@especa.com', '$argon2id$v=19$m=19456,t=2,p=1$7e3nZArAyeKHlnmEZ7xjDA$pk4WemIF38Wn+OSk/iyUX45Fb1UgDSIKDezhJMsk56A', '018e0000-0001-7000-8000-000000000001')
+ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`);
+
+INSERT INTO `tenants` (`id`, `name`, `slug`, `business_type`, `status`) VALUES
+    ('018e0000-0001-7000-8000-000000000020', 'especa Studio', 'especa-studio', 'photography', 'active')
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+INSERT INTO `memberships` (`id`, `tenant_id`, `user_id`, `role`, `status`) VALUES
+    ('018e0000-0001-7000-8000-000000000030', '018e0000-0001-7000-8000-000000000020', '018e0000-0001-7000-8000-000000000010', 'admin', 'active'),
+    ('018e0000-0001-7000-8000-000000000031', '018e0000-0001-7000-8000-000000000020', '018e0000-0001-7000-8000-000000000011', 'admin', 'active')
+ON DUPLICATE KEY UPDATE `role` = VALUES(`role`);
 
 -- 5. Finance Database
 CREATE DATABASE IF NOT EXISTS `finance_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

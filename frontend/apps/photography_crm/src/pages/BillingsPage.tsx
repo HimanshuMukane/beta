@@ -10,19 +10,10 @@ import { createColumnHelper } from '@tanstack/react-table'
 import type {
   DataTableFeatures,
   DataTableFilterConfig,
-  DataTableBulkAction,
-  DataTableRowAction,
 } from '@repo/ui'
 import {
   IconDownload,
   IconPlus,
-  IconReceipt2,
-  IconCreditCard,
-  IconCash,
-  IconBan,
-  IconRotate2,
-  IconFileInvoice,
-  IconTrash,
 } from '@tabler/icons-react'
 import { isWithinInterval, parse } from 'date-fns'
 
@@ -34,13 +25,7 @@ import type {
   BillingCancelled,
   BillingRefunded,
 } from '../types/billing'
-import {
-  INITIAL_BILLING_PAYMENTS,
-  INITIAL_BILLING_INVOICES,
-  INITIAL_BILLING_EXPENSES,
-  INITIAL_BILLING_CANCELLED,
-  INITIAL_BILLING_REFUNDED,
-} from '../data/mock-billing'
+import { billingApi } from '../api/crmApi'
 import { BillingHero } from '../components/BillingHero'
 import { BillingDateRangePicker, type DateRange } from '../components/BillingDateRangePicker'
 import { AddPaymentModal } from '../components/AddPaymentModal'
@@ -79,11 +64,23 @@ export function BillingsPage() {
   })
 
   // Data states
-  const [payments, setPayments] = React.useState<BillingPayment[]>(INITIAL_BILLING_PAYMENTS)
-  const [invoices, setInvoices] = React.useState<BillingInvoice[]>(INITIAL_BILLING_INVOICES)
-  const [expenses, setExpenses] = React.useState<BillingExpense[]>(INITIAL_BILLING_EXPENSES)
-  const [cancelled, setCancelled] = React.useState<BillingCancelled[]>(INITIAL_BILLING_CANCELLED)
-  const [refunded, setRefunded] = React.useState<BillingRefunded[]>(INITIAL_BILLING_REFUNDED)
+  const [payments, setPayments] = React.useState<BillingPayment[]>([])
+  const [invoices, setInvoices] = React.useState<BillingInvoice[]>([])
+  const [expenses, setExpenses] = React.useState<BillingExpense[]>([])
+  const [cancelled, setCancelled] = React.useState<BillingCancelled[]>([])
+  const [refunded, setRefunded] = React.useState<BillingRefunded[]>([])
+
+  const loadBillingData = React.useCallback(() => {
+    billingApi.getPayments().then(setPayments).catch((err) => console.error(err))
+    billingApi.getInvoices().then(setInvoices).catch((err) => console.error(err))
+    billingApi.getExpenses().then(setExpenses).catch((err) => console.error(err))
+    billingApi.getCancelled().then(setCancelled).catch((err) => console.error(err))
+    billingApi.getRefunds().then(setRefunded).catch((err) => console.error(err))
+  }, [])
+
+  React.useEffect(() => {
+    loadBillingData()
+  }, [loadBillingData])
 
   // Modal dialog states
   const [isPaymentModalOpen, setIsPaymentModalOpen] = React.useState(false)
@@ -249,7 +246,8 @@ export function BillingsPage() {
   // --- 1. PAYMENTS COLUMNS ---
   // Table column headers: ID, Payment Date, Client Name, Type, Payment Amount, Payment Status, Download, Created On
   const paymentColumns = React.useMemo(
-    () => [
+    () =>
+      paymentColHelper.columns([
       paymentColHelper.accessor('id', {
         header: 'ID',
         meta: { align: 'left', headerClassName: 'text-xs font-bold' },
@@ -331,7 +329,7 @@ export function BillingsPage() {
         cell: (info) => (
           <Button
             variant="ghost"
-            size="icon-xs"
+            size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
             onClick={() => toast.success(`Receipt for ${info.row.original.id} downloaded`)}
             title="Download Payment Receipt"
@@ -349,14 +347,15 @@ export function BillingsPage() {
           </span>
         ),
       }),
-    ],
+    ]),
     []
   )
 
   // --- 2. INVOICE COLUMNS ---
   // Table column headers: ID, Invoice Name, Client Name, Projects Name, Total Amount, Payment Status, Paid Amount, Pending Amount, Invoice Date, Created Date
   const invoiceColumns = React.useMemo(
-    () => [
+    () =>
+      invoiceColHelper.columns([
       invoiceColHelper.accessor('id', {
         header: 'ID',
         meta: { align: 'left', headerClassName: 'text-xs font-bold' },
@@ -468,14 +467,15 @@ export function BillingsPage() {
           </span>
         ),
       }),
-    ],
+    ]),
     []
   )
 
   // --- 3. EXPENSE COLUMNS ---
   // Table column headers: ID, Expense Name, Date, Amount, Type, Created Date
   const expenseColumns = React.useMemo(
-    () => [
+    () =>
+      expenseColHelper.columns([
       expenseColHelper.accessor('id', {
         header: 'ID',
         meta: { align: 'left', headerClassName: 'text-xs font-bold' },
@@ -537,14 +537,15 @@ export function BillingsPage() {
           </span>
         ),
       }),
-    ],
+    ]),
     []
   )
 
   // --- 4. CANCELLED COLUMNS ---
   // Table column headers: Action, Cancellation Date, Payment Date, Type, Client Name, Projects Name, Payment Amount, Created On
   const cancelledColumns = React.useMemo(
-    () => [
+    () =>
+      cancelledColHelper.columns([
       cancelledColHelper.accessor('action', {
         header: 'Action',
         meta: { align: 'left' },
@@ -628,14 +629,15 @@ export function BillingsPage() {
           </span>
         ),
       }),
-    ],
+    ]),
     []
   )
 
   // --- 5. REFUNDED COLUMNS ---
   // Table column headers: ID, Invoice Name, Refund Date, Client Name, Projects Name, Payment Amount, Cancellation Charges, Refund Amount, Note, Status, Created On
   const refundedColumns = React.useMemo(
-    () => [
+    () =>
+      refundedColHelper.columns([
       refundedColHelper.accessor('id', {
         header: 'ID',
         meta: { align: 'left', headerClassName: 'text-xs font-bold' },
@@ -754,7 +756,7 @@ export function BillingsPage() {
           </span>
         ),
       }),
-    ],
+    ]),
     []
   )
 
@@ -1013,22 +1015,42 @@ export function BillingsPage() {
       <AddPaymentModal
         open={isPaymentModalOpen}
         onOpenChange={setIsPaymentModalOpen}
-        onAddPayment={(newPay) => setPayments((prev) => [newPay, ...prev])}
+        onAddPayment={(newPay) => {
+          billingApi.createPayment(newPay).then((created) => {
+            setPayments((prev) => [created, ...prev])
+            toast.success('Payment recorded successfully')
+          }).catch((err) => toast.error(err.message || 'Failed to record payment'))
+        }}
       />
       <AddInvoiceModal
         open={isInvoiceModalOpen}
         onOpenChange={setIsInvoiceModalOpen}
-        onAddInvoice={(newInv) => setInvoices((prev) => [newInv, ...prev])}
+        onAddInvoice={(newInv) => {
+          billingApi.createInvoice(newInv).then((created) => {
+            setInvoices((prev) => [created, ...prev])
+            toast.success('Invoice created successfully')
+          }).catch((err) => toast.error(err.message || 'Failed to create invoice'))
+        }}
       />
       <AddExpenseModal
         open={isExpenseModalOpen}
         onOpenChange={setIsExpenseModalOpen}
-        onAddExpense={(newExp) => setExpenses((prev) => [newExp, ...prev])}
+        onAddExpense={(newExp) => {
+          billingApi.createExpense(newExp).then((created) => {
+            setExpenses((prev) => [created, ...prev])
+            toast.success('Expense added successfully')
+          }).catch((err) => toast.error(err.message || 'Failed to add expense'))
+        }}
       />
       <AddRefundModal
         open={isRefundModalOpen}
         onOpenChange={setIsRefundModalOpen}
-        onAddRefund={(newRef) => setRefunded((prev) => [newRef, ...prev])}
+        onAddRefund={(newRef) => {
+          billingApi.createRefund(newRef).then((created) => {
+            setRefunded((prev) => [created, ...prev])
+            toast.success('Refund issued successfully')
+          }).catch((err) => toast.error(err.message || 'Failed to issue refund'))
+        }}
       />
     </div>
   )

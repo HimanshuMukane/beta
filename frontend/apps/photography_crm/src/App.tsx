@@ -1,4 +1,4 @@
-import { useState, useMemo, Suspense, lazy } from 'react'
+import { useState, useEffect, useMemo, Suspense, lazy } from 'react'
 import {
   BrowserRouter,
   Routes,
@@ -11,27 +11,19 @@ import {
 import {
   DashboardShell,
   Toaster,
-  Button,
   toast,
+  AuthProvider,
+  ProtectedRoute,
 } from '@repo/ui'
-import {
-  IconReportAnalytics,
-  IconSettings,
-  IconFolders,
-  IconCalendar,
-  IconTarget,
-  IconCreditCard,
-  IconShoppingBag,
-} from '@tabler/icons-react'
-import { INITIAL_LEADS } from './data/mock-leads'
-import { INITIAL_PROJECTS } from './data/mock-projects'
+import SigninPage from './pages/auth/SigninPage'
+import SignupPage from './pages/auth/SignupPage'
 import type { Lead, PipelineStage } from './types/lead'
 import type { Project, ProjectStage } from './types/project'
 import type { ProjectSession, SessionStatus } from './types/session'
 import type { Order, OrderStage } from './types/order'
 import type { SettingsTab } from './types/settings'
-import { INITIAL_ORDERS } from './data/mock-orders'
 import { PhotographySidebar, type ReportCategory } from './components/PhotographySidebar'
+import { leadsApi, projectsApi, sessionsApi, ordersApi } from './api/crmApi'
 
 // Lazy Load Core Pages
 const LeadsPage = lazy(() =>
@@ -98,14 +90,23 @@ const PhotographersPage = lazy(() =>
 const SequenceIdPage = lazy(() =>
   import('./pages/settings/SequenceIdPage').then((m) => ({ default: m.SequenceIdPage }))
 )
-const GenericPresetPage = lazy(() =>
-  import('./pages/settings/GenericPresetPage').then((m) => ({ default: m.GenericPresetPage }))
-)
 const ServicesSettingsPage = lazy(() =>
   import('./pages/settings/ServicesSettingsPage').then((m) => ({ default: m.ServicesSettingsPage }))
 )
 const PackagesSettingsPage = lazy(() =>
   import('./pages/settings/PackagesSettingsPage').then((m) => ({ default: m.PackagesSettingsPage }))
+)
+const OrdersSettingsPage = lazy(() =>
+  import('./pages/settings/OrdersSettingsPage').then((m) => ({ default: m.OrdersSettingsPage }))
+)
+const DeliverablesSettingsPage = lazy(() =>
+  import('./pages/settings/DeliverablesSettingsPage').then((m) => ({ default: m.DeliverablesSettingsPage }))
+)
+const ContractTemplatePage = lazy(() =>
+  import('./pages/settings/ContractTemplatePage').then((m) => ({ default: m.ContractTemplatePage }))
+)
+const FeedbackTemplatePage = lazy(() =>
+  import('./pages/settings/FeedbackTemplatePage').then((m) => ({ default: m.FeedbackTemplatePage }))
 )
 const TemplateCustomizerPage = lazy(() =>
   import('./pages/settings/TemplateCustomizerPage').then((m) => ({ default: m.TemplateCustomizerPage }))
@@ -119,33 +120,35 @@ function AppContent() {
   const location = useLocation()
   const pathname = location.pathname
 
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS)
+  const [leads, setLeads] = useState<Lead[]>([])
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
 
-  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS)
+  const [projects, setProjects] = useState<Project[]>([])
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [projectPrefillData, setProjectPrefillData] = useState<Partial<Project> | null>(null)
 
-  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS)
+  const [orders, setOrders] = useState<Order[]>([])
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
 
-  const [sessions, setSessions] = useState<ProjectSession[]>(() => {
-    return INITIAL_PROJECTS.flatMap((p) =>
-      p.sessions.map((s) => ({
-        ...s,
-        projectName: s.projectName || p.projectName,
-        projectType: s.projectType || p.projectType,
-        sessionManager: s.sessionManager || 'especa',
-        shootTiming: s.shootTiming || 'Evening',
-        duration: s.duration || '4 hours',
-      }))
-    )
-  })
+  const [sessions, setSessions] = useState<ProjectSession[]>([])
 
-  // Derive sidebar mode and active subtabs from pathname
-  const sidebarMode: 'main' | 'reports' | 'settings' = useMemo(() => {
-    if (pathname.startsWith('/settings')) return 'settings'
+  useEffect(() => {
+    leadsApi.list().then(setLeads).catch((err) => console.error('Failed to load leads:', err))
+    projectsApi.list().then(setProjects).catch((err) => console.error('Failed to load projects:', err))
+    sessionsApi.list().then(setSessions).catch((err) => console.error('Failed to load sessions:', err))
+    ordersApi.list().then(setOrders).catch((err) => console.error('Failed to load orders:', err))
+  }, [])
+
+  // Derive current route key for sidebar active states
+  const currentRoute = useMemo(() => {
+    if (pathname.startsWith('/projects')) return 'projects'
+    if (pathname.startsWith('/sessions')) return 'sessions-list'
+    if (pathname.startsWith('/leads')) return 'leads'
+    if (pathname.startsWith('/billings')) return 'billings'
+    if (pathname.startsWith('/orders')) return 'orders'
     if (pathname.startsWith('/reports')) return 'reports'
-    return 'main'
+    if (pathname.startsWith('/settings')) return 'settings'
+    return 'projects'
   }, [pathname])
 
   const activeReport: ReportCategory = useMemo(() => {
@@ -162,62 +165,34 @@ function AppContent() {
     return 'master-data'
   }, [pathname])
 
-  // Derive currentRoute key for main sidebar active state
-  const currentMainRoute = useMemo(() => {
-    if (pathname.startsWith('/projects')) return 'projects-list'
-    if (pathname.startsWith('/sessions')) return 'sessions-list'
-    if (pathname.startsWith('/leads')) return 'leads-list'
-    if (pathname.startsWith('/billings')) return 'billings'
-    if (pathname.startsWith('/orders')) return 'orders-list'
-    return 'projects-list'
-  }, [pathname])
-
   // Session Handlers
   const handleSaveSession = (savedSession: ProjectSession) => {
-    setSessions((prev) => {
-      const exists = prev.some((s) => s.id === savedSession.id)
-      if (exists) {
-        return prev.map((s) => (s.id === savedSession.id ? savedSession : s))
-      }
-      return [savedSession, ...prev]
-    })
-
-    if (savedSession.projectName) {
-      setProjects((prev) =>
-        prev.map((proj) => {
-          if (proj.projectName === savedSession.projectName) {
-            const sesExists = proj.sessions.some((s) => s.id === savedSession.id)
-            const updatedSessions = sesExists
-              ? proj.sessions.map((s) => (s.id === savedSession.id ? savedSession : s))
-              : [...proj.sessions, savedSession]
-            return {
-              ...proj,
-              sessions: updatedSessions,
-              sessionsCount: updatedSessions.length,
-            }
-          }
-          return proj
-        })
-      )
+    const exists = sessions.some((s) => s.id === savedSession.id)
+    if (exists) {
+      sessionsApi.update(savedSession.id, savedSession).then((updated) => {
+        setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
+      }).catch((err) => toast.error(err.message || 'Failed to update session'))
+    } else {
+      sessionsApi.create(savedSession).then((created) => {
+        setSessions((prev) => [created, ...prev])
+      }).catch((err) => toast.error(err.message || 'Failed to create session'))
     }
   }
 
   const handleDeleteSession = (sessionId: string) => {
-    setSessions((prev) => prev.filter((s) => s.id !== sessionId))
-    setProjects((prev) =>
-      prev.map((proj) => ({
-        ...proj,
-        sessions: proj.sessions.filter((s) => s.id !== sessionId),
-        sessionsCount: proj.sessions.filter((s) => s.id !== sessionId).length,
-      }))
-    )
+    sessionsApi.delete(sessionId).then(() => {
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId))
+      toast.success('Session deleted')
+    }).catch((err) => toast.error(err.message || 'Failed to delete session'))
   }
 
   const handleSessionStatusChange = (sessionId: string, newStatus: SessionStatus) => {
-    setSessions((prev) =>
-      prev.map((s) => (s.id === sessionId ? { ...s, status: newStatus } : s))
-    )
-    toast.success(`Session status updated to ${newStatus}`)
+    sessionsApi.updateStatus(sessionId, newStatus).then(() => {
+      setSessions((prev) =>
+        prev.map((s) => (s.id === sessionId ? { ...s, status: newStatus } : s))
+      )
+      toast.success(`Session status updated to ${newStatus}`)
+    }).catch((err) => toast.error(err.message || 'Failed to update session status'))
   }
 
   // Lead Navigation Handlers
@@ -268,79 +243,130 @@ function AppContent() {
   }
 
   // Project Navigation Handlers
-  const handleNavigateToCreateProject = () => {
+  const handleNavigateToCreateProject = (prefill?: Partial<Project>) => {
     setEditingProject(null)
+    setProjectPrefillData(prefill || null)
     navigate('/projects/create')
+  }
+
+  const handleConvertLeadToProject = (lead: Lead) => {
+    const firstSegment = lead.projectSegments?.[0]
+    const prefill: Partial<Project> = {
+      projectName: lead.projectName || `${lead.name} Shoot`,
+      clientName: lead.name,
+      clientEmail: lead.email,
+      clientMobile: lead.mobileNo,
+      projectType: lead.projectType || 'Wedding',
+      projectAddress: lead.projectAddress || '',
+      startDate: lead.projectStartDate || firstSegment?.startDate || new Date().toISOString().split('T')[0],
+      endDate: lead.projectEndDate || firstSegment?.endDate || new Date().toISOString().split('T')[0],
+      stage: 'Booked',
+      status: 'Booked',
+      segments: lead.projectSegments || [
+        {
+          id: 'seg-1',
+          name: lead.projectName || `${lead.name} Shoot`,
+          type: lead.projectType || 'Wedding',
+          startDate: lead.projectStartDate || new Date().toISOString().split('T')[0],
+          endDate: lead.projectEndDate || new Date().toISOString().split('T')[0],
+        },
+      ],
+    }
+    setEditingProject(null)
+    setProjectPrefillData(prefill)
+    navigate('/projects/create')
+    toast.success(`Pre-filled project creation from Lead "${lead.name}"`)
   }
 
   const handleNavigateToEditProject = (project: Project) => {
     setEditingProject(project)
+    setProjectPrefillData(null)
     navigate(`/projects/edit/${project.id}`)
   }
 
   const handleNavigateToProjectsList = () => {
     setEditingProject(null)
+    setProjectPrefillData(null)
     navigate('/projects')
   }
 
   // Lead CRUD
   const handleSaveLead = (leadToSave: Lead) => {
-    setLeads((prev) => {
-      const exists = prev.some((l) => l.id === leadToSave.id)
-      if (exists) {
-        return prev.map((l) => (l.id === leadToSave.id ? leadToSave : l))
-      }
-      return [leadToSave, ...prev]
-    })
+    const exists = leads.some((l) => l.id === leadToSave.id)
+    if (exists) {
+      leadsApi.update(leadToSave.id, leadToSave).then((saved) => {
+        setLeads((prev) => prev.map((l) => (l.id === saved.id ? saved : l)))
+        toast.success(`Lead "${saved.name}" updated successfully`)
+      }).catch((err) => toast.error(err.message || 'Failed to update lead'))
+    } else {
+      leadsApi.create(leadToSave).then((saved) => {
+        setLeads((prev) => [saved, ...prev])
+        toast.success(`Lead "${saved.name}" created successfully`)
+      }).catch((err) => toast.error(err.message || 'Failed to create lead'))
+    }
   }
 
   const handleDeleteLead = (leadId: string) => {
-    setLeads((prev) => prev.filter((l) => l.id !== leadId))
+    leadsApi.delete(leadId).then(() => {
+      setLeads((prev) => prev.filter((l) => l.id !== leadId))
+      toast.success('Lead deleted successfully')
+    }).catch((err) => toast.error(err.message || 'Failed to delete lead'))
   }
 
   const handleLeadStageChange = (leadId: string, newStage: PipelineStage) => {
-    setLeads((prev) =>
-      prev.map((lead) => {
-        if (lead.id !== leadId) return lead
-        let newSubStage = lead.leadStage
-        if (newStage === 'new_leads') newSubStage = 'New Lead'
-        else if (newStage === 'contacted') newSubStage = 'Contacted'
-        else if (newStage === 'qualified') newSubStage = 'Negotiation'
-        else if (newStage === 'converted') newSubStage = 'Booked'
+    let newSubStage = 'New Lead'
+    if (newStage === 'contacted') newSubStage = 'Contacted'
+    else if (newStage === 'qualified') newSubStage = 'Negotiation'
+    else if (newStage === 'converted') newSubStage = 'Booked'
 
-        return {
-          ...lead,
-          pipelineStage: newStage,
-          leadStage: newSubStage,
-        }
-      })
-    )
-    toast.success(`Lead moved to ${newStage.replace('_', ' ').toUpperCase()}`)
+    leadsApi.updateStage(leadId, newStage, newSubStage as any).then(() => {
+      setLeads((prev) =>
+        prev.map((lead) => {
+          if (lead.id !== leadId) return lead
+          return {
+            ...lead,
+            pipelineStage: newStage,
+            leadStage: newSubStage as any,
+          }
+        })
+      )
+      toast.success(`Lead moved to ${newStage.replace('_', ' ').toUpperCase()}`)
+    }).catch((err) => toast.error(err.message || 'Failed to update lead stage'))
   }
 
   // Project CRUD
   const handleSaveProject = (projectToSave: Project) => {
-    setProjects((prev) => {
-      const exists = prev.some((p) => p.id === projectToSave.id)
-      if (exists) {
-        return prev.map((p) => (p.id === projectToSave.id ? projectToSave : p))
-      }
-      return [projectToSave, ...prev]
-    })
+    const exists = projects.some((p) => p.id === projectToSave.id)
+    if (exists) {
+      projectsApi.update(projectToSave.id, projectToSave).then((saved) => {
+        setProjects((prev) => prev.map((p) => (p.id === saved.id ? saved : p)))
+        toast.success(`Project "${saved.projectName}" updated successfully`)
+      }).catch((err) => toast.error(err.message || 'Failed to update project'))
+    } else {
+      projectsApi.create(projectToSave).then((saved) => {
+        setProjects((prev) => [saved, ...prev])
+        toast.success(`Project "${saved.projectName}" created successfully`)
+      }).catch((err) => toast.error(err.message || 'Failed to create project'))
+    }
   }
 
   const handleDeleteProject = (projectId: string) => {
-    setProjects((prev) => prev.filter((p) => p.id !== projectId))
+    projectsApi.delete(projectId).then(() => {
+      setProjects((prev) => prev.filter((p) => p.id !== projectId))
+      toast.success('Project deleted successfully')
+    }).catch((err) => toast.error(err.message || 'Failed to delete project'))
   }
 
   const handleProjectStageChange = (projectId: string, newStage: ProjectStage) => {
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id !== projectId) return p
-        return { ...p, stage: newStage }
-      })
-    )
-    toast.success(`Project moved to stage ${newStage}`)
+    projectsApi.updateStage(projectId, newStage).then(() => {
+      setProjects((prev) =>
+        prev.map((p) => {
+          if (p.id !== projectId) return p
+          return { ...p, stage: newStage }
+        })
+      )
+      toast.success(`Project moved to stage ${newStage}`)
+    }).catch((err) => toast.error(err.message || 'Failed to update project stage'))
   }
 
   // Order Handlers
@@ -360,87 +386,146 @@ function AppContent() {
   }
 
   const handleSaveOrder = (savedOrder: Order) => {
-    setOrders((prev) => {
-      const exists = prev.some((o) => o.id === savedOrder.id)
-      if (exists) {
-        return prev.map((o) => (o.id === savedOrder.id ? savedOrder : o))
-      }
-      return [savedOrder, ...prev]
-    })
+    const exists = orders.some((o) => o.id === savedOrder.id)
+    if (exists) {
+      ordersApi.update(savedOrder.id, savedOrder).then((updated) => {
+        setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
+        toast.success('Order updated successfully')
+      }).catch((err) => toast.error(err.message || 'Failed to update order'))
+    } else {
+      ordersApi.create(savedOrder).then((created) => {
+        setOrders((prev) => [created, ...prev])
+        toast.success('Order created successfully')
+      }).catch((err) => toast.error(err.message || 'Failed to create order'))
+    }
     navigate('/orders')
   }
 
   const handleDeleteOrder = (orderId: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId))
-    toast.success('Order deleted successfully')
+    ordersApi.delete(orderId).then(() => {
+      setOrders((prev) => prev.filter((o) => o.id !== orderId))
+      toast.success('Order deleted successfully')
+    }).catch((err) => toast.error(err.message || 'Failed to delete order'))
   }
 
   const handleOrderStageChange = (orderId: string, newStage: OrderStage) => {
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id !== orderId) return o
-        return { ...o, stage: newStage }
-      })
-    )
-    toast.success(`Order stage updated to ${newStage}`)
+    ordersApi.updateStage(orderId, newStage).then(() => {
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id !== orderId) return o
+          return { ...o, stage: newStage }
+        })
+      )
+      toast.success(`Order stage updated to ${newStage}`)
+    }).catch((err) => toast.error(err.message || 'Failed to update order stage'))
   }
 
-  // Dynamic Breadcrumb
-  const breadcrumbTitle = useMemo(() => {
-    if (sidebarMode === 'settings') {
+  // Dynamic Interactive Breadcrumb Def
+  const breadcrumbItems = useMemo(() => {
+    if (pathname.startsWith('/settings')) {
       const titles: Record<SettingsTab, string> = {
-        'master-data': 'Settings: Master Data',
-        photographers: 'Settings: Photographers & Crew',
-        'sequence-id': 'Settings: Sequence ID & Visibility',
-        'preset-services': 'Preset Configuration: Services',
-        'preset-packages': 'Preset Configuration: Packages',
-        'preset-orders': 'Preset Configuration: Orders',
-        'preset-deliverables': 'Preset Configuration: Deliverables',
-        'template-forms': 'Design: Forms Template',
-        'template-quotation-pdf': 'Design: Quotation PDF Template',
-        'template-invoice-pdf': 'Design: Invoice PDF Template',
-        'template-contracts': 'Design: Contracts Template',
-        'template-feedbacks': 'Design: Feedbacks Template',
-        'stages-workflow': 'Stages: Production Workflow',
+        'master-data': 'Master Data',
+        photographers: 'Photographers & Crew',
+        'sequence-id': 'Sequence ID',
+        'preset-services': 'Services Preset',
+        'preset-packages': 'Packages Preset',
+        'preset-orders': 'Orders Preset',
+        'preset-deliverables': 'Deliverables Preset',
+        'template-forms': 'Forms Template',
+        'template-quotation-pdf': 'Quotation PDF Template',
+        'template-invoice-pdf': 'Invoice PDF Template',
+        'template-contracts': 'Contracts Template',
+        'template-feedbacks': 'Feedbacks Template',
+        'stages-workflow': 'Production Workflow',
       }
-      return titles[activeSetting] || 'Studio Settings'
+      return [
+        { label: 'Studio Settings', href: '/settings/master-data' },
+        { label: titles[activeSetting] || 'Settings' },
+      ]
     }
 
-    if (sidebarMode === 'reports') {
+    if (pathname.startsWith('/reports')) {
       const titles: Record<ReportCategory, string> = {
-        billing: 'Reports: Billing Statement',
-        leads: 'Reports: Leads Acquisition Funnel',
-        orders: 'Reports: Orders & Merchandise',
-        sessions: 'Reports: Sessions & Crew Deployment',
-        finance: 'Reports: Financial P&L & Profitability',
-        'master-report': 'Reports: Master Operations Register',
-        'account-analytics': 'Reports: Client Account Analytics & LTV',
-        feedback: 'Reports: Client Feedback & NPS',
+        billing: 'Billing Statement',
+        leads: 'Leads Funnel',
+        orders: 'Orders & Merchandise',
+        sessions: 'Sessions & Crew',
+        finance: 'Finance P&L',
+        'master-report': 'Master Register',
+        'account-analytics': 'Account Analytics',
+        feedback: 'Client Feedback',
       }
-      return titles[activeReport] || 'Studio Reports'
+      return [
+        { label: 'Reports & BI', href: '/reports/billing' },
+        { label: titles[activeReport] || 'Report' },
+      ]
     }
 
-    if (pathname === '/leads/create') return 'Create Lead'
-    if (pathname.startsWith('/leads/edit')) return `Edit Lead (${editingLead?.name || ''})`
-    if (pathname.startsWith('/leads')) return 'Photography Leads'
-    if (pathname === '/projects/create') return 'Create Project'
-    if (pathname.startsWith('/projects/edit')) return `Project: ${editingProject?.projectName || ''}`
-    if (pathname.startsWith('/sessions')) return 'Sessions'
-    if (pathname.startsWith('/billings')) return 'Billings'
-    if (pathname === '/orders/create') return 'New Order'
-    if (pathname.startsWith('/orders/edit')) return `Order: ${editingOrder?.orderNumber || ''}`
-    if (pathname.startsWith('/orders')) return 'Orders'
-    return 'Projects'
-  }, [sidebarMode, activeSetting, activeReport, pathname, editingLead, editingProject, editingOrder])
+    if (pathname === '/leads/create') {
+      return [
+        { label: 'Leads', href: '/leads' },
+        { label: 'Create Lead' },
+      ]
+    }
+    if (pathname.startsWith('/leads/edit')) {
+      return [
+        { label: 'Leads', href: '/leads' },
+        { label: editingLead?.name ? `Lead: ${editingLead.name}` : 'Edit Lead' },
+      ]
+    }
+    if (pathname.startsWith('/leads')) {
+      return [{ label: 'Photography Leads' }]
+    }
+
+    if (pathname === '/projects/create') {
+      return [
+        { label: 'Projects', href: '/projects' },
+        { label: 'Create Project' },
+      ]
+    }
+    if (pathname.startsWith('/projects/edit')) {
+      return [
+        { label: 'Projects', href: '/projects' },
+        { label: editingProject?.projectName ? `Project: ${editingProject.projectName}` : 'Edit Project' },
+      ]
+    }
+    if (pathname.startsWith('/projects')) {
+      return [{ label: 'Projects' }]
+    }
+
+    if (pathname.startsWith('/sessions')) {
+      return [{ label: 'Sessions' }]
+    }
+    if (pathname.startsWith('/billings')) {
+      return [{ label: 'Billings' }]
+    }
+
+    if (pathname === '/orders/create') {
+      return [
+        { label: 'Orders', href: '/orders' },
+        { label: 'New Order' },
+      ]
+    }
+    if (pathname.startsWith('/orders/edit')) {
+      return [
+        { label: 'Orders', href: '/orders' },
+        { label: editingOrder?.orderNumber ? `Order: ${editingOrder.orderNumber}` : 'Edit Order' },
+      ]
+    }
+    if (pathname.startsWith('/orders')) {
+      return [{ label: 'Orders' }]
+    }
+
+    return [{ label: 'Projects' }]
+  }, [activeSetting, activeReport, pathname, editingLead, editingProject, editingOrder])
 
   return (
     <DashboardShell
       title="Photography CRM"
-      breadcrumb={breadcrumbTitle}
+      breadcrumb={breadcrumbItems}
       sidebar={
         <PhotographySidebar
-          mode={sidebarMode}
-          currentRoute={currentMainRoute}
+          currentRoute={currentRoute}
           activeReport={activeReport}
           activeSetting={activeSetting}
           onSelectRoute={(r) => {
@@ -459,122 +544,10 @@ function AppContent() {
           onSelectSetting={(set) => {
             navigate(`/settings/${set}`)
           }}
-          onExitSubmode={() => {
-            navigate('/projects')
-          }}
         />
       }
-      headerActions={
-        <div className="flex items-center gap-2">
-          <Button
-            variant={sidebarMode === 'reports' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => {
-              if (sidebarMode === 'reports') {
-                navigate('/projects')
-              } else {
-                navigate(`/reports/${activeReport || 'billing'}`)
-              }
-            }}
-            className={`h-7 text-xs font-semibold gap-1.5 transition ${
-              sidebarMode === 'reports'
-                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
-                : 'border-border text-foreground hover:bg-muted'
-            }`}
-          >
-            <IconReportAnalytics className="h-3.5 w-3.5" />
-            <span>Reports</span>
-          </Button>
-
-          <Button
-            variant={sidebarMode === 'settings' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => {
-              if (sidebarMode === 'settings') {
-                navigate('/projects')
-              } else {
-                navigate(`/settings/${activeSetting || 'master-data'}`)
-              }
-            }}
-            className={`h-7 text-xs font-semibold gap-1.5 transition ${
-              sidebarMode === 'settings'
-                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
-                : 'border-border text-foreground hover:bg-muted'
-            }`}
-          >
-            <IconSettings className="h-3.5 w-3.5" />
-            <span>Settings</span>
-          </Button>
-        </div>
-      }
     >
-      <Toaster position="top-right" richColors />
-
-      {/* Main Module Tabs Navigation Bar (only shown in core CRM mode) */}
-      {sidebarMode === 'main' && (
-        <div className="flex items-center gap-2 border-b bg-muted/10 px-1 py-1 mb-4 rounded-lg">
-          <button
-            type="button"
-            onClick={() => navigate('/projects')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
-              pathname.startsWith('/projects')
-                ? 'bg-background text-foreground shadow-xs font-bold border'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <IconFolders className="h-3.5 w-3.5" />
-            <span>Projects ({projects.length})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/sessions')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
-              pathname.startsWith('/sessions')
-                ? 'bg-background text-foreground shadow-xs font-bold border'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <IconCalendar className="h-3.5 w-3.5" />
-            <span>Sessions ({sessions.length})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/leads')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
-              pathname.startsWith('/leads')
-                ? 'bg-background text-foreground shadow-xs font-bold border'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <IconTarget className="h-3.5 w-3.5" />
-            <span>Leads ({leads.length})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/billings')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
-              pathname.startsWith('/billings')
-                ? 'bg-background text-foreground shadow-xs font-bold border'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <IconCreditCard className="h-3.5 w-3.5" />
-            <span>Billings</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/orders')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
-              pathname.startsWith('/orders')
-                ? 'bg-background text-foreground shadow-xs font-bold border'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <IconShoppingBag className="h-3.5 w-3.5" />
-            <span>Orders ({orders.length})</span>
-          </button>
-        </div>
-      )}
+      <Toaster position="bottom-right" richColors />
 
       {/* Routes Switcher with Code-Splitting Suspense */}
       <Suspense
@@ -605,6 +578,7 @@ function AppContent() {
             path="/projects/create"
             element={
               <ProjectCreatePage
+                initialData={projectPrefillData || undefined}
                 onBack={handleNavigateToProjectsList}
                 onSave={handleSaveProject}
               />
@@ -628,8 +602,8 @@ function AppContent() {
             element={
               <SessionsPage
                 sessions={sessions}
-                onAddNewSession={() => {}}
-                onEditSession={() => {}}
+                onAddNewSession={() => { }}
+                onEditSession={() => { }}
                 onDeleteSession={handleDeleteSession}
                 onStatusChange={handleSessionStatusChange}
                 onSaveSession={handleSaveSession}
@@ -647,6 +621,7 @@ function AppContent() {
                 onEditLead={handleNavigateToEditLead}
                 onDeleteLead={handleDeleteLead}
                 onStageChange={handleLeadStageChange}
+                onConvertToProject={handleConvertLeadToProject}
               />
             }
           />
@@ -726,40 +701,8 @@ function AppContent() {
           <Route path="/settings/sequence-id" element={<SequenceIdPage />} />
           <Route path="/settings/preset-services" element={<ServicesSettingsPage />} />
           <Route path="/settings/preset-packages" element={<PackagesSettingsPage />} />
-          <Route
-            path="/settings/preset-orders"
-            element={
-              <GenericPresetPage
-                title="Orders & Merchandise Presets"
-                subtitle="Default pricing for albums, frames, and prints"
-                icon={IconSettings}
-                initialItems={[
-                  { id: 'ordp-1', name: '12x36 Photobook (40 Pgs)', rate: 12500, unit: 'album' },
-                  { id: 'ordp-2', name: 'Acrylic Wall Frame (24x36)', rate: 6500, unit: 'frame' },
-                  { id: 'ordp-3', name: 'Canvas Gallery Wrap (20x30)', rate: 4200, unit: 'canvas' },
-                  { id: 'ordp-4', name: 'Premium Wooden Keepsake Box', rate: 3500, unit: 'box' },
-                ]}
-              />
-            }
-          />
-          <Route
-            path="/settings/preset-deliverables"
-            element={
-              <GenericPresetPage
-                title="Deliverables Presets"
-                subtitle="Standard deliverables checklist for project milestones"
-                icon={IconSettings}
-                hasPrice={false}
-                initialItems={[
-                  { id: 'del-1', name: 'High-Res Edited Photos (Soft Copy)' },
-                  { id: 'del-2', name: 'Cinematic 4K Wedding Teaser (3-5 mins)' },
-                  { id: 'del-3', name: 'Full Length Documentary Film (45 mins)' },
-                  { id: 'del-4', name: 'Custom Engraved Wooden USB Drive' },
-                  { id: 'del-5', name: 'Handcrafted Flushmount Coffee Table Album' },
-                ]}
-              />
-            }
-          />
+          <Route path="/settings/preset-orders" element={<OrdersSettingsPage />} />
+          <Route path="/settings/preset-deliverables" element={<DeliverablesSettingsPage />} />
           <Route
             path="/settings/template-forms"
             element={
@@ -790,26 +733,8 @@ function AppContent() {
               />
             }
           />
-          <Route
-            path="/settings/template-contracts"
-            element={
-              <TemplateCustomizerPage
-                title="Photography Contract Agreement"
-                subtitle="Copyright ownership, cancellation clauses, and client liability agreements"
-                type="contract"
-              />
-            }
-          />
-          <Route
-            path="/settings/template-feedbacks"
-            element={
-              <TemplateCustomizerPage
-                title="Client Feedback & NPS Survey"
-                subtitle="Post-shoot satisfaction survey questions and review requests"
-                type="feedback"
-              />
-            }
-          />
+          <Route path="/settings/template-contracts" element={<ContractTemplatePage />} />
+          <Route path="/settings/template-feedbacks" element={<FeedbackTemplatePage />} />
           <Route path="/settings/stages-workflow" element={<WorkflowPage />} />
 
           {/* Catch-all redirect */}
@@ -895,7 +820,20 @@ function OrderEditPageWrapper({
 export default function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <AuthProvider>
+        <Routes>
+          <Route path="/signin" element={<SigninPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute fallback={<Navigate to="/signin" replace />}>
+                <AppContent />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

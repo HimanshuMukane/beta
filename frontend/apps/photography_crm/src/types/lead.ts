@@ -1,3 +1,6 @@
+import type { ProjectType, ProjectSegment } from './project'
+export type { ProjectType, ProjectSegment }
+
 export type LeadSource =
   | 'All Leads'
   | 'Messenger'
@@ -29,7 +32,6 @@ export type LeadStage =
   | ConvertedSubStage
 
 export type LeadPipeline = 'Sales Pipeline' | 'Wedding Inquiries' | 'Commercial Shoots' | 'Portraits'
-export type ProjectType = 'Wedding' | 'Pre-Wedding' | 'Engagement' | 'Corporate' | 'Maternity' | 'Fashion' | 'Birthday'
 export type QuoteType = 'Standard Package' | 'Custom Estimate' | 'Retainer' | 'Hourly Shoot'
 
 // Navigation Perspectives
@@ -47,14 +49,6 @@ export type FollowupSubFilter =
   | 'due_followup'
   | 'today_followup'
   | 'upcoming_followup'
-
-export interface ProjectSegment {
-  id: string
-  name: string
-  type: ProjectType
-  startDate: string
-  endDate: string
-}
 
 export interface ServiceItem {
   id: string

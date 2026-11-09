@@ -27,19 +27,33 @@ import {
   DialogTitle,
   DialogFooter,
   toast,
+  apiClient,
 } from '@repo/ui'
 import type { TeamDesignation, CrewMember } from '../../types/settings'
-import { INITIAL_DESIGNATIONS, INITIAL_CREW_MEMBERS } from '../../data/mock-settings'
+import { settingsApi } from '../../api/settingsApi'
+import { PhoneInputField } from '../../components/PhoneInputField'
 
 export function PhotographersPage() {
-  const [designations, setDesignations] = React.useState<TeamDesignation[]>(INITIAL_DESIGNATIONS)
-  const [crewMembers, setCrewMembers] = React.useState<CrewMember[]>(INITIAL_CREW_MEMBERS)
+  const [designations, setDesignations] = React.useState<TeamDesignation[]>([])
+  const [crewMembers, setCrewMembers] = React.useState<CrewMember[]>([])
 
-  // Drawer 1: Manage Designations (matches Screenshot 1)
+  React.useEffect(() => {
+    settingsApi.getSettings().then((s) => {
+      if (s.crewMembers) setCrewMembers(s.crewMembers)
+    }).catch(console.error)
+
+    apiClient<TeamDesignation[]>('/api/roles')
+      .then((roles) => {
+        if (Array.isArray(roles)) {
+          setDesignations(roles)
+        }
+      })
+      .catch(console.error)
+  }, [])
+
   const [isDesignationsDrawerOpen, setIsDesignationsDrawerOpen] = React.useState(false)
   const [newDesignationInput, setNewDesignationInput] = React.useState('')
 
-  // Drawer 2: Add Crew Member (matches Screenshot 2)
   const [isAddCrewDrawerOpen, setIsAddCrewDrawerOpen] = React.useState(false)
   const [fullName, setFullName] = React.useState('')
   const [countryCode, setCountryCode] = React.useState('+91')
@@ -50,21 +64,30 @@ export function PhotographersPage() {
   )
   const [note, setNote] = React.useState('')
 
-  // Designation handlers
-  const handleAddDesignation = () => {
-    if (!newDesignationInput.trim()) return
-    const newDes: TeamDesignation = {
-      id: `des-${Date.now()}`,
-      name: newDesignationInput.trim(),
+  const handleAddDesignation = async () => {
+    const name = newDesignationInput.trim()
+    if (!name) return
+    try {
+      const created = await apiClient<TeamDesignation>('/api/roles', {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      })
+      setDesignations((prev) => [...prev, created])
+      setNewDesignationInput('')
+      toast.success(`Added designation "${created.name}"`)
+    } catch {
+      toast.error('Failed to add designation')
     }
-    setDesignations((prev) => [...prev, newDes])
-    setNewDesignationInput('')
-    toast.success(`Added designation "${newDes.name}"`)
   }
 
-  const handleDeleteDesignation = (id: string) => {
-    setDesignations((prev) => prev.filter((d) => d.id !== id))
-    toast.success('Designation removed')
+  const handleDeleteDesignation = async (id: string) => {
+    try {
+      await apiClient(`/api/roles/${id}`, { method: 'DELETE' })
+      setDesignations((prev) => prev.filter((d) => d.id !== id))
+      toast.success('Designation removed')
+    } catch {
+      toast.error('Failed to remove designation')
+    }
   }
 
   // Crew Member handlers
@@ -89,7 +112,9 @@ export function PhotographersPage() {
       note: note.trim() || undefined,
     }
 
-    setCrewMembers((prev) => [newCrew, ...prev])
+    const updated = [newCrew, ...crewMembers]
+    setCrewMembers(updated)
+    settingsApi.updateSettings({ crewMembers: updated }).catch(console.error)
     setIsAddCrewDrawerOpen(false)
     setFullName('')
     setMobileNo('')
@@ -99,7 +124,9 @@ export function PhotographersPage() {
   }
 
   const handleDeleteCrewMember = (id: string) => {
-    setCrewMembers((prev) => prev.filter((c) => c.id !== id))
+    const updated = crewMembers.filter((c) => c.id !== id)
+    setCrewMembers(updated)
+    settingsApi.updateSettings({ crewMembers: updated }).catch(console.error)
     toast.success('Crew member removed')
   }
 
@@ -107,16 +134,21 @@ export function PhotographersPage() {
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
       {/* Top Banner and Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Photographers & Studio Crew
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Manage your camera operators, drone pilots, cinematographers, and designations.
-          </p>
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+            <IconUsers className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              Photographers & Studio Crew
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Manage your camera operators, drone pilots, cinematographers, and designations.
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
           <Button
             variant="outline"
             size="sm"
@@ -129,7 +161,7 @@ export function PhotographersPage() {
           <Button
             size="sm"
             onClick={() => setIsAddCrewDrawerOpen(true)}
-            className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs h-8"
+            className="text-xs font-semibold gap-1.5 bg-primary text-primary-foreground shadow-xs h-8"
           >
             <IconUserPlus className="h-3.5 w-3.5" />
             Add Crew Member
@@ -323,26 +355,14 @@ export function PhotographersPage() {
               {/* Mobile No */}
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-foreground">Mobile No</Label>
-                <div className="flex gap-2">
-                  <Select value={countryCode} onValueChange={setCountryCode}>
-                    <SelectTrigger className="w-[85px] h-9 text-xs">
-                      <SelectValue placeholder="+91" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="+91">IN (+91)</SelectItem>
-                      <SelectItem value="+1">US (+1)</SelectItem>
-                      <SelectItem value="+44">UK (+44)</SelectItem>
-                      <SelectItem value="+971">AE (+971)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    value={mobileNo}
-                    onChange={(e) => setMobileNo(e.target.value)}
-                    placeholder="Mobile No"
-                    className="flex-1 h-9 text-xs"
-                    required
-                  />
-                </div>
+                <PhoneInputField
+                  countryCode={countryCode}
+                  mobileNo={mobileNo}
+                  onCountryCodeChange={setCountryCode}
+                  onMobileNoChange={setMobileNo}
+                  placeholder="Mobile No"
+                  required
+                />
               </div>
 
               {/* Email Address */}

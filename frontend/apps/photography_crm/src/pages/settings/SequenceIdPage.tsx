@@ -1,6 +1,7 @@
 import * as React from 'react'
 import {
   IconDeviceFloppy,
+  IconId,
 } from '@tabler/icons-react'
 import {
   Card,
@@ -14,11 +15,29 @@ import {
   toast,
 } from '@repo/ui'
 import type { SequenceIdSettings, SequenceConfig } from '../../types/settings'
-import { INITIAL_SEQUENCE_SETTINGS } from '../../data/mock-settings'
+import { settingsApi } from '../../api/settingsApi'
 
 export function SequenceIdPage() {
   const [activeTab, setActiveTab] = React.useState<'sequence' | 'visibility'>('sequence')
-  const [settings, setSettings] = React.useState<SequenceIdSettings>(INITIAL_SEQUENCE_SETTINGS)
+  const [settings, setSettings] = React.useState<SequenceIdSettings>({
+    leads: { prefix: 'ESPE/LQuote/', nextNumber: '101' },
+    client: { prefix: 'ESPE/CLIENT/', nextNumber: '101' },
+    orders: { prefix: 'ESPE/WALKIN/', nextNumber: '100' },
+    expense: { prefix: 'ESPE/EX/', nextNumber: '100' },
+    invoice: { prefix: 'ESPE/INVOICE/', nextNumber: '101' },
+    projects: { prefix: 'ESPE/EVENT/', nextNumber: '101' },
+    studioTaxNo: '27AABCE1234F1Z5',
+    cancellation: { prefix: 'ESPE/CANCEL/', nextNumber: '100' },
+    showClientTaxNo: true,
+  })
+
+  React.useEffect(() => {
+    settingsApi.getSettings().then((s) => {
+      if (s.sequenceSettings && Object.keys(s.sequenceSettings).length > 0) {
+        setSettings(s.sequenceSettings)
+      }
+    }).catch(console.error)
+  }, [])
 
   const handleSequenceChange = (
     key: keyof Omit<SequenceIdSettings, 'showClientTaxNo' | 'studioTaxNo'>,
@@ -35,13 +54,38 @@ export function SequenceIdPage() {
   }
 
   const handleSave = () => {
-    toast.success('Sequence & Visibility settings saved successfully')
+    settingsApi.updateSettings({ sequenceSettings: settings }).then(() => {
+      toast.success('Sequence & Visibility settings saved successfully')
+    }).catch((err) => toast.error(err.message || 'Failed to save settings'))
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto pb-16">
+    <div className="space-y-6 max-w-4xl mx-auto pb-16">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+            <IconId className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Sequence ID & Tax Settings</h1>
+            <p className="text-xs text-muted-foreground">
+              Configure auto-increment prefixes and fiscal visibility on quotations and invoices.
+            </p>
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          onClick={handleSave}
+          className="h-8 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground self-start sm:self-auto shadow-xs"
+        >
+          <IconDeviceFloppy className="h-3.5 w-3.5" />
+          Save Changes
+        </Button>
+      </div>
+
       {/* Top Tab Pill Switcher (Matches Screenshot 3) */}
-      <div className="flex justify-center pt-2">
+      <div className="flex justify-center pt-1">
         <div className="inline-flex rounded-xl bg-muted/60 p-1 border shadow-2xs">
           <button
             type="button"

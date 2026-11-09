@@ -14,7 +14,17 @@ import {
   Checkbox,
   cn,
 } from '@repo/ui'
-import { AVAILABLE_DELIVERABLES } from '../data/mock-leads'
+import { useStudioSettings } from '../hooks/useStudioSettings'
+
+const DEFAULT_FALLBACK_DELIVERABLES = [
+  { id: 'del-1', name: 'Raw Photos', category: 'Wedding', selected: true },
+  { id: 'del-2', name: 'Album', category: 'Wedding', selected: false },
+  { id: 'del-3', name: 'Pen Drive', category: 'Wedding', selected: true },
+  { id: 'del-4', name: 'Wedding Teaser', category: 'Wedding', selected: false },
+  { id: 'del-5', name: 'Highlights', category: 'Wedding', selected: false },
+  { id: 'del-6', name: 'Mini Photo Book (Complimentary)', category: 'Complimentary', selected: false },
+  { id: 'del-7', name: 'Online Gallery 1 Year', category: 'Complimentary', selected: false },
+]
 
 interface DeliverablesDropdownProps {
   selectedDeliverables: string[]
@@ -25,19 +35,31 @@ export function DeliverablesDropdown({
   selectedDeliverables,
   onChange,
 }: DeliverablesDropdownProps) {
+  const { settings } = useStudioSettings()
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
 
+  const allDeliverables = React.useMemo(() => {
+    if (settings?.deliverablesPresets && settings.deliverablesPresets.length > 0) {
+      return settings.deliverablesPresets.map((d) => ({
+        id: d.id,
+        name: d.name,
+        category: d.groupName,
+      }))
+    }
+    return DEFAULT_FALLBACK_DELIVERABLES
+  }, [settings?.deliverablesPresets])
+
   const categories = React.useMemo(() => {
-    const cats = Array.from(new Set(AVAILABLE_DELIVERABLES.map((d) => d.category)))
+    const cats = Array.from(new Set(allDeliverables.map((d) => d.category)))
     return cats
-  }, [])
+  }, [allDeliverables])
 
   const filteredItems = React.useMemo(() => {
-    if (!search.trim()) return AVAILABLE_DELIVERABLES
+    if (!search.trim()) return allDeliverables
     const q = search.toLowerCase()
-    return AVAILABLE_DELIVERABLES.filter((d) => d.name.toLowerCase().includes(q))
-  }, [search])
+    return allDeliverables.filter((d) => d.name.toLowerCase().includes(q))
+  }, [search, allDeliverables])
 
   const toggleItem = (name: string) => {
     if (selectedDeliverables.includes(name)) {
@@ -48,7 +70,7 @@ export function DeliverablesDropdown({
   }
 
   const toggleCategory = (category: string) => {
-    const itemsInCat = AVAILABLE_DELIVERABLES.filter((d) => d.category === category).map(
+    const itemsInCat = allDeliverables.filter((d) => d.category === category).map(
       (d) => d.name
     )
     const allSelected = itemsInCat.every((n) => selectedDeliverables.includes(n))

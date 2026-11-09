@@ -1,9 +1,6 @@
 import * as React from 'react'
 import {
   IconArrowLeft,
-  IconTrash,
-  IconGripVertical,
-  IconCalendar,
   IconDeviceFloppy,
   IconEdit,
 } from '@tabler/icons-react'
@@ -24,27 +21,19 @@ import {
   Badge,
   toast,
 } from '@repo/ui'
-import type { Lead, ProjectSegment, ServiceItem, LeadSource, ProjectType } from '../types/lead'
+import type { Lead, ProjectSegment, ServiceItem, LeadSource } from '../types/lead'
 import { EditServiceDrawer } from '../components/EditServiceDrawer'
 import { DeliverablesDropdown } from '../components/DeliverablesDropdown'
 import { DateTimePickerCustom } from '../components/DateTimePickerCustom'
 import { LeadSourceCombobox } from '../components/LeadSourceCombobox'
+import { PhoneInputField } from '../components/PhoneInputField'
+import { ProjectSegmentsEditor } from '../components/ProjectSegmentsEditor'
 
 interface LeadFormPageProps {
   initialLead?: Lead | null
   onBack: () => void
   onSave: (lead: Lead) => void
 }
-
-const PROJECT_TYPES: ProjectType[] = [
-  'Wedding',
-  'Pre-Wedding',
-  'Engagement',
-  'Corporate',
-  'Maternity',
-  'Fashion',
-  'Birthday',
-]
 
 const QUOTATION_TEMPLATES = [
   'Choose Quotation Design Templates',
@@ -129,29 +118,6 @@ export function LeadFormPage({ initialLead, onBack, onSave }: LeadFormPageProps)
 
   // Drawer
   const [isServiceDrawerOpen, setIsServiceDrawerOpen] = React.useState(false)
-
-  // Segment Handlers
-  const handleAddSegment = () => {
-    const nextIdx = projectSegments.length + 1
-    const newSeg: ProjectSegment = {
-      id: `seg-${Date.now()}`,
-      name: `Segment ${nextIdx}`,
-      type: 'Wedding',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
-    }
-    setProjectSegments((prev) => [...prev, newSeg])
-  }
-
-  const handleRemoveSegment = (id: string) => {
-    setProjectSegments((prev) => prev.filter((s) => s.id !== id))
-  }
-
-  const handleUpdateSegment = (id: string, field: keyof ProjectSegment, val: string) => {
-    setProjectSegments((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, [field]: val } : s))
-    )
-  }
 
   // Cost Calculations
   const servicesSubTotal = React.useMemo(() => {
@@ -294,27 +260,14 @@ export function LeadFormPage({ initialLead, onBack, onSave }: LeadFormPageProps)
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Mobile No <span className="text-destructive">*</span>
                 </Label>
-                <div className="flex items-center gap-2">
-                  <Select value={countryCode} onValueChange={setCountryCode}>
-                    <SelectTrigger className="w-24 shrink-0 h-10 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="+91">IN (+91)</SelectItem>
-                      <SelectItem value="+1">US (+1)</SelectItem>
-                      <SelectItem value="+44">UK (+44)</SelectItem>
-                      <SelectItem value="+971">AE (+971)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    value={mobileNo}
-                    onChange={(e) => setMobileNo(e.target.value)}
-                    placeholder="98765 43210"
-                    type="tel"
-                    className="h-10 text-sm flex-1"
-                    required
-                  />
-                </div>
+                <PhoneInputField
+                  countryCode={countryCode}
+                  mobileNo={mobileNo}
+                  onCountryCodeChange={setCountryCode}
+                  onMobileNoChange={setMobileNo}
+                  placeholder="98765 43210"
+                  required
+                />
               </div>
 
               {/* Email Address */}
@@ -409,124 +362,11 @@ export function LeadFormPage({ initialLead, onBack, onSave }: LeadFormPageProps)
                 </div>
               </div>
 
-              {/* Project Segments header */}
-              <div className="pt-2">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    <IconCalendar className="h-4 w-4 text-primary" />
-                    <span>Project Segments</span>
-                  </div>
-                  <span className="text-[11px] text-muted-foreground">
-                    Add one segment per date block
-                  </span>
-                </div>
-
-                {/* Segments List */}
-                <div className="space-y-3">
-                  {projectSegments.map((seg, idx) => (
-                    <div
-                      key={seg.id}
-                      className="rounded-lg border bg-muted/20 p-3.5 space-y-2 relative transition hover:border-border"
-                    >
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
-                            {idx + 1}
-                          </span>
-                          <Input
-                            value={seg.name}
-                            onChange={(e) =>
-                              handleUpdateSegment(seg.id, 'name', e.target.value)
-                            }
-                            placeholder="Segment title (e.g. Haldi ceremony)"
-                            className="h-7 text-xs font-medium w-48 border-0 bg-transparent px-1 focus-visible:ring-1"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {projectSegments.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveSegment(seg.id)}
-                              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                            >
-                              <IconTrash className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                          <IconGripVertical className="h-4 w-4 text-muted-foreground/40 cursor-grab" />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Type
-                          </span>
-                          <Select
-                            value={seg.type}
-                            onValueChange={(val) =>
-                              handleUpdateSegment(seg.id, 'type', val)
-                            }
-                          >
-                            <SelectTrigger className="h-8 text-xs bg-background">
-                              <SelectValue placeholder="Project Type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {PROJECT_TYPES.map((pt) => (
-                                <SelectItem key={pt} value={pt} className="text-xs">
-                                  {pt}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Event Date Range
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="date"
-                              value={seg.startDate}
-                              onChange={(e) =>
-                                handleUpdateSegment(seg.id, 'startDate', e.target.value)
-                              }
-                              className="h-8 text-xs bg-background px-2"
-                            />
-                            <span className="text-xs text-muted-foreground">→</span>
-                            <Input
-                              type="date"
-                              value={seg.endDate}
-                              onChange={(e) =>
-                                handleUpdateSegment(seg.id, 'endDate', e.target.value)
-                              }
-                              className="h-8 text-xs bg-background px-2"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add Segment */}
-                <div className="pt-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleAddSegment}
-                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 p-0 h-auto font-medium"
-                  >
-                    + Add Project segment
-                  </Button>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Long-duration projects are easier to manage in calendars with segments.
-                  </p>
-                </div>
-              </div>
+              {/* Project Segments Editor */}
+              <ProjectSegmentsEditor
+                segments={projectSegments}
+                onChange={setProjectSegments}
+              />
             </CardContent>
           </Card>
         </div>

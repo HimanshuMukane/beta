@@ -520,7 +520,7 @@ export function ProjectsPage({
               columns={columns}
               data={filteredProjects}
               searchableColumns={['projectName', 'clientName', 'id', 'projectType']}
-              searchPlaceholder="Search projects by client or project name... (Press ⌘K)"
+              searchPlaceholder="Search projects by client, ID, or project name..."
               filterConfigs={filterConfigs}
               bulkActions={bulkActions}
               rowActions={rowActions}

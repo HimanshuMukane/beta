@@ -1,7 +1,6 @@
 import * as React from 'react'
 import {
   Button,
-  Badge,
   Input,
   Dialog,
   DialogContent,
@@ -19,12 +18,7 @@ import {
 } from '@repo/ui'
 import {
   IconCheck,
-  IconClock,
   IconPlus,
-  IconChevronRight,
-  IconFilter,
-  IconUser,
-  IconCalendar,
 } from '@tabler/icons-react'
 import {
   ProductionTaskDrawer,
@@ -171,7 +165,7 @@ interface ProductionMatrixViewProps {
 }
 
 export function ProductionMatrixView({
-  projectId,
+  projectId: _projectId,
   projectName,
 }: ProductionMatrixViewProps) {
   const [activePhase, setActivePhase] = React.useState<

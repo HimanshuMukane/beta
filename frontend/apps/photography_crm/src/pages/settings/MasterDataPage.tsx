@@ -21,13 +21,19 @@ import {
   toast,
 } from '@repo/ui'
 import type { MasterDataCategory, MasterDataItem } from '../../types/settings'
-import { INITIAL_MASTER_DATA } from '../../data/mock-settings'
+import { settingsApi } from '../../api/settingsApi'
 
 export function MasterDataPage() {
-  const [categories, setCategories] = React.useState<Record<string, MasterDataCategory>>(
-    INITIAL_MASTER_DATA
-  )
+  const [categories, setCategories] = React.useState<Record<string, MasterDataCategory>>({})
   const [activeCategoryKey, setActiveCategoryKey] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    settingsApi.getSettings().then((s) => {
+      if (s.masterData && Object.keys(s.masterData).length > 0) {
+        setCategories(s.masterData)
+      }
+    }).catch(console.error)
+  }, [])
 
   // Drawer / Modal item editing state
   const [editingItemId, setEditingItemId] = React.useState<string | null>(null)
@@ -57,13 +63,15 @@ export function MasterDataPage() {
       name: newItemName.trim(),
     }
 
-    setCategories((prev) => ({
-      ...prev,
+    const updated = {
+      ...categories,
       [activeCategoryKey]: {
-        ...prev[activeCategoryKey],
-        items: [...prev[activeCategoryKey].items, newItem],
+        ...categories[activeCategoryKey],
+        items: [...(categories[activeCategoryKey]?.items || []), newItem],
       },
-    }))
+    }
+    setCategories(updated)
+    settingsApi.updateSettings({ masterData: updated }).catch(console.error)
     setNewItemName('')
     toast.success(`Added "${newItem.name}" to ${activeCategory?.title}`)
   }
@@ -75,15 +83,17 @@ export function MasterDataPage() {
 
   const handleSaveEdit = (itemId: string) => {
     if (!editItemName.trim() || !activeCategoryKey) return
-    setCategories((prev) => ({
-      ...prev,
+    const updated = {
+      ...categories,
       [activeCategoryKey]: {
-        ...prev[activeCategoryKey],
-        items: prev[activeCategoryKey].items.map((it) =>
+        ...categories[activeCategoryKey],
+        items: (categories[activeCategoryKey]?.items || []).map((it) =>
           it.id === itemId ? { ...it, name: editItemName.trim() } : it
         ),
       },
-    }))
+    }
+    setCategories(updated)
+    settingsApi.updateSettings({ masterData: updated }).catch(console.error)
     setEditingItemId(null)
     setEditItemName('')
     toast.success('Updated successfully')
@@ -91,25 +101,32 @@ export function MasterDataPage() {
 
   const handleDeleteItem = (itemId: string) => {
     if (!activeCategoryKey) return
-    setCategories((prev) => ({
-      ...prev,
+    const updated = {
+      ...categories,
       [activeCategoryKey]: {
-        ...prev[activeCategoryKey],
-        items: prev[activeCategoryKey].items.filter((it) => it.id !== itemId),
+        ...categories[activeCategoryKey],
+        items: (categories[activeCategoryKey]?.items || []).filter((it) => it.id !== itemId),
       },
-    }))
+    }
+    setCategories(updated)
+    settingsApi.updateSettings({ masterData: updated }).catch(console.error)
     toast.success('Item deleted')
   }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
-      {/* Header matching Screenshot 4 */}
-      <div className="text-center space-y-1.5 pt-2 pb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Master Data</h1>
-        <p className="text-xs text-muted-foreground max-w-2xl mx-auto">
-          Configure core business parameters—projects, expenses, tax percentage, orders, schedules and
-          status presets—for consistency across your studio operations.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+            <IconDatabase className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Master Data</h1>
+            <p className="text-xs text-muted-foreground">
+              Configure core business parameters—projects, expenses, tax percentage, schedules, and statuses.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Types Section */}

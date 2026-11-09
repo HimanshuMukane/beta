@@ -1,22 +1,14 @@
 import * as React from 'react'
 import {
   IconPlus,
-  IconMinus,
   IconTrash,
-  IconEdit,
-  IconSparkles,
   IconBox,
   IconArrowLeft,
-  IconCopy,
   IconTrendingUp,
-  IconChevronDown,
+  IconCopy,
 } from '@tabler/icons-react'
 import {
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   Button,
   Input,
   Select,
@@ -27,9 +19,9 @@ import {
   Textarea,
   Badge,
   toast,
-  cn,
 } from '@repo/ui'
 import { DeliverablesDropdown } from '../../components/DeliverablesDropdown'
+import { settingsApi } from '../../api/settingsApi'
 
 export interface PackageServiceItem {
   id: string
@@ -90,6 +82,14 @@ export function PackagesSettingsPage() {
   const [viewMode, setViewMode] = React.useState<'list' | 'editor'>('list')
   const [editingPackageId, setEditingPackageId] = React.useState<string | null>(null)
 
+  React.useEffect(() => {
+    settingsApi.getSettings().then((store) => {
+      if (store.packages && store.packages.length > 0) {
+        setPackages(store.packages)
+      }
+    }).catch(() => {})
+  }, [])
+
   // Editor Form State
   const [packageName, setPackageName] = React.useState('')
   const [packageDescription, setPackageDescription] = React.useState('')
@@ -127,7 +127,11 @@ export function PackagesSettingsPage() {
 
   // Delete package
   const handleDeletePackage = (id: string) => {
-    setPackages((prev) => prev.filter((p) => p.id !== id))
+    setPackages((prev) => {
+      const updated = prev.filter((p) => p.id !== id)
+      settingsApi.updateSettings({ packages: updated }).catch(() => {})
+      return updated
+    })
     toast.success('Package deleted')
   }
 
@@ -138,7 +142,11 @@ export function PackagesSettingsPage() {
       id: `pkg-${Date.now()}`,
       name: `${pkg.name} (Copy)`,
     }
-    setPackages((prev) => [duplicated, ...prev])
+    setPackages((prev) => {
+      const updated = [duplicated, ...prev]
+      settingsApi.updateSettings({ packages: updated }).catch(() => {})
+      return updated
+    })
     toast.success('Package duplicated')
   }
 
@@ -227,7 +235,9 @@ export function PackagesSettingsPage() {
 
     setPackages((prev) => {
       const exists = prev.some((p) => p.id === saved.id)
-      return exists ? prev.map((p) => (p.id === saved.id ? saved : p)) : [saved, ...prev]
+      const updated = exists ? prev.map((p) => (p.id === saved.id ? saved : p)) : [saved, ...prev]
+      settingsApi.updateSettings({ packages: updated }).catch(() => {})
+      return updated
     })
 
     toast.success(editingPackageId ? 'Package updated!' : 'Package created!')
@@ -237,31 +247,36 @@ export function PackagesSettingsPage() {
   // 1. LIST VIEW (matching Image 4)
   if (viewMode === 'list') {
     return (
-      <div className="space-y-6 max-w-4xl mx-auto pt-2">
-        {/* Title & Subtitle */}
-        <div className="text-center space-y-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Packages</h1>
-          <p className="text-xs text-muted-foreground max-w-xl mx-auto">
-            Add complete package details, including the package name and service descriptions. Easily use the package name in leads and invoices.
-          </p>
-        </div>
+      <div className="space-y-6 max-w-4xl mx-auto pb-16">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+              <IconBox className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-foreground">Packages Presets</h1>
+              <p className="text-xs text-muted-foreground">
+                Bundle services and deliverables into reusable tiered packages for quotes and bookings.
+              </p>
+            </div>
+          </div>
 
-        {/* Limit badge & New Package button */}
-        <div className="flex flex-col items-center justify-center gap-2 pt-2">
-          <Badge
-            variant="secondary"
-            className="text-[11px] font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 px-3 py-1"
-          >
-            {packages.length} Created / 3 Limit
-          </Badge>
-          <button
-            type="button"
-            onClick={handleOpenNewPackage}
-            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 transition"
-          >
-            <IconPlus className="h-3.5 w-3.5" />
-            <span>New Package</span>
-          </button>
+          <div className="flex items-center gap-2.5 self-start sm:self-auto">
+            <Badge
+              variant="secondary"
+              className="text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20 px-2.5 py-1"
+            >
+              {packages.length} Configured
+            </Badge>
+            <Button
+              size="sm"
+              onClick={handleOpenNewPackage}
+              className="text-xs font-semibold gap-1.5 bg-primary text-primary-foreground shadow-xs h-8"
+            >
+              <IconPlus className="h-3.5 w-3.5" />
+              New Package
+            </Button>
+          </div>
         </div>
 
         {/* Package Cards List */}
@@ -295,6 +310,14 @@ export function PackagesSettingsPage() {
                   >
                     Manage
                   </Button>
+                  <button
+                    type="button"
+                    onClick={() => handleDuplicatePackage(pkg)}
+                    className="h-8 w-8 rounded-full border border-border text-muted-foreground hover:bg-muted flex items-center justify-center transition"
+                    title="Duplicate Package"
+                  >
+                    <IconCopy className="h-3.5 w-3.5" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleDeletePackage(pkg.id)}
@@ -540,7 +563,7 @@ export function PackagesSettingsPage() {
             Deliverables
           </label>
           <DeliverablesDropdown
-            selected={selectedDeliverables}
+            selectedDeliverables={selectedDeliverables}
             onChange={setSelectedDeliverables}
           />
         </div>

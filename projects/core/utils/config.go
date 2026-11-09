@@ -90,9 +90,9 @@ func LoadConfig(filenames ...string) error {
 		databaseURL = fmt.Sprintf("root:%s@tcp(%s:%s)/platform_identity?parseTime=true&loc=Local", dbPassword, dbHost, dbPort)
 	}
 
-	identityDBName := strings.TrimSpace(getEnv("IDENTITY_DB_NAME", "platform_identity"))
+	identityDBName := strings.TrimSpace(getEnv("IDENTITY_DB_NAME", ""))
 	identityDBURL := strings.TrimSpace(os.Getenv("IDENTITY_DATABASE_URL"))
-	if identityDBURL == "" {
+	if identityDBURL == "" && identityDBName != "" {
 		identityDBURL = fmt.Sprintf("root:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local",
 			dbPassword, dbHost, dbPort, identityDBName)
 	}

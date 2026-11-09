@@ -32,6 +32,7 @@ import {
   IconCircleCheck,
   IconAlertTriangle,
   IconClock,
+  IconFolderPlus,
 } from '@tabler/icons-react'
 import type {
   Lead,
@@ -48,6 +49,7 @@ interface LeadsPageProps {
   onEditLead: (lead: Lead) => void
   onDeleteLead: (leadId: string) => void
   onStageChange: (leadId: string, newStage: PipelineStage) => void
+  onConvertToProject?: (lead: Lead) => void
 }
 
 const columnHelper = createColumnHelper<DataTableFeatures, Lead>()
@@ -58,6 +60,7 @@ export function LeadsPage({
   onEditLead,
   onDeleteLead,
   onStageChange,
+  onConvertToProject,
 }: LeadsPageProps) {
   // View mode: Table vs Kanban
   const [viewMode, setViewMode] = React.useState<'table' | 'kanban'>('table')
@@ -429,6 +432,15 @@ export function LeadsPage({
       icon: IconEdit,
       action: (row: Lead) => onEditLead(row),
     },
+    ...(onConvertToProject
+      ? [
+          {
+            label: 'Convert to Project',
+            icon: IconFolderPlus,
+            action: (row: Lead) => onConvertToProject(row),
+          },
+        ]
+      : []),
     {
       label: 'Delete Lead',
       icon: IconTrash,
@@ -923,6 +935,20 @@ export function LeadsPage({
                 >
                   Edit Lead
                 </Button>
+                {onConvertToProject && (
+                  <Button
+                    variant="secondary"
+                    className="gap-1.5"
+                    onClick={() => {
+                      const l = drawerLead
+                      setDrawerLead(null)
+                      onConvertToProject(l)
+                    }}
+                  >
+                    <IconFolderPlus className="h-4 w-4" />
+                    Convert to Project
+                  </Button>
+                )}
                 <Button variant="outline" onClick={() => setDrawerLead(null)}>
                   Close
                 </Button>

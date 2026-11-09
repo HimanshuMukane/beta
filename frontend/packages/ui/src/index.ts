@@ -22,6 +22,7 @@ export * from "./components/ui/popover"
 export * from "./components/ui/drawer"
 export * from "./components/ui/textarea"
 export * from "./components/ui/sonner"
+export * from "./components/ui/collapsible"
 export { toast } from "sonner"
 
 export * from "./components/login-form"

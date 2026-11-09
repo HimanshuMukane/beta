@@ -4,6 +4,7 @@ import {
   IconMinus,
   IconBriefcase,
   IconFolderPlus,
+  IconDeviceFloppy,
 } from '@tabler/icons-react'
 import {
   Card,
@@ -25,6 +26,7 @@ import {
   DialogFooter,
   toast,
 } from '@repo/ui'
+import { settingsApi } from '../../api/settingsApi'
 
 export interface ServiceItem {
   id: string
@@ -34,7 +36,7 @@ export interface ServiceItem {
   amount: number
 }
 
-const INITIAL_SERVICE_GROUPS = [
+const DEFAULT_SERVICE_GROUPS = [
   'Basic Service',
   'Advance Service',
   'Other Service',
@@ -43,7 +45,7 @@ const INITIAL_SERVICE_GROUPS = [
   'Add-ons',
 ]
 
-const INITIAL_SERVICES: ServiceItem[] = [
+const DEFAULT_SERVICES: ServiceItem[] = [
   { id: 'srv-1', groupName: 'Basic Service', serviceName: 'Traditional Photography', quantity: 1, amount: 200 },
   { id: 'srv-2', groupName: 'Basic Service', serviceName: 'Traditional Videography', quantity: 1, amount: 200 },
   { id: 'srv-3', groupName: 'Advance Service', serviceName: 'Candid Photography', quantity: 1, amount: 150 },
@@ -57,8 +59,19 @@ const INITIAL_SERVICES: ServiceItem[] = [
 ]
 
 export function ServicesSettingsPage() {
-  const [serviceGroups, setServiceGroups] = React.useState<string[]>(INITIAL_SERVICE_GROUPS)
-  const [services, setServices] = React.useState<ServiceItem[]>(INITIAL_SERVICES)
+  const [serviceGroups, setServiceGroups] = React.useState<string[]>(DEFAULT_SERVICE_GROUPS)
+  const [services, setServices] = React.useState<ServiceItem[]>(DEFAULT_SERVICES)
+
+  React.useEffect(() => {
+    settingsApi.getSettings().then((store) => {
+      if (store.serviceGroups && store.serviceGroups.length > 0) {
+        setServiceGroups(store.serviceGroups)
+      }
+      if (store.services && store.services.length > 0) {
+        setServices(store.services)
+      }
+    }).catch(() => {})
+  }, [])
 
   // Manage Service Groups Modal State (matching Image 2)
   const [isManageGroupsOpen, setIsManageGroupsOpen] = React.useState(false)
@@ -71,14 +84,12 @@ export function ServicesSettingsPage() {
   const [newRowQty, setNewRowQty] = React.useState<number>(1)
   const [newRowAmount, setNewRowAmount] = React.useState<number>(0)
 
-  // Open modal handler
   const handleOpenManageGroups = () => {
     setEditingGroups([...serviceGroups])
     setNewGroupNameInput('')
     setIsManageGroupsOpen(true)
   }
 
-  // Add group inside modal
   const handleAddGroupToModal = () => {
     if (!newGroupNameInput.trim()) return
     const trimmed = newGroupNameInput.trim()
@@ -90,23 +101,34 @@ export function ServicesSettingsPage() {
     setNewGroupNameInput('')
   }
 
-  // Remove group inside modal
   const handleRemoveGroupFromModal = (indexToRemove: number) => {
     setEditingGroups((prev) => prev.filter((_, idx) => idx !== indexToRemove))
   }
 
-  // Save groups from modal
-  const handleSaveServiceGroups = () => {
+  const handleSaveServiceGroups = async () => {
     if (editingGroups.length === 0) {
       toast.error('At least one service group is required')
       return
     }
     setServiceGroups(editingGroups)
     setIsManageGroupsOpen(false)
-    toast.success('Service groups updated successfully')
+    try {
+      await settingsApi.updateSettings({ serviceGroups: editingGroups })
+      toast.success('Service groups updated successfully')
+    } catch {
+      toast.error('Failed to save service groups to database')
+    }
   }
 
-  // Inline row updates
+  const handleSaveAllServices = async () => {
+    try {
+      await settingsApi.updateSettings({ services, serviceGroups })
+      toast.success('Services saved successfully')
+    } catch {
+      toast.error('Failed to save services to database')
+    }
+  }
+
   const handleUpdateServiceField = (
     id: string,
     field: keyof ServiceItem,
@@ -117,13 +139,15 @@ export function ServicesSettingsPage() {
     )
   }
 
-  // Remove service row
   const handleRemoveService = (id: string) => {
-    setServices((prev) => prev.filter((s) => s.id !== id))
+    setServices((prev) => {
+      const updated = prev.filter((s) => s.id !== id)
+      settingsApi.updateSettings({ services: updated }).catch(() => {})
+      return updated
+    })
     toast.info('Service removed')
   }
 
-  // Add new service row
   const handleAddServiceRow = () => {
     if (!newRowName.trim()) {
       toast.error('Please enter a Service Name')
@@ -137,7 +161,9 @@ export function ServicesSettingsPage() {
       amount: Math.max(0, newRowAmount || 0),
     }
 
-    setServices((prev) => [...prev, newService])
+    const updated = [...services, newService]
+    setServices(updated)
+    settingsApi.updateSettings({ services: updated }).catch(() => {})
     setNewRowName('')
     setNewRowQty(1)
     setNewRowAmount(0)
@@ -145,24 +171,37 @@ export function ServicesSettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Title & Description matching Image 1 */}
-      <div className="text-center space-y-1.5 pt-2">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Services</h1>
-        <p className="text-xs text-muted-foreground max-w-xl mx-auto">
-          Preset event services names with service cost and reduce your quote, invoice generation time.
-        </p>
+    <div className="space-y-6 max-w-5xl mx-auto pb-16">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+            <IconBriefcase className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Services Presets</h1>
+            <p className="text-xs text-muted-foreground">
+              Preset event services with standard rates to streamline quote and invoice generation.
+            </p>
+          </div>
+        </div>
 
-        {/* Manage Service Group Action Button */}
-        <div className="pt-2">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={handleOpenManageGroups}
-            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border-emerald-500/30 gap-1.5 h-8 px-3.5 shadow-2xs"
+            className="text-xs font-semibold gap-1.5 h-8 border-dashed"
           >
-            <IconFolderPlus className="h-3.5 w-3.5" />
-            <span>Manage Service Group</span>
+            <IconFolderPlus className="h-3.5 w-3.5 text-primary" />
+            <span>Manage Service Groups ({serviceGroups.length})</span>
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSaveAllServices}
+            className="text-xs font-semibold gap-1.5 h-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+          >
+            <IconDeviceFloppy className="h-3.5 w-3.5" />
+            <span>Save All Changes</span>
           </Button>
         </div>
       </div>

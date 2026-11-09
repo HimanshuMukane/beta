@@ -1,9 +1,6 @@
 import * as React from 'react'
 import {
   IconArrowLeft,
-  IconTrash,
-  IconGripVertical,
-  IconCalendar,
   IconDeviceFloppy,
 } from '@tabler/icons-react'
 import {
@@ -15,75 +12,44 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   toast,
 } from '@repo/ui'
 import type { Project, ProjectSegment, ProjectType } from '../types/project'
 import { LeadSourceCombobox } from '../components/LeadSourceCombobox'
+import { PhoneInputField } from '../components/PhoneInputField'
+import { ProjectSegmentsEditor } from '../components/ProjectSegmentsEditor'
 
 interface ProjectCreatePageProps {
+  initialData?: Partial<Project>
   onBack: () => void
   onSave: (project: Project) => void
 }
 
-const PROJECT_TYPES: ProjectType[] = [
-  'Wedding',
-  'Pre-Wedding',
-  'Engagement',
-  'Corporate',
-  'Maternity',
-  'Fashion',
-  'Birthday',
-]
-
-export function ProjectCreatePage({ onBack, onSave }: ProjectCreatePageProps) {
-  // Client Details Form State (as per image)
-  const [clientName, setClientName] = React.useState('')
+export function ProjectCreatePage({ initialData, onBack, onSave }: ProjectCreatePageProps) {
+  // Client Details Form State (prefill if provided from converted lead)
+  const [clientName, setClientName] = React.useState(initialData?.clientName || '')
   const [countryCode, setCountryCode] = React.useState('+91')
-  const [mobileNo, setMobileNo] = React.useState('')
-  const [email, setEmail] = React.useState('')
-  const [address, setAddress] = React.useState('')
+  const [mobileNo, setMobileNo] = React.useState(initialData?.clientMobile || '')
+  const [email, setEmail] = React.useState(initialData?.clientEmail || '')
+  const [address, setAddress] = React.useState(initialData?.projectAddress || '')
   const [leadSource, setLeadSource] = React.useState('Instagram')
 
-  // Projects Details Form State (as per image)
-  const [projectName, setProjectName] = React.useState('')
-  const [projectAddress, setProjectAddress] = React.useState('')
-  const [segments, setSegments] = React.useState<ProjectSegment[]>([
-    {
-      id: 'seg-1',
-      name: 'Main Shoot',
-      type: 'Wedding',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
-    },
-  ])
-
-  // Segment Handlers
-  const handleAddSegment = () => {
-    const nextIdx = segments.length + 1
-    const newSeg: ProjectSegment = {
-      id: `seg-${Date.now()}`,
-      name: `Segment ${nextIdx}`,
-      type: 'Wedding',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
-    }
-    setSegments((prev) => [...prev, newSeg])
-  }
-
-  const handleRemoveSegment = (id: string) => {
-    setSegments((prev) => prev.filter((s) => s.id !== id))
-  }
-
-  const handleUpdateSegment = (id: string, field: keyof ProjectSegment, val: string) => {
-    setSegments((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, [field]: val } : s))
-    )
-  }
+  // Projects Details Form State
+  const [projectName, setProjectName] = React.useState(initialData?.projectName || '')
+  const [projectAddress, setProjectAddress] = React.useState(initialData?.projectAddress || '')
+  const [segments, setSegments] = React.useState<ProjectSegment[]>(
+    initialData?.segments && initialData.segments.length > 0
+      ? initialData.segments
+      : [
+          {
+            id: 'seg-1',
+            name: 'Main Shoot',
+            type: (initialData?.projectType as ProjectType) || 'Wedding',
+            startDate: initialData?.startDate || new Date().toISOString().split('T')[0],
+            endDate: initialData?.endDate || new Date().toISOString().split('T')[0],
+          },
+        ]
+  )
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -256,27 +222,14 @@ export function ProjectCreatePage({ onBack, onSave }: ProjectCreatePageProps) {
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Mobile No <span className="text-destructive">*</span>
                 </Label>
-                <div className="flex items-center gap-2">
-                  <Select value={countryCode} onValueChange={setCountryCode}>
-                    <SelectTrigger className="w-24 shrink-0 h-10 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="+91">IN (+91)</SelectItem>
-                      <SelectItem value="+1">US (+1)</SelectItem>
-                      <SelectItem value="+44">UK (+44)</SelectItem>
-                      <SelectItem value="+971">AE (+971)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    value={mobileNo}
-                    onChange={(e) => setMobileNo(e.target.value)}
-                    placeholder="Mobile No"
-                    type="tel"
-                    className="h-10 text-sm flex-1"
-                    required
-                  />
-                </div>
+                <PhoneInputField
+                  countryCode={countryCode}
+                  mobileNo={mobileNo}
+                  onCountryCodeChange={setCountryCode}
+                  onMobileNoChange={setMobileNo}
+                  placeholder="Mobile No"
+                  required
+                />
               </div>
 
               {/* Email Address */}
@@ -355,124 +308,11 @@ export function ProjectCreatePage({ onBack, onSave }: ProjectCreatePageProps) {
                 </div>
               </div>
 
-              {/* Projects Segments Header */}
-              <div className="pt-2">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    <IconCalendar className="h-4 w-4 text-primary" />
-                    <span>Projects Segments</span>
-                  </div>
-                  <span className="text-[11px] text-muted-foreground">
-                    Add one segment per date block
-                  </span>
-                </div>
-
-                {/* Segments List */}
-                <div className="space-y-3">
-                  {segments.map((seg, idx) => (
-                    <div
-                      key={seg.id}
-                      className="rounded-lg border bg-muted/20 p-3.5 space-y-2 relative transition hover:border-border"
-                    >
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
-                            {idx + 1}
-                          </span>
-                          <Input
-                            value={seg.name}
-                            onChange={(e) =>
-                              handleUpdateSegment(seg.id, 'name', e.target.value)
-                            }
-                            placeholder="New segment"
-                            className="h-7 text-xs font-medium w-48 border-0 bg-transparent px-1 focus-visible:ring-1"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {segments.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveSegment(seg.id)}
-                              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                            >
-                              <IconTrash className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                          <IconGripVertical className="h-4 w-4 text-muted-foreground/40 cursor-grab" />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Type
-                          </span>
-                          <Select
-                            value={seg.type}
-                            onValueChange={(val) =>
-                              handleUpdateSegment(seg.id, 'type', val as ProjectType)
-                            }
-                          >
-                            <SelectTrigger className="h-8 text-xs bg-background">
-                              <SelectValue placeholder="Projects Type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {PROJECT_TYPES.map((pt) => (
-                                <SelectItem key={pt} value={pt} className="text-xs">
-                                  {pt}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Event Date Range
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="date"
-                              value={seg.startDate}
-                              onChange={(e) =>
-                                handleUpdateSegment(seg.id, 'startDate', e.target.value)
-                              }
-                              className="h-8 text-xs bg-background px-2"
-                            />
-                            <span className="text-xs text-muted-foreground">→</span>
-                            <Input
-                              type="date"
-                              value={seg.endDate}
-                              onChange={(e) =>
-                                handleUpdateSegment(seg.id, 'endDate', e.target.value)
-                              }
-                              className="h-8 text-xs bg-background px-2"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add Segment Action */}
-                <div className="pt-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleAddSegment}
-                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 p-0 h-auto font-medium"
-                  >
-                    + Add Projects segment
-                  </Button>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Long-duration Projects are easier to manage in calendars with segments.
-                  </p>
-                </div>
-              </div>
+              {/* Projects Segments Editor */}
+              <ProjectSegmentsEditor
+                segments={segments}
+                onChange={setSegments}
+              />
             </CardContent>
           </Card>
         </div>

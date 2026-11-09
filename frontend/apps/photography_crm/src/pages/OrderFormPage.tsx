@@ -36,9 +36,32 @@ import type {
   OrderPaymentStatus,
   OrderPaymentRecord,
 } from '../types/order'
-import { ORDER_TYPES, POPULAR_LINE_ITEMS } from '../data/mock-orders'
 import { LeadSourceCombobox } from '../components/LeadSourceCombobox'
+import { PhoneInputField } from '../components/PhoneInputField'
 import type { LeadSource } from '../types/lead'
+
+export const ORDER_TYPES: string[] = [
+  'Walk-in',
+  'Studio Session',
+  'Print & Album',
+  'Framing',
+  'Commercial Shoot',
+  'Passport/Visa Photo',
+  'Custom Merch',
+  'Online',
+]
+
+export const POPULAR_LINE_ITEMS = [
+  { name: '12x36 Photobook (Matte Finish - 40 pgs)', cost: 12500 },
+  { name: 'Acrylic Wall Frame (24x36)', cost: 6500 },
+  { name: 'Canvas Gallery Wrap (20x30)', cost: 4200 },
+  { name: 'Premium Wooden Photo Box (50 prints)', cost: 3500 },
+  { name: 'Mini Pocket Books (Set of 3)', cost: 2800 },
+  { name: 'Digital Soft Copies High-Res (USB Drive)', cost: 4500 },
+  { name: 'Passport/Visa Print Sheet (8 copies)', cost: 450 },
+  { name: 'Studio Portrait Session Print (12x18)', cost: 1800 },
+  { name: 'Custom Calendar with 12 Shoots', cost: 2200 },
+]
 
 interface OrderFormPageProps {
   initialOrder?: Order | null
@@ -374,26 +397,14 @@ export function OrderFormPage({
               <Label className="text-xs font-semibold text-muted-foreground">
                 MOBILE NO <span className="text-destructive">*</span>
               </Label>
-              <div className="flex gap-2">
-                <Select value={countryCode} onValueChange={setCountryCode}>
-                  <SelectTrigger className="w-[85px] h-9 text-xs">
-                    <SelectValue placeholder="+91" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="+91">IN (+91)</SelectItem>
-                    <SelectItem value="+1">US (+1)</SelectItem>
-                    <SelectItem value="+44">UK (+44)</SelectItem>
-                    <SelectItem value="+971">AE (+971)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  value={mobileNo}
-                  onChange={(e) => setMobileNo(e.target.value)}
-                  placeholder="Mobile No"
-                  className="flex-1 h-9 text-xs"
-                  required
-                />
-              </div>
+              <PhoneInputField
+                countryCode={countryCode}
+                mobileNo={mobileNo}
+                onCountryCodeChange={setCountryCode}
+                onMobileNoChange={setMobileNo}
+                placeholder="Mobile No"
+                required
+              />
             </div>
 
             <div className="space-y-1">

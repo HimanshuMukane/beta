@@ -774,62 +774,80 @@ export function ProjectEditPage({
           <CardContent className="space-y-4">
             <span className="text-xs font-semibold text-muted-foreground">November, 2026</span>
 
-            <div className="space-y-3">
-              {sessions.map((ses) => (
-                <div
-                  key={ses.id}
-                  className="rounded-xl border bg-muted/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:border-border"
+            {sessions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center rounded-lg border border-dashed">
+                <IconInbox className="h-10 w-10 text-muted-foreground/50 mb-2" />
+                <h4 className="text-sm font-semibold text-foreground">No shoot sessions scheduled yet</h4>
+                <p className="text-xs text-muted-foreground mt-0.5 mb-3">
+                  Schedule sessions for ceremony days, portraits, and crew assignments.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={handleOpenAddSession}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5"
                 >
-                  {/* Left: Day & Date badge */}
-                  <div className="flex items-center gap-4">
-                    <div className="flex flex-col items-center justify-center rounded-lg bg-card border px-3 py-2 min-w-[70px] shadow-xs">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase">
-                        {ses.date.split(',')[0]}
-                      </span>
-                      <span className="text-2xl font-bold tabular-nums text-foreground">
-                        {ses.date.match(/\d+/)?.[0] || '11'}
-                      </span>
-                    </div>
-
-                    {/* Middle: Details */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <IconClock className="h-3.5 w-3.5" />
-                        <span>{ses.timeRange}</span>
+                  <IconPlus className="h-3.5 w-3.5" />
+                  Schedule First Session
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {sessions.map((ses) => (
+                  <div
+                    key={ses.id}
+                    className="rounded-xl border bg-muted/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:border-border"
+                  >
+                    {/* Left: Day & Date badge */}
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-center justify-center rounded-lg bg-card border px-3 py-2 min-w-[70px] shadow-xs">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase">
+                          {ses.date.split(',')[0]}
+                        </span>
+                        <span className="text-2xl font-bold tabular-nums text-foreground">
+                          {ses.date.match(/\d+/)?.[0] || '11'}
+                        </span>
                       </div>
-                      <h4
-                        onClick={() => handleOpenEditSession(ses)}
-                        className="font-bold text-sm text-foreground hover:text-primary transition cursor-pointer"
+
+                      {/* Middle: Details */}
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <IconClock className="h-3.5 w-3.5" />
+                          <span>{ses.timeRange}</span>
+                        </div>
+                        <h4
+                          onClick={() => handleOpenEditSession(ses)}
+                          className="font-bold text-sm text-foreground hover:text-primary transition cursor-pointer"
+                        >
+                          {ses.title}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {ses.venue} • {ses.city}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {ses.members.length > 0
+                            ? `Crew: ${ses.members.join(', ')}`
+                            : 'No Members Added'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right: Status badge & Shoots Activity button */}
+                    <div className="flex sm:flex-col items-end gap-2 justify-between">
+                      <Badge variant="outline" className="text-xs font-medium">
+                        {ses.status}
+                      </Badge>
+                      <button
+                        type="button"
+                        onClick={() => toast.info(`Viewing activity for ${ses.title}`)}
+                        className="text-xs text-primary hover:underline flex items-center gap-1"
                       >
-                        {ses.title}
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        {ses.venue} • {ses.city}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {ses.members.length > 0
-                          ? `Crew: ${ses.members.join(', ')}`
-                          : 'No Members Added'}
-                      </p>
+                        <span>Shoots Activity</span>
+                      </button>
                     </div>
                   </div>
-
-                  {/* Right: Status badge & Shoots Activity button */}
-                  <div className="flex sm:flex-col items-end gap-2 justify-between">
-                    <Badge variant="outline" className="text-xs font-medium">
-                      {ses.status}
-                    </Badge>
-                    <button
-                      type="button"
-                      onClick={() => toast.info(`Viewing activity for ${ses.title}`)}
-                      className="text-xs text-primary hover:underline flex items-center gap-1"
-                    >
-                      <span>Shoots Activity</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

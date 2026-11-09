@@ -8,7 +8,6 @@ import {
   IconReportAnalytics,
   IconUserCheck,
   IconMessageHeart,
-  IconArrowLeft,
   IconCamera,
   IconFolders,
   IconChevronRight,
@@ -25,6 +24,8 @@ import {
   IconSignature,
   IconMessageDots,
   IconGitFork,
+  IconLogout,
+  IconUser,
 } from '@tabler/icons-react'
 import {
   Sidebar,
@@ -37,7 +38,14 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
   Button,
+  useAuth,
   cn,
 } from '@repo/ui'
 import type { SettingsTab } from '../types/settings'
@@ -53,14 +61,12 @@ export type ReportCategory =
   | 'feedback'
 
 interface PhotographySidebarProps extends React.ComponentProps<typeof Sidebar> {
-  mode: 'main' | 'reports' | 'settings'
   currentRoute: string
   activeReport: ReportCategory
   activeSetting: SettingsTab
   onSelectRoute: (route: string) => void
   onSelectReport: (report: ReportCategory) => void
   onSelectSetting: (setting: SettingsTab) => void
-  onExitSubmode: () => void
 }
 
 const REPORT_MENU_ITEMS: {
@@ -69,295 +75,79 @@ const REPORT_MENU_ITEMS: {
   icon: React.ComponentType<{ className?: string }>
   badge?: string
 }[] = [
-  { id: 'billing', title: 'Billing', icon: IconReceipt },
-  { id: 'leads', title: 'Leads', icon: IconTargetArrow },
-  { id: 'orders', title: 'Orders', icon: IconShoppingBag },
-  { id: 'sessions', title: 'Sessions', icon: IconCalendarEvent },
-  { id: 'finance', title: 'Finance', icon: IconChartPie, badge: 'Insights' },
-  { id: 'master-report', title: 'Master Report', icon: IconReportAnalytics },
-  { id: 'account-analytics', title: 'Account Analytics', icon: IconUserCheck },
-  { id: 'feedback', title: 'Feedback', icon: IconMessageHeart },
-]
+    { id: 'billing', title: 'Billing', icon: IconReceipt },
+    { id: 'leads', title: 'Leads', icon: IconTargetArrow },
+    { id: 'orders', title: 'Orders', icon: IconShoppingBag },
+    { id: 'sessions', title: 'Sessions', icon: IconCalendarEvent },
+    { id: 'finance', title: 'Finance', icon: IconChartPie, badge: 'Insights' },
+    { id: 'master-report', title: 'Master Report', icon: IconReportAnalytics },
+    { id: 'account-analytics', title: 'Account Analytics', icon: IconUserCheck },
+    { id: 'feedback', title: 'Feedback', icon: IconMessageHeart },
+  ]
+
+const SETTINGS_SECTIONS: {
+  title: string
+  items: { id: SettingsTab; title: string; icon: React.ComponentType<{ className?: string }> }[]
+}[] = [
+    {
+      title: 'General',
+      items: [
+        { id: 'master-data', title: 'Master Data', icon: IconDatabase },
+        { id: 'photographers', title: 'Photographers', icon: IconUsers },
+        { id: 'sequence-id', title: 'Sequence ID', icon: IconId },
+      ],
+    },
+    {
+      title: 'Preset Configuration',
+      items: [
+        { id: 'preset-services', title: 'Services', icon: IconBriefcase },
+        { id: 'preset-packages', title: 'Packages', icon: IconBox },
+        { id: 'preset-orders', title: 'Orders', icon: IconShoppingBag },
+        { id: 'preset-deliverables', title: 'Deliverables', icon: IconPackage },
+      ],
+    },
+    {
+      title: 'Customize Design & Templates',
+      items: [
+        { id: 'template-forms', title: 'Forms', icon: IconFileText },
+        { id: 'template-quotation-pdf', title: 'Quotation PDF', icon: IconFileInvoice },
+        { id: 'template-invoice-pdf', title: 'Invoice PDF', icon: IconFileCheck },
+        { id: 'template-contracts', title: 'Contracts', icon: IconSignature },
+        { id: 'template-feedbacks', title: 'Feedbacks', icon: IconMessageDots },
+      ],
+    },
+    {
+      title: 'Stages',
+      items: [
+        { id: 'stages-workflow', title: 'Workflow', icon: IconGitFork },
+      ],
+    },
+  ]
 
 export function PhotographySidebar({
-  mode,
   currentRoute,
   activeReport,
   activeSetting,
   onSelectRoute,
   onSelectReport,
   onSelectSetting,
-  onExitSubmode,
   ...props
 }: PhotographySidebarProps) {
-  // SETTINGS SIDEBAR MODE
-  if (mode === 'settings') {
-    return (
-      <Sidebar collapsible="icon" {...props}>
-        {/* Header with Back button to Studio CRM */}
-        <SidebarHeader className="border-b p-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
-              <IconSettings className="h-4 w-4" />
-            </span>
-            <div className="truncate">
-              <h3 className="text-xs font-bold leading-tight text-foreground">
-                Studio Settings
-              </h3>
-              <p className="text-[10px] text-muted-foreground truncate">
-                Presets & Configurations
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onExitSubmode}
-            className="w-full mt-2 h-7 text-[11px] font-semibold gap-1.5 border-dashed"
-          >
-            <IconArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Studio CRM</span>
-          </Button>
-        </SidebarHeader>
+  const isReportsActive = currentRoute.startsWith('report')
+  const isSettingsActive = currentRoute.startsWith('setting')
+  const { user, logout } = useAuth()
 
-        <SidebarContent>
-          {/* GROUP 1: Settings */}
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-              Settings
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {[
-                  { id: 'master-data' as SettingsTab, title: 'Master Data', icon: IconDatabase },
-                  { id: 'photographers' as SettingsTab, title: 'Photographers', icon: IconUsers },
-                  { id: 'sequence-id' as SettingsTab, title: 'Sequence ID', icon: IconId },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const isActive = activeSetting === item.id
-                  return (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => onSelectSetting(item.id)}
-                        className={cn(
-                          'h-9 text-xs transition font-medium',
-                          isActive &&
-                            'bg-primary/10 text-primary font-bold shadow-2xs hover:bg-primary/15'
-                        )}
-                      >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        <span className="flex-1 truncate">{item.title}</span>
-                        {isActive && (
-                          <IconChevronRight className="h-3.5 w-3.5 text-primary shrink-0" />
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+  const [reportsOpen, setReportsOpen] = React.useState(isReportsActive)
+  const [settingsOpen, setSettingsOpen] = React.useState(isSettingsActive)
 
-          {/* GROUP 2: Preset Configuration */}
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-              Preset Configuration
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {[
-                  { id: 'preset-services' as SettingsTab, title: 'Services', icon: IconBriefcase },
-                  { id: 'preset-packages' as SettingsTab, title: 'Packages', icon: IconBox },
-                  { id: 'preset-orders' as SettingsTab, title: 'Orders', icon: IconShoppingBag },
-                  { id: 'preset-deliverables' as SettingsTab, title: 'Deliverables', icon: IconPackage },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const isActive = activeSetting === item.id
-                  return (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => onSelectSetting(item.id)}
-                        className={cn(
-                          'h-9 text-xs transition font-medium',
-                          isActive &&
-                            'bg-primary/10 text-primary font-bold shadow-2xs hover:bg-primary/15'
-                        )}
-                      >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        <span className="flex-1 truncate">{item.title}</span>
-                        {isActive && (
-                          <IconChevronRight className="h-3.5 w-3.5 text-primary shrink-0" />
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+  React.useEffect(() => {
+    if (isReportsActive) setReportsOpen(true)
+  }, [isReportsActive])
 
-          {/* GROUP 3: Customize Design & Templates */}
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-              Customize Design & Templates
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {[
-                  { id: 'template-forms' as SettingsTab, title: 'Forms', icon: IconFileText },
-                  { id: 'template-quotation-pdf' as SettingsTab, title: 'Quotation PDF', icon: IconFileInvoice },
-                  { id: 'template-invoice-pdf' as SettingsTab, title: 'Invoice PDF', icon: IconFileCheck },
-                  { id: 'template-contracts' as SettingsTab, title: 'Contracts', icon: IconSignature },
-                  { id: 'template-feedbacks' as SettingsTab, title: 'Feedbacks', icon: IconMessageDots },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const isActive = activeSetting === item.id
-                  return (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => onSelectSetting(item.id)}
-                        className={cn(
-                          'h-9 text-xs transition font-medium',
-                          isActive &&
-                            'bg-primary/10 text-primary font-bold shadow-2xs hover:bg-primary/15'
-                        )}
-                      >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        <span className="flex-1 truncate">{item.title}</span>
-                        {isActive && (
-                          <IconChevronRight className="h-3.5 w-3.5 text-primary shrink-0" />
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+  React.useEffect(() => {
+    if (isSettingsActive) setSettingsOpen(true)
+  }, [isSettingsActive])
 
-          {/* GROUP 4: Stages */}
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-              Stages
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    isActive={activeSetting === 'stages-workflow'}
-                    onClick={() => onSelectSetting('stages-workflow')}
-                    className={cn(
-                      'h-9 text-xs transition font-medium',
-                      activeSetting === 'stages-workflow' &&
-                        'bg-primary/10 text-primary font-bold shadow-2xs hover:bg-primary/15'
-                    )}
-                  >
-                    <IconGitFork className="h-4 w-4 shrink-0" />
-                    <span className="flex-1 truncate">Workflow</span>
-                    {activeSetting === 'stages-workflow' && (
-                      <IconChevronRight className="h-3.5 w-3.5 text-primary shrink-0" />
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-
-        <SidebarFooter className="border-t p-3 text-[11px] text-muted-foreground">
-          <p className="truncate">Studio Configuration Engine</p>
-        </SidebarFooter>
-      </Sidebar>
-    )
-  }
-
-  // REPORTS SIDEBAR MODE
-  if (mode === 'reports') {
-    return (
-      <Sidebar collapsible="icon" {...props}>
-        {/* Header with Back button to Studio CRM */}
-        <SidebarHeader className="border-b p-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
-                <IconReportAnalytics className="h-4 w-4" />
-              </span>
-              <div className="truncate">
-                <h3 className="text-xs font-bold leading-tight text-foreground">
-                  Reports & BI
-                </h3>
-                <p className="text-[10px] text-muted-foreground truncate">
-                  Studio Performance
-                </p>
-              </div>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onExitSubmode}
-            className="w-full mt-2 h-7 text-[11px] font-semibold gap-1.5 border-dashed"
-          >
-            <IconArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Studio CRM</span>
-          </Button>
-        </SidebarHeader>
-
-        {/* Reports Navigation Items */}
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-              Analytics & Statements
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {REPORT_MENU_ITEMS.map((item) => {
-                  const Icon = item.icon
-                  const isActive = activeReport === item.id
-                  return (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => onSelectReport(item.id)}
-                        className={cn(
-                          'h-9 text-xs transition font-medium',
-                          isActive &&
-                            'bg-primary/10 text-primary font-bold shadow-2xs hover:bg-primary/15'
-                        )}
-                      >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        <span className="flex-1 truncate">{item.title}</span>
-                        {item.badge && (
-                          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold">
-                            {item.badge}
-                          </span>
-                        )}
-                        {isActive && (
-                          <IconChevronRight className="h-3.5 w-3.5 text-primary shrink-0" />
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-
-        <SidebarFooter className="border-t p-3 text-[11px] text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-medium">Live Studio Telemetry</span>
-          </div>
-        </SidebarFooter>
-      </Sidebar>
-    )
-  }
-
-  // Normal Main CRM Sidebar
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="border-b p-3">
@@ -375,6 +165,7 @@ export function PhotographySidebar({
       </SidebarHeader>
 
       <SidebarContent>
+        {/* Core Modules */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
             Core Modules
@@ -453,10 +244,163 @@ export function PhotographySidebar({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Analytics & Reports Section */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+            Analytics
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <Collapsible
+                open={reportsOpen}
+                onOpenChange={setReportsOpen}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={isReportsActive}
+                      className={cn(
+                        'h-9 text-xs font-medium',
+                        isReportsActive && 'font-bold text-primary bg-primary/10'
+                      )}
+                    >
+                      <IconReportAnalytics className="h-4 w-4" />
+                      <span className="flex-1 text-left">Reports & BI</span>
+                      <IconChevronRight className="h-3.5 w-3.5 ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className="py-1">
+                      {REPORT_MENU_ITEMS.map((item) => {
+                        const Icon = item.icon
+                        const isSubActive = isReportsActive && activeReport === item.id
+                        return (
+                          <SidebarMenuSubItem key={item.id}>
+                            <SidebarMenuSubButton
+                              isActive={isSubActive}
+                              onClick={() => onSelectReport(item.id)}
+                              className={cn(
+                                'h-8 text-xs cursor-pointer',
+                                isSubActive && 'font-bold text-primary bg-primary/10'
+                              )}
+                            >
+                              <Icon className="h-3.5 w-3.5 shrink-0" />
+                              <span className="flex-1 truncate">{item.title}</span>
+                              {item.badge && (
+                                <span className="text-[8px] uppercase px-1 py-0.2 rounded-full bg-emerald-500/15 text-emerald-600 font-bold">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Settings & Configurations Section */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+            Configuration
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <Collapsible
+                open={settingsOpen}
+                onOpenChange={setSettingsOpen}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={isSettingsActive}
+                      className={cn(
+                        'h-9 text-xs font-medium',
+                        isSettingsActive && 'font-bold text-primary bg-primary/10'
+                      )}
+                    >
+                      <IconSettings className="h-4 w-4" />
+                      <span className="flex-1 text-left">Studio Settings</span>
+                      <IconChevronRight className="h-3.5 w-3.5 ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className="py-1">
+                      {SETTINGS_SECTIONS.map((section, sIdx) => (
+                        <React.Fragment key={section.title}>
+                          <div className={cn(
+                            "px-2 pb-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase select-none",
+                            sIdx === 0 ? "pt-1" : "pt-3 border-t border-border/40 mt-1.5"
+                          )}>
+                            {section.title}
+                          </div>
+                          {section.items.map((item) => {
+                            const Icon = item.icon
+                            const isSubActive = isSettingsActive && activeSetting === item.id
+                            return (
+                              <SidebarMenuSubItem key={item.id}>
+                                <SidebarMenuSubButton
+                                  isActive={isSubActive}
+                                  onClick={() => onSelectSetting(item.id)}
+                                  className={cn(
+                                    'h-8 text-xs cursor-pointer rounded-md transition-all font-medium',
+                                    isSubActive
+                                      ? 'font-bold text-primary bg-primary/10 shadow-2xs'
+                                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                  )}
+                                >
+                                  <Icon className={cn("h-3.5 w-3.5 shrink-0", isSubActive ? "text-primary" : "text-muted-foreground")} />
+                                  <span className="flex-1 truncate">{item.title}</span>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            )
+                          })}
+                        </React.Fragment>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-3 text-[11px] text-muted-foreground">
-        <p className="truncate">especa Studio Suite v2.0</p>
+      <SidebarFooter className="border-t p-3 space-y-2">
+        {user && (
+          <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 p-2 border border-border/50">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <IconUser className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold leading-none truncate text-foreground">
+                  {user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.email}
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate leading-none mt-1">
+                  {user.role_name || user.email}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+              title="Sign Out"
+              onClick={() => logout()}
+            >
+              <IconLogout className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+        <p className="text-[11px] text-muted-foreground truncate">especa Studio Suite v2.0</p>
       </SidebarFooter>
     </Sidebar>
   )
