@@ -2,10 +2,7 @@ module superadmin
 
 go 1.26.6
 
-require (
-	github.com/a-h/templ v0.3.1020
-	github.com/jmoiron/sqlx v1.4.0
-)
+require github.com/jmoiron/sqlx v1.4.0
 
 require github.com/go-sql-driver/mysql v1.10.1 // indirect
 
