@@ -11,8 +11,12 @@
   "dependencies": {
     "@repo/ui": "workspace:*",
     "@tabler/icons-react": "^3.50.0",
+    "date-fns": "^4.4.0",
+    "echarts": "^6.1.0",
+    "echarts-for-react": "^3.0.6",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "react-router-dom": "^7.18.5"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",

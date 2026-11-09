@@ -1,584 +1,901 @@
-import { useState, Suspense, lazy } from 'react'
+import { useState, useMemo, Suspense, lazy } from 'react'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+  useParams,
+} from 'react-router-dom'
 import {
   DashboardShell,
-  SplitAuthLayout,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  Button,
-  Badge,
-  Checkbox,
   Toaster,
+  Button,
   toast,
-  cn,
 } from '@repo/ui'
-import type { KanbanTask, KanbanColumnDef } from '@repo/ui/components/kanban/kanban'
-import { createColumnHelper } from '@tanstack/react-table'
-import type { DataTableFeatures, DataTableFilterConfig, DataTableBulkAction, DataTableRowAction, DataTableProps } from '@repo/ui'
 import {
-  IconCopy,
-  IconTrash,
-  IconArchive,
-  IconCheck,
+  IconReportAnalytics,
+  IconSettings,
+  IconFolders,
   IconCalendar,
+  IconTarget,
+  IconCreditCard,
+  IconShoppingBag,
 } from '@tabler/icons-react'
+import { INITIAL_LEADS } from './data/mock-leads'
+import { INITIAL_PROJECTS } from './data/mock-projects'
+import type { Lead, PipelineStage } from './types/lead'
+import type { Project, ProjectStage } from './types/project'
+import type { ProjectSession, SessionStatus } from './types/session'
+import type { Order, OrderStage } from './types/order'
+import type { SettingsTab } from './types/settings'
+import { INITIAL_ORDERS } from './data/mock-orders'
+import { PhotographySidebar, type ReportCategory } from './components/PhotographySidebar'
 
-const DataTable = lazy(() => import('@repo/ui/components/data-table').then(m => ({ default: m.DataTable }))) as <TData extends Record<string, any>>(props: DataTableProps<TData>) => React.JSX.Element
-const Kanban = lazy(() => import('@repo/ui/components/kanban/kanban').then(m => ({ default: m.Kanban })))
-const LoginForm = lazy(() => import('@repo/ui/components/login-form').then(m => ({ default: m.LoginForm })))
-const SignupForm = lazy(() => import('@repo/ui/components/signup-form').then(m => ({ default: m.SignupForm })))
+// Lazy Load Core Pages
+const LeadsPage = lazy(() =>
+  import('./pages/LeadsPage').then((m) => ({ default: m.LeadsPage }))
+)
+const LeadFormPage = lazy(() =>
+  import('./pages/LeadFormPage').then((m) => ({ default: m.LeadFormPage }))
+)
+const ProjectsPage = lazy(() =>
+  import('./pages/ProjectsPage').then((m) => ({ default: m.ProjectsPage }))
+)
+const ProjectCreatePage = lazy(() =>
+  import('./pages/ProjectCreatePage').then((m) => ({ default: m.ProjectCreatePage }))
+)
+const ProjectEditPage = lazy(() =>
+  import('./pages/ProjectEditPage').then((m) => ({ default: m.ProjectEditPage }))
+)
+const SessionsPage = lazy(() =>
+  import('./pages/SessionsPage').then((m) => ({ default: m.SessionsPage }))
+)
+const BillingsPage = lazy(() =>
+  import('./pages/BillingsPage').then((m) => ({ default: m.BillingsPage }))
+)
+const OrdersPage = lazy(() =>
+  import('./pages/OrdersPage').then((m) => ({ default: m.OrdersPage }))
+)
+const OrderFormPage = lazy(() =>
+  import('./pages/OrderFormPage').then((m) => ({ default: m.OrderFormPage }))
+)
 
-type PaymentRecord = {
-  id: string
-  clientName: string
-  email: string
-  package: string
-  shootDate: string
-  amount: number
-  status: 'pending' | 'processing' | 'success' | 'failed'
-}
+// Lazy Load Reports Pages
+const BillingReportPage = lazy(() =>
+  import('./pages/reports/BillingReportPage').then((m) => ({ default: m.BillingReportPage }))
+)
+const LeadsReportPage = lazy(() =>
+  import('./pages/reports/LeadsReportPage').then((m) => ({ default: m.LeadsReportPage }))
+)
+const OrdersReportPage = lazy(() =>
+  import('./pages/reports/OrdersReportPage').then((m) => ({ default: m.OrdersReportPage }))
+)
+const SessionsReportPage = lazy(() =>
+  import('./pages/reports/SessionsReportPage').then((m) => ({ default: m.SessionsReportPage }))
+)
+const FinanceReportPage = lazy(() =>
+  import('./pages/reports/FinanceReportPage').then((m) => ({ default: m.FinanceReportPage }))
+)
+const MasterReportPage = lazy(() =>
+  import('./pages/reports/MasterReportPage').then((m) => ({ default: m.MasterReportPage }))
+)
+const AccountAnalyticsPage = lazy(() =>
+  import('./pages/reports/AccountAnalyticsPage').then((m) => ({ default: m.AccountAnalyticsPage }))
+)
+const FeedbackReportPage = lazy(() =>
+  import('./pages/reports/FeedbackReportPage').then((m) => ({ default: m.FeedbackReportPage }))
+)
 
-const initialPayments: PaymentRecord[] = [
-  { id: 'inv-101', clientName: 'Eleanor Vance', email: 'eleanor@vanceweddings.com', package: 'Full Wedding Coverage', shootDate: '2026-12-14', amount: 3200, status: 'success' },
-  { id: 'inv-102', clientName: 'Liam Chen', email: 'liam.chen@architects.org', package: 'Commercial Interior', shootDate: '2026-11-20', amount: 1450, status: 'processing' },
-  { id: 'inv-103', clientName: 'Sophia Rodriguez', email: 'sophia@rodriguezstudio.com', package: 'Editorial Portrait', shootDate: '2026-11-28', amount: 850, status: 'pending' },
-  { id: 'inv-104', clientName: 'Marcus Sterling', email: 'marcus@sterlingcapital.co', package: 'Corporate Headshots', shootDate: '2026-10-15', amount: 2100, status: 'success' },
-  { id: 'inv-105', clientName: 'Chloe Dubois', email: 'chloe@atelierdubois.fr', package: 'Fashion Lookbook', shootDate: '2026-11-05', amount: 4800, status: 'failed' },
-  { id: 'inv-106', clientName: 'David Kalu', email: 'david@kalucreative.net', package: 'Engagement Session', shootDate: '2026-12-02', amount: 950, status: 'pending' },
-  { id: 'inv-107', clientName: 'Amara Patel', email: 'amara.p@voguecraft.io', package: 'Product Catalog', shootDate: '2026-11-12', amount: 2600, status: 'success' },
-  { id: 'inv-108', clientName: 'Lucas Bennett', email: 'lucas@bennettevents.com', package: 'Conference Keynote', shootDate: '2026-11-08', amount: 1750, status: 'processing' },
-]
+// Lazy Load Settings Pages
+const MasterDataPage = lazy(() =>
+  import('./pages/settings/MasterDataPage').then((m) => ({ default: m.MasterDataPage }))
+)
+const PhotographersPage = lazy(() =>
+  import('./pages/settings/PhotographersPage').then((m) => ({ default: m.PhotographersPage }))
+)
+const SequenceIdPage = lazy(() =>
+  import('./pages/settings/SequenceIdPage').then((m) => ({ default: m.SequenceIdPage }))
+)
+const GenericPresetPage = lazy(() =>
+  import('./pages/settings/GenericPresetPage').then((m) => ({ default: m.GenericPresetPage }))
+)
+const ServicesSettingsPage = lazy(() =>
+  import('./pages/settings/ServicesSettingsPage').then((m) => ({ default: m.ServicesSettingsPage }))
+)
+const PackagesSettingsPage = lazy(() =>
+  import('./pages/settings/PackagesSettingsPage').then((m) => ({ default: m.PackagesSettingsPage }))
+)
+const TemplateCustomizerPage = lazy(() =>
+  import('./pages/settings/TemplateCustomizerPage').then((m) => ({ default: m.TemplateCustomizerPage }))
+)
+const WorkflowPage = lazy(() =>
+  import('./pages/settings/WorkflowPage').then((m) => ({ default: m.WorkflowPage }))
+)
 
-const kanbanColumns: KanbanColumnDef[] = [
-  { id: 'upcoming', title: 'Upcoming', color: 'gray' },
-  { id: 'todo', title: 'To Do', color: 'gray' },
-  { id: 'in_progress', title: 'In Progress', color: 'blue' },
-  { id: 'testing', title: 'Testing', color: 'gray' },
-  { id: 'bugs', title: 'Bugs', color: 'red' },
-]
+function AppContent() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const pathname = location.pathname
 
-const initialKanbanTasks: KanbanTask[] = [
-  {
-    id: 'task-1',
-    title: 'UI elements till modal',
-    status: 'todo',
-    assignees: [{ name: 'Marcus Newman', initials: 'MN' }],
-    tags: ['feature'],
-  },
-  {
-    id: 'task-2',
-    title: 'Pages Half Until Error Page',
-    status: 'todo',
-    assignees: [{ name: 'Jack Taylor', initials: 'JT' }],
-    tags: ['feature'],
-  },
-  {
-    id: 'task-3',
-    title: 'User Profile',
-    status: 'todo',
-    assignees: [
-      { name: 'Alice Walker', initials: 'AW' },
-      { name: 'Victor Vance', initials: 'VV' },
-    ],
-  },
-  {
-    id: 'task-4',
-    title: 'Charts',
-    status: 'todo',
-    assignees: [
-      { name: 'Alice Walker', initials: 'AW' },
-      { name: 'Victor Vance', initials: 'VV' },
-    ],
-    tags: ['feature'],
-  },
-  {
-    id: 'task-5',
-    title: 'Calendar',
-    status: 'todo',
-    assignees: [{ name: 'David Vance', initials: 'DV' }],
-    tags: ['feature'],
-  },
-  {
-    id: 'task-6',
-    title: 'Dashboard',
-    status: 'todo',
-    assignees: [{ name: 'David Vance', initials: 'DV' }],
-    tags: ['feature'],
-  },
-  {
-    id: 'task-7',
-    title: 'Invoice',
-    status: 'todo',
-    assignees: [{ name: 'Marcus Newman', initials: 'MN' }],
-    tags: ['feature'],
-  },
-  {
-    id: 'task-8',
-    title: 'Form Elements',
-    status: 'in_progress',
-    assignees: [
-      { name: 'David Vance', initials: 'DV' },
-      { name: 'Alice Walker', initials: 'AW' },
-    ],
-    tags: ['feature'],
-  },
-  {
-    id: 'task-9',
-    title: 'Form Layout',
-    status: 'in_progress',
-    assignees: [
-      { name: 'Marcus Newman', initials: 'MN' },
-      { name: 'Jack Taylor', initials: 'JT' },
-    ],
-    tags: ['feature'],
-  },
-]
+  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS)
+  const [editingLead, setEditingLead] = useState<Lead | null>(null)
 
-const columnHelper = createColumnHelper<DataTableFeatures, PaymentRecord>()
+  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
 
-const paymentColumns = columnHelper.columns([
-  columnHelper.display({
-    id: 'select',
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && 'indeterminate')
-          }
-          onCheckedChange={(value: boolean | 'indeterminate') => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      </div>
-    ),
-    cell: ({ row }) => {
-      const isSelected = row.getIsSelected()
-      return (
-        <div className="relative flex items-center justify-center h-5 w-6 mx-auto">
-          {/* Serial number shown when row is not hovered and not selected */}
-          <span
-            className={cn(
-              "text-xs font-mono text-muted-foreground tabular-nums transition-opacity",
-              isSelected ? "hidden" : "block group-hover/row:hidden"
-            )}
-          >
-            {row.index + 1}
-          </span>
-          {/* Checkbox shown on row hover or when row is selected */}
-          <div
-            className={cn(
-              "transition-opacity",
-              isSelected ? "block" : "hidden group-hover/row:block"
-            )}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={(value: boolean | 'indeterminate') => row.toggleSelected(!!value)}
-              aria-label={`Select row ${row.index + 1}`}
-            />
-          </div>
-        </div>
-      )
-    },
-    enableSorting: false,
-    enableHiding: false,
-  }),
-  columnHelper.accessor('id', {
-    header: 'Invoice ID',
-    cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">{row.getValue('id')}</span>,
-  }),
-  columnHelper.accessor('clientName', {
-    header: 'Client',
-    cell: ({ row }) => (
-      <div>
-        <div className="font-medium text-foreground">{row.getValue('clientName')}</div>
-        <div className="text-xs text-muted-foreground">{row.original.email}</div>
-      </div>
-    ),
-  }),
-  columnHelper.accessor('package', {
-    header: 'Shoot Package',
-    cell: ({ row }) => <span className="text-sm">{row.getValue('package')}</span>,
-  }),
-  columnHelper.accessor('shootDate', {
-    header: 'Shoot Date',
-    cell: ({ row }) => (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <IconCalendar className="h-3.5 w-3.5" />
-        <span>{row.getValue('shootDate')}</span>
-      </div>
-    ),
-  }),
-  columnHelper.accessor('status', {
-    header: 'Status',
-    cell: ({ row }) => {
-      const status = row.getValue('status') as PaymentRecord['status']
-      const variant =
-        status === 'success'
-          ? 'success'
-          : status === 'processing'
-          ? 'info'
-          : status === 'failed'
-          ? 'destructive'
-          : 'warning'
-      return <Badge variant={variant} className="capitalize text-xs">{status}</Badge>
-    },
-  }),
-  columnHelper.accessor('amount', {
-    header: () => <div className="text-right">Amount</div>,
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue('amount'))
-      const formatted = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-      }).format(amount)
-      return <div className="text-right font-medium tabular-nums">{formatted}</div>
-    },
-  }),
-])
+  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
 
-const filterConfigs: DataTableFilterConfig[] = [
-  {
-    columnId: 'status',
-    title: 'Status',
-    type: 'select',
-    options: [
-      { label: 'Success', value: 'success' },
-      { label: 'Pending', value: 'pending' },
-      { label: 'Processing', value: 'processing' },
-      { label: 'Failed', value: 'failed' },
-    ],
-  },
-  {
-    columnId: 'clientName',
-    title: 'Client Name',
-    type: 'text',
-  },
-  {
-    columnId: 'package',
-    title: 'Package',
-    type: 'text',
-  },
-]
-
-export default function App() {
-  const [payments, setPayments] = useState<PaymentRecord[]>(initialPayments)
-  const [kanbanTasks, setKanbanTasks] = useState<KanbanTask[]>(initialKanbanTasks)
-  const [dashboardTab, setDashboardTab] = useState<'table' | 'kanban'>('kanban')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'signin' | 'signup'>(() => {
-    const path = window.location.pathname
-    if (path === '/signin' || path === '/login') return 'signin'
-    if (path === '/signup' || path === '/register') return 'signup'
-    return 'dashboard'
+  const [sessions, setSessions] = useState<ProjectSession[]>(() => {
+    return INITIAL_PROJECTS.flatMap((p) =>
+      p.sessions.map((s) => ({
+        ...s,
+        projectName: s.projectName || p.projectName,
+        projectType: s.projectType || p.projectType,
+        sessionManager: s.sessionManager || 'especa',
+        shootTiming: s.shootTiming || 'Evening',
+        duration: s.duration || '4 hours',
+      }))
+    )
   })
 
-  const bulkActions: DataTableBulkAction<PaymentRecord>[] = [
-    {
-      label: 'Archive',
-      icon: IconArchive,
-      action: (selected, clearSelection) => {
-        toast.success(`Archived ${selected.length} record(s)`)
-        clearSelection()
-      },
-    },
-    {
-      label: 'Delete',
-      icon: IconTrash,
-      variant: 'destructive',
-      requiresConfirmation: true,
-      confirmationTitle: 'Delete Selected Invoices',
-      confirmationDescription: (count) =>
-        `Are you sure you want to delete ${count} selected invoice(s)? This action will remove records from the CRM and cannot be undone.`,
-      action: (selected, clearSelection) => {
-        const selectedIds = new Set(selected.map((s) => s.id))
-        setPayments((prev) => prev.filter((p) => !selectedIds.has(p.id)))
-        toast.success(`Deleted ${selected.length} invoice(s)`)
-        clearSelection()
-      },
-    },
-  ]
+  // Derive sidebar mode and active subtabs from pathname
+  const sidebarMode: 'main' | 'reports' | 'settings' = useMemo(() => {
+    if (pathname.startsWith('/settings')) return 'settings'
+    if (pathname.startsWith('/reports')) return 'reports'
+    return 'main'
+  }, [pathname])
 
-  const rowActions: DataTableRowAction<PaymentRecord>[] = [
-    {
-      label: 'Copy Invoice ID',
-      icon: IconCopy,
-      action: (record) => {
-        navigator.clipboard?.writeText(record.id)
-        toast.success(`Copied ID ${record.id} to clipboard`)
-      },
-    },
-    {
-      label: 'Mark as Paid',
-      icon: IconCheck,
-      action: (record) => {
-        setPayments((prev) =>
-          prev.map((p) => (p.id === record.id ? { ...p, status: 'success' } : p))
-        )
-        toast.success(`Invoice ${record.id} marked as Paid`)
-      },
-    },
-    {
-      label: 'Delete Invoice',
-      icon: IconTrash,
-      variant: 'destructive',
-      separatorBefore: true,
-      action: (record) => {
-        setPayments((prev) => prev.filter((p) => p.id !== record.id))
-        toast.success(`Invoice ${record.id} deleted`)
-      },
-    },
-  ]
+  const activeReport: ReportCategory = useMemo(() => {
+    if (pathname.startsWith('/reports/')) {
+      return pathname.replace('/reports/', '') as ReportCategory
+    }
+    return 'billing'
+  }, [pathname])
 
-  if (currentView === 'signin') {
-    return (
-      <SplitAuthLayout appName="Photography CRM">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-bold tracking-tight">Photography CRM</span>
-            <Button variant="ghost" size="sm" onClick={() => setCurrentView('dashboard')}>
-              Back to Dashboard
-            </Button>
-          </div>
-          <Card className="border bg-card shadow-sm">
-            <CardContent className="pt-6">
-              <Suspense fallback={<div className="h-48 flex items-center justify-center text-sm text-muted-foreground">Loading form...</div>}>
-                <LoginForm />
-              </Suspense>
-            </CardContent>
-          </Card>
-          <div className="text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <button
-              onClick={() => setCurrentView('signup')}
-              className="text-primary underline underline-offset-4 font-medium"
-            >
-              Sign up
-            </button>
-          </div>
-        </div>
-      </SplitAuthLayout>
+  const activeSetting: SettingsTab = useMemo(() => {
+    if (pathname.startsWith('/settings/')) {
+      return pathname.replace('/settings/', '') as SettingsTab
+    }
+    return 'master-data'
+  }, [pathname])
+
+  // Derive currentRoute key for main sidebar active state
+  const currentMainRoute = useMemo(() => {
+    if (pathname.startsWith('/projects')) return 'projects-list'
+    if (pathname.startsWith('/sessions')) return 'sessions-list'
+    if (pathname.startsWith('/leads')) return 'leads-list'
+    if (pathname.startsWith('/billings')) return 'billings'
+    if (pathname.startsWith('/orders')) return 'orders-list'
+    return 'projects-list'
+  }, [pathname])
+
+  // Session Handlers
+  const handleSaveSession = (savedSession: ProjectSession) => {
+    setSessions((prev) => {
+      const exists = prev.some((s) => s.id === savedSession.id)
+      if (exists) {
+        return prev.map((s) => (s.id === savedSession.id ? savedSession : s))
+      }
+      return [savedSession, ...prev]
+    })
+
+    if (savedSession.projectName) {
+      setProjects((prev) =>
+        prev.map((proj) => {
+          if (proj.projectName === savedSession.projectName) {
+            const sesExists = proj.sessions.some((s) => s.id === savedSession.id)
+            const updatedSessions = sesExists
+              ? proj.sessions.map((s) => (s.id === savedSession.id ? savedSession : s))
+              : [...proj.sessions, savedSession]
+            return {
+              ...proj,
+              sessions: updatedSessions,
+              sessionsCount: updatedSessions.length,
+            }
+          }
+          return proj
+        })
+      )
+    }
+  }
+
+  const handleDeleteSession = (sessionId: string) => {
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId))
+    setProjects((prev) =>
+      prev.map((proj) => ({
+        ...proj,
+        sessions: proj.sessions.filter((s) => s.id !== sessionId),
+        sessionsCount: proj.sessions.filter((s) => s.id !== sessionId).length,
+      }))
     )
   }
 
-  if (currentView === 'signup') {
-    return (
-      <SplitAuthLayout appName="Photography CRM">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-bold tracking-tight">Photography CRM</span>
-            <Button variant="ghost" size="sm" onClick={() => setCurrentView('dashboard')}>
-              Back to Dashboard
-            </Button>
-          </div>
-          <Card className="border bg-card shadow-sm">
-            <CardContent className="pt-6">
-              <Suspense fallback={<div className="h-64 flex items-center justify-center text-sm text-muted-foreground">Loading form...</div>}>
-                <SignupForm />
-              </Suspense>
-            </CardContent>
-          </Card>
-          <div className="text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <button
-              onClick={() => setCurrentView('signin')}
-              className="text-primary underline underline-offset-4 font-medium"
-            >
-              Sign in
-            </button>
-          </div>
-        </div>
-      </SplitAuthLayout>
+  const handleSessionStatusChange = (sessionId: string, newStatus: SessionStatus) => {
+    setSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, status: newStatus } : s))
     )
+    toast.success(`Session status updated to ${newStatus}`)
+  }
+
+  // Lead Navigation Handlers
+  const handleNavigateToCreateLead = (stage?: PipelineStage) => {
+    setEditingLead(
+      stage
+        ? ({
+          id: '',
+          name: '',
+          mobileNo: '',
+          countryCode: '+91',
+          email: '',
+          createdDate: new Date().toISOString().split('T')[0],
+          leadSource: 'Instagram',
+          generate: 'Direct Entry',
+          assignee: { name: 'Rohan Mehta', initials: 'RM' },
+          leadPipeline: 'Wedding Inquiries',
+          pipelineStage: stage,
+          leadStage:
+            stage === 'contacted'
+              ? 'Contacted'
+              : stage === 'qualified'
+                ? 'Interested'
+                : 'New Lead',
+          quoteAmount: 0,
+          followupDate: '2026-11-11T16:28',
+          projectType: 'Wedding',
+          quoteType: 'Standard Package',
+          projectStartDate: '2026-12-01',
+          projectEndDate: '2026-12-02',
+          projectSegments: [],
+          selectedServices: [],
+          selectedDeliverables: ['Raw Photos', 'Pen Drive'],
+        } as Lead)
+        : null
+    )
+    navigate('/leads/create')
+  }
+
+  const handleNavigateToEditLead = (lead: Lead) => {
+    setEditingLead(lead)
+    navigate(`/leads/edit/${lead.id}`)
+  }
+
+  const handleNavigateToLeadsList = () => {
+    setEditingLead(null)
+    navigate('/leads')
+  }
+
+  // Project Navigation Handlers
+  const handleNavigateToCreateProject = () => {
+    setEditingProject(null)
+    navigate('/projects/create')
+  }
+
+  const handleNavigateToEditProject = (project: Project) => {
+    setEditingProject(project)
+    navigate(`/projects/edit/${project.id}`)
+  }
+
+  const handleNavigateToProjectsList = () => {
+    setEditingProject(null)
+    navigate('/projects')
+  }
+
+  // Lead CRUD
+  const handleSaveLead = (leadToSave: Lead) => {
+    setLeads((prev) => {
+      const exists = prev.some((l) => l.id === leadToSave.id)
+      if (exists) {
+        return prev.map((l) => (l.id === leadToSave.id ? leadToSave : l))
+      }
+      return [leadToSave, ...prev]
+    })
+  }
+
+  const handleDeleteLead = (leadId: string) => {
+    setLeads((prev) => prev.filter((l) => l.id !== leadId))
+  }
+
+  const handleLeadStageChange = (leadId: string, newStage: PipelineStage) => {
+    setLeads((prev) =>
+      prev.map((lead) => {
+        if (lead.id !== leadId) return lead
+        let newSubStage = lead.leadStage
+        if (newStage === 'new_leads') newSubStage = 'New Lead'
+        else if (newStage === 'contacted') newSubStage = 'Contacted'
+        else if (newStage === 'qualified') newSubStage = 'Negotiation'
+        else if (newStage === 'converted') newSubStage = 'Booked'
+
+        return {
+          ...lead,
+          pipelineStage: newStage,
+          leadStage: newSubStage,
+        }
+      })
+    )
+    toast.success(`Lead moved to ${newStage.replace('_', ' ').toUpperCase()}`)
+  }
+
+  // Project CRUD
+  const handleSaveProject = (projectToSave: Project) => {
+    setProjects((prev) => {
+      const exists = prev.some((p) => p.id === projectToSave.id)
+      if (exists) {
+        return prev.map((p) => (p.id === projectToSave.id ? projectToSave : p))
+      }
+      return [projectToSave, ...prev]
+    })
+  }
+
+  const handleDeleteProject = (projectId: string) => {
+    setProjects((prev) => prev.filter((p) => p.id !== projectId))
+  }
+
+  const handleProjectStageChange = (projectId: string, newStage: ProjectStage) => {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p
+        return { ...p, stage: newStage }
+      })
+    )
+    toast.success(`Project moved to stage ${newStage}`)
+  }
+
+  // Order Handlers
+  const handleNavigateToCreateOrder = () => {
+    setEditingOrder(null)
+    navigate('/orders/create')
+  }
+
+  const handleNavigateToEditOrder = (order: Order) => {
+    setEditingOrder(order)
+    navigate(`/orders/edit/${order.id}`)
+  }
+
+  const handleNavigateToOrdersList = () => {
+    setEditingOrder(null)
+    navigate('/orders')
+  }
+
+  const handleSaveOrder = (savedOrder: Order) => {
+    setOrders((prev) => {
+      const exists = prev.some((o) => o.id === savedOrder.id)
+      if (exists) {
+        return prev.map((o) => (o.id === savedOrder.id ? savedOrder : o))
+      }
+      return [savedOrder, ...prev]
+    })
+    navigate('/orders')
+  }
+
+  const handleDeleteOrder = (orderId: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId))
+    toast.success('Order deleted successfully')
+  }
+
+  const handleOrderStageChange = (orderId: string, newStage: OrderStage) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o
+        return { ...o, stage: newStage }
+      })
+    )
+    toast.success(`Order stage updated to ${newStage}`)
+  }
+
+  // Dynamic Breadcrumb
+  const breadcrumbTitle = useMemo(() => {
+    if (sidebarMode === 'settings') {
+      const titles: Record<SettingsTab, string> = {
+        'master-data': 'Settings: Master Data',
+        photographers: 'Settings: Photographers & Crew',
+        'sequence-id': 'Settings: Sequence ID & Visibility',
+        'preset-services': 'Preset Configuration: Services',
+        'preset-packages': 'Preset Configuration: Packages',
+        'preset-orders': 'Preset Configuration: Orders',
+        'preset-deliverables': 'Preset Configuration: Deliverables',
+        'template-forms': 'Design: Forms Template',
+        'template-quotation-pdf': 'Design: Quotation PDF Template',
+        'template-invoice-pdf': 'Design: Invoice PDF Template',
+        'template-contracts': 'Design: Contracts Template',
+        'template-feedbacks': 'Design: Feedbacks Template',
+        'stages-workflow': 'Stages: Production Workflow',
+      }
+      return titles[activeSetting] || 'Studio Settings'
+    }
+
+    if (sidebarMode === 'reports') {
+      const titles: Record<ReportCategory, string> = {
+        billing: 'Reports: Billing Statement',
+        leads: 'Reports: Leads Acquisition Funnel',
+        orders: 'Reports: Orders & Merchandise',
+        sessions: 'Reports: Sessions & Crew Deployment',
+        finance: 'Reports: Financial P&L & Profitability',
+        'master-report': 'Reports: Master Operations Register',
+        'account-analytics': 'Reports: Client Account Analytics & LTV',
+        feedback: 'Reports: Client Feedback & NPS',
+      }
+      return titles[activeReport] || 'Studio Reports'
+    }
+
+    if (pathname === '/leads/create') return 'Create Lead'
+    if (pathname.startsWith('/leads/edit')) return `Edit Lead (${editingLead?.name || ''})`
+    if (pathname.startsWith('/leads')) return 'Photography Leads'
+    if (pathname === '/projects/create') return 'Create Project'
+    if (pathname.startsWith('/projects/edit')) return `Project: ${editingProject?.projectName || ''}`
+    if (pathname.startsWith('/sessions')) return 'Sessions'
+    if (pathname.startsWith('/billings')) return 'Billings'
+    if (pathname === '/orders/create') return 'New Order'
+    if (pathname.startsWith('/orders/edit')) return `Order: ${editingOrder?.orderNumber || ''}`
+    if (pathname.startsWith('/orders')) return 'Orders'
+    return 'Projects'
+  }, [sidebarMode, activeSetting, activeReport, pathname, editingLead, editingProject, editingOrder])
+
+  return (
+    <DashboardShell
+      title="Photography CRM"
+      breadcrumb={breadcrumbTitle}
+      sidebar={
+        <PhotographySidebar
+          mode={sidebarMode}
+          currentRoute={currentMainRoute}
+          activeReport={activeReport}
+          activeSetting={activeSetting}
+          onSelectRoute={(r) => {
+            const routeMap: Record<string, string> = {
+              'projects-list': '/projects',
+              'sessions-list': '/sessions',
+              'leads-list': '/leads',
+              'billings': '/billings',
+              'orders-list': '/orders',
+            }
+            navigate(routeMap[r] || '/projects')
+          }}
+          onSelectReport={(rep) => {
+            navigate(`/reports/${rep}`)
+          }}
+          onSelectSetting={(set) => {
+            navigate(`/settings/${set}`)
+          }}
+          onExitSubmode={() => {
+            navigate('/projects')
+          }}
+        />
+      }
+      headerActions={
+        <div className="flex items-center gap-2">
+          <Button
+            variant={sidebarMode === 'reports' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              if (sidebarMode === 'reports') {
+                navigate('/projects')
+              } else {
+                navigate(`/reports/${activeReport || 'billing'}`)
+              }
+            }}
+            className={`h-7 text-xs font-semibold gap-1.5 transition ${
+              sidebarMode === 'reports'
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                : 'border-border text-foreground hover:bg-muted'
+            }`}
+          >
+            <IconReportAnalytics className="h-3.5 w-3.5" />
+            <span>Reports</span>
+          </Button>
+
+          <Button
+            variant={sidebarMode === 'settings' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              if (sidebarMode === 'settings') {
+                navigate('/projects')
+              } else {
+                navigate(`/settings/${activeSetting || 'master-data'}`)
+              }
+            }}
+            className={`h-7 text-xs font-semibold gap-1.5 transition ${
+              sidebarMode === 'settings'
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                : 'border-border text-foreground hover:bg-muted'
+            }`}
+          >
+            <IconSettings className="h-3.5 w-3.5" />
+            <span>Settings</span>
+          </Button>
+        </div>
+      }
+    >
+      <Toaster position="top-right" richColors />
+
+      {/* Main Module Tabs Navigation Bar (only shown in core CRM mode) */}
+      {sidebarMode === 'main' && (
+        <div className="flex items-center gap-2 border-b bg-muted/10 px-1 py-1 mb-4 rounded-lg">
+          <button
+            type="button"
+            onClick={() => navigate('/projects')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+              pathname.startsWith('/projects')
+                ? 'bg-background text-foreground shadow-xs font-bold border'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <IconFolders className="h-3.5 w-3.5" />
+            <span>Projects ({projects.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/sessions')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+              pathname.startsWith('/sessions')
+                ? 'bg-background text-foreground shadow-xs font-bold border'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <IconCalendar className="h-3.5 w-3.5" />
+            <span>Sessions ({sessions.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/leads')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+              pathname.startsWith('/leads')
+                ? 'bg-background text-foreground shadow-xs font-bold border'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <IconTarget className="h-3.5 w-3.5" />
+            <span>Leads ({leads.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/billings')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+              pathname.startsWith('/billings')
+                ? 'bg-background text-foreground shadow-xs font-bold border'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <IconCreditCard className="h-3.5 w-3.5" />
+            <span>Billings</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/orders')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+              pathname.startsWith('/orders')
+                ? 'bg-background text-foreground shadow-xs font-bold border'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <IconShoppingBag className="h-3.5 w-3.5" />
+            <span>Orders ({orders.length})</span>
+          </button>
+        </div>
+      )}
+
+      {/* Routes Switcher with Code-Splitting Suspense */}
+      <Suspense
+        fallback={
+          <div className="flex flex-1 items-center justify-center p-8 text-xs text-muted-foreground">
+            Loading view...
+          </div>
+        }
+      >
+        <Routes>
+          {/* Default redirect to projects */}
+          <Route path="/" element={<Navigate to="/projects" replace />} />
+
+          {/* Core Modules */}
+          <Route
+            path="/projects"
+            element={
+              <ProjectsPage
+                projects={projects}
+                onAddNewProject={handleNavigateToCreateProject}
+                onEditProject={handleNavigateToEditProject}
+                onDeleteProject={handleDeleteProject}
+                onStageChange={handleProjectStageChange}
+              />
+            }
+          />
+          <Route
+            path="/projects/create"
+            element={
+              <ProjectCreatePage
+                onBack={handleNavigateToProjectsList}
+                onSave={handleSaveProject}
+              />
+            }
+          />
+          <Route
+            path="/projects/edit/:id"
+            element={
+              <ProjectEditPageWrapper
+                projects={projects}
+                editingProject={editingProject}
+                onBack={handleNavigateToProjectsList}
+                onSave={handleSaveProject}
+                onDelete={handleDeleteProject}
+              />
+            }
+          />
+
+          <Route
+            path="/sessions"
+            element={
+              <SessionsPage
+                sessions={sessions}
+                onAddNewSession={() => {}}
+                onEditSession={() => {}}
+                onDeleteSession={handleDeleteSession}
+                onStatusChange={handleSessionStatusChange}
+                onSaveSession={handleSaveSession}
+                existingProjectNames={projects.map((p) => p.projectName)}
+              />
+            }
+          />
+
+          <Route
+            path="/leads"
+            element={
+              <LeadsPage
+                leads={leads}
+                onAddNewLead={handleNavigateToCreateLead}
+                onEditLead={handleNavigateToEditLead}
+                onDeleteLead={handleDeleteLead}
+                onStageChange={handleLeadStageChange}
+              />
+            }
+          />
+          <Route
+            path="/leads/create"
+            element={
+              <LeadFormPage
+                initialLead={editingLead}
+                onBack={handleNavigateToLeadsList}
+                onSave={handleSaveLead}
+              />
+            }
+          />
+          <Route
+            path="/leads/edit/:id"
+            element={
+              <LeadEditPageWrapper
+                leads={leads}
+                editingLead={editingLead}
+                onBack={handleNavigateToLeadsList}
+                onSave={handleSaveLead}
+              />
+            }
+          />
+
+          <Route path="/billings" element={<BillingsPage />} />
+
+          <Route
+            path="/orders"
+            element={
+              <OrdersPage
+                orders={orders}
+                onAddNewOrder={handleNavigateToCreateOrder}
+                onEditOrder={handleNavigateToEditOrder}
+                onDeleteOrder={handleDeleteOrder}
+                onStageChange={handleOrderStageChange}
+              />
+            }
+          />
+          <Route
+            path="/orders/create"
+            element={
+              <OrderFormPage
+                initialOrder={editingOrder}
+                onBack={handleNavigateToOrdersList}
+                onSave={handleSaveOrder}
+                existingProjectOptions={projects.map((p) => ({ id: p.id, name: p.projectName }))}
+              />
+            }
+          />
+          <Route
+            path="/orders/edit/:id"
+            element={
+              <OrderEditPageWrapper
+                orders={orders}
+                editingOrder={editingOrder}
+                onBack={handleNavigateToOrdersList}
+                onSave={handleSaveOrder}
+                existingProjectOptions={projects.map((p) => ({ id: p.id, name: p.projectName }))}
+              />
+            }
+          />
+
+          {/* Reports Routes */}
+          <Route path="/reports/billing" element={<BillingReportPage />} />
+          <Route path="/reports/leads" element={<LeadsReportPage />} />
+          <Route path="/reports/orders" element={<OrdersReportPage />} />
+          <Route path="/reports/sessions" element={<SessionsReportPage />} />
+          <Route path="/reports/finance" element={<FinanceReportPage />} />
+          <Route path="/reports/master-report" element={<MasterReportPage />} />
+          <Route path="/reports/account-analytics" element={<AccountAnalyticsPage />} />
+          <Route path="/reports/feedback" element={<FeedbackReportPage />} />
+
+          {/* Settings Routes */}
+          <Route path="/settings/master-data" element={<MasterDataPage />} />
+          <Route path="/settings/photographers" element={<PhotographersPage />} />
+          <Route path="/settings/sequence-id" element={<SequenceIdPage />} />
+          <Route path="/settings/preset-services" element={<ServicesSettingsPage />} />
+          <Route path="/settings/preset-packages" element={<PackagesSettingsPage />} />
+          <Route
+            path="/settings/preset-orders"
+            element={
+              <GenericPresetPage
+                title="Orders & Merchandise Presets"
+                subtitle="Default pricing for albums, frames, and prints"
+                icon={IconSettings}
+                initialItems={[
+                  { id: 'ordp-1', name: '12x36 Photobook (40 Pgs)', rate: 12500, unit: 'album' },
+                  { id: 'ordp-2', name: 'Acrylic Wall Frame (24x36)', rate: 6500, unit: 'frame' },
+                  { id: 'ordp-3', name: 'Canvas Gallery Wrap (20x30)', rate: 4200, unit: 'canvas' },
+                  { id: 'ordp-4', name: 'Premium Wooden Keepsake Box', rate: 3500, unit: 'box' },
+                ]}
+              />
+            }
+          />
+          <Route
+            path="/settings/preset-deliverables"
+            element={
+              <GenericPresetPage
+                title="Deliverables Presets"
+                subtitle="Standard deliverables checklist for project milestones"
+                icon={IconSettings}
+                hasPrice={false}
+                initialItems={[
+                  { id: 'del-1', name: 'High-Res Edited Photos (Soft Copy)' },
+                  { id: 'del-2', name: 'Cinematic 4K Wedding Teaser (3-5 mins)' },
+                  { id: 'del-3', name: 'Full Length Documentary Film (45 mins)' },
+                  { id: 'del-4', name: 'Custom Engraved Wooden USB Drive' },
+                  { id: 'del-5', name: 'Handcrafted Flushmount Coffee Table Album' },
+                ]}
+              />
+            }
+          />
+          <Route
+            path="/settings/template-forms"
+            element={
+              <TemplateCustomizerPage
+                title="Lead Intake & Inquiry Forms"
+                subtitle="Customize public lead capture form questions, branding, and disclaimers"
+                type="form"
+              />
+            }
+          />
+          <Route
+            path="/settings/template-quotation-pdf"
+            element={
+              <TemplateCustomizerPage
+                title="Quotation PDF Template"
+                subtitle="Visual design, payment schedules, and terms on client quotation estimates"
+                type="quotation"
+              />
+            }
+          />
+          <Route
+            path="/settings/template-invoice-pdf"
+            element={
+              <TemplateCustomizerPage
+                title="Invoice PDF Template"
+                subtitle="Tax invoice layout, bank details, and studio payment remittance instructions"
+                type="invoice"
+              />
+            }
+          />
+          <Route
+            path="/settings/template-contracts"
+            element={
+              <TemplateCustomizerPage
+                title="Photography Contract Agreement"
+                subtitle="Copyright ownership, cancellation clauses, and client liability agreements"
+                type="contract"
+              />
+            }
+          />
+          <Route
+            path="/settings/template-feedbacks"
+            element={
+              <TemplateCustomizerPage
+                title="Client Feedback & NPS Survey"
+                subtitle="Post-shoot satisfaction survey questions and review requests"
+                type="feedback"
+              />
+            }
+          />
+          <Route path="/settings/stages-workflow" element={<WorkflowPage />} />
+
+          {/* Catch-all redirect */}
+          <Route path="*" element={<Navigate to="/projects" replace />} />
+        </Routes>
+      </Suspense>
+    </DashboardShell>
+  )
+}
+
+function LeadEditPageWrapper({
+  leads,
+  editingLead,
+  onBack,
+  onSave,
+}: {
+  leads: Lead[]
+  editingLead: Lead | null
+  onBack: () => void
+  onSave: (l: Lead) => void
+}) {
+  const { id } = useParams<{ id: string }>()
+  const targetLead = editingLead || leads.find((l) => l.id === id) || null
+  return <LeadFormPage initialLead={targetLead} onBack={onBack} onSave={onSave} />
+}
+
+function ProjectEditPageWrapper({
+  projects,
+  editingProject,
+  onBack,
+  onSave,
+  onDelete,
+}: {
+  projects: Project[]
+  editingProject: Project | null
+  onBack: () => void
+  onSave: (p: Project) => void
+  onDelete: (id: string) => void
+}) {
+  const { id } = useParams<{ id: string }>()
+  const targetProject = editingProject || projects.find((p) => p.id === id) || null
+
+  if (!targetProject) {
+    return <Navigate to="/projects" replace />
   }
 
   return (
-    <DashboardShell title="Photography CRM" breadcrumb="Overview">
-      <Toaster position="top-right" />
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight">Photography CRM</h1>
-          <p className="text-sm text-muted-foreground">
-            Shoots, client galleries, bookings and invoices.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-md border bg-muted/40 p-0.5">
-            <Button
-              variant={dashboardTab === 'kanban' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setDashboardTab('kanban')}
-              className="h-7 px-2.5 text-xs font-medium"
-            >
-              Pipeline (Kanban)
-            </Button>
-            <Button
-              variant={dashboardTab === 'table' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setDashboardTab('table')}
-              className="h-7 px-2.5 text-xs font-medium"
-            >
-              Invoices (Table)
-            </Button>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => setCurrentView('signin')}>
-            Switch to Sign In
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentView('signup')}>
-            Switch to Sign Up
-          </Button>
-        </div>
-      </div>
+    <ProjectEditPage
+      project={targetProject}
+      onBack={onBack}
+      onUpdate={onSave}
+      onDelete={onDelete}
+    />
+  )
+}
 
-      <div className="grid gap-2.5 md:grid-cols-3 mb-2.5">
-        <Card className="border bg-card shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Invoices</CardTitle>
-            <CardDescription>Records in workspace</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">{payments.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Real-time status</p>
-          </CardContent>
-        </Card>
-        <Card className="border bg-card shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">System Status</CardTitle>
-            <CardDescription>Backend connection</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-green-600">Connected</div>
-            <p className="text-xs text-muted-foreground mt-1">Ready for requests</p>
-          </CardContent>
-        </Card>
-        <Card className="border bg-card shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Revenue Billed</CardTitle>
-            <CardDescription>Gross invoice total</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold tabular-nums">
-              ${payments.reduce((acc, p) => acc + p.amount, 0).toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Active shoot billing</p>
-          </CardContent>
-        </Card>
-      </div>
+function OrderEditPageWrapper({
+  orders,
+  editingOrder,
+  onBack,
+  onSave,
+  existingProjectOptions,
+}: {
+  orders: Order[]
+  editingOrder: Order | null
+  onBack: () => void
+  onSave: (o: Order) => void
+  existingProjectOptions: { id: string; name: string }[]
+}) {
+  const { id } = useParams<{ id: string }>()
+  const targetOrder = editingOrder || orders.find((o) => o.id === id) || null
 
-      {dashboardTab === 'kanban' ? (
-        <Card className="border bg-card shadow-xs">
-          <CardContent className="p-3">
-            <Suspense fallback={<div className="h-96 flex items-center justify-center text-sm text-muted-foreground">Loading pipeline board...</div>}>
-              <Kanban
-                title="Sales Opportunities & Bookings"
-                description="Drag and drop deals across stages, track values, and manage clients."
-                columns={kanbanColumns}
-                tasks={kanbanTasks}
-                onTasksChange={setKanbanTasks}
-                onTaskMove={(taskId: string, targetStatus: string) => {
-                  const updated = kanbanTasks.map(t => t.id === taskId ? { ...t, status: targetStatus } : t)
-                  setKanbanTasks(updated)
-                  return true
-                }}
-                viewMode={dashboardTab}
-                onViewModeChange={(mode: 'table' | 'kanban') => setDashboardTab(mode)}
-              />
-            </Suspense>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border bg-card shadow-sm">
-          <CardHeader>
-            <CardTitle>Recent Payments & Invoices</CardTitle>
-            <CardDescription>
-              Production-grade SaaS data table with multi-column search, structured filters, density settings, CSV export, and row drawer.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Suspense fallback={<div className="h-96 flex items-center justify-center text-sm text-muted-foreground">Loading invoice table...</div>}>
-              <DataTable
-                columns={paymentColumns}
-                data={payments}
-                searchableColumns={['clientName', 'email', 'package', 'id']}
-                searchPlaceholder="Search invoices... (Press ⌘K)"
-                filterConfigs={filterConfigs}
-                bulkActions={bulkActions}
-                rowActions={rowActions}
-                renderDetailDrawer={(row, close) => (
-                  <div className="space-y-6">
-                    <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">Status</span>
-                        <Badge
-                          variant={
-                            row.status === 'success'
-                              ? 'default'
-                              : row.status === 'failed'
-                              ? 'destructive'
-                              : 'secondary'
-                          }
-                          className="capitalize text-xs"
-                        >
-                          {row.status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">Invoice Amount</span>
-                        <span className="text-lg font-bold tabular-nums">${row.amount.toLocaleString()}</span>
-                      </div>
-                    </div>
+  return (
+    <OrderFormPage
+      initialOrder={targetOrder}
+      onBack={onBack}
+      onSave={onSave}
+      existingProjectOptions={existingProjectOptions}
+    />
+  )
+}
 
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Client Details
-                      </h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between py-1 border-b">
-                          <span className="text-muted-foreground">Client Name</span>
-                          <span className="font-medium">{row.clientName}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b">
-                          <span className="text-muted-foreground">Email</span>
-                          <span className="font-mono text-xs">{row.email}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b">
-                          <span className="text-muted-foreground">Package</span>
-                          <span>{row.package}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b">
-                          <span className="text-muted-foreground">Shoot Date</span>
-                          <span>{row.shootDate}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 pt-4">
-                      <Button
-                        className="flex-1"
-                        onClick={() => {
-                          toast.success(`Sent receipt to ${row.email}`)
-                          close()
-                        }}
-                      >
-                        Send Receipt
-                      </Button>
-                      <Button variant="outline" onClick={close}>
-                        Close
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                detailDrawerTitle={(row) => `Invoice ${row.id}`}
-                detailDrawerDescription={(row) => `Review details and billing status for ${row.clientName}.`}
-                enableExport={true}
-                exportFilename="crm-invoices.csv"
-              />
-            </Suspense>
-          </CardContent>
-        </Card>
-      )}
-    </DashboardShell>
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   )
 }

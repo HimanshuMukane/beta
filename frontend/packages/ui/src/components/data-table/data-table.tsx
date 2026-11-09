@@ -96,6 +96,12 @@ import { Skeleton } from "../ui/skeleton"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
 import { toast } from "sonner"
 import { features, type DataTableFeatures } from "./data-table-features"
+import {
+  FilterBuilder,
+  evaluateFilterTree,
+  type FilterGroupItem,
+  type FilterColumnConfig,
+} from "./filter-builder"
 import { cn } from "@repo/ui/lib/utils"
 
 export type TableDensity = "compact" | "comfortable"
@@ -109,7 +115,7 @@ export interface DataTableFilterOption {
 export interface DataTableFilterConfig {
   columnId: string
   title: string
-  type: "select" | "multi-select" | "text" | "number-range"
+  type: "select" | "multi-select" | "text" | "number" | "number-range" | "date"
   options?: DataTableFilterOption[]
 }
 
@@ -192,6 +198,13 @@ export function DataTable<TData extends RowData>({
       return (localStorage.getItem("data-table-density") as TableDensity) || defaultDensity
     }
     return defaultDensity
+  })
+
+  const [filterTree, setFilterTree] = React.useState<FilterGroupItem>({
+    id: "root",
+    type: "group",
+    conjunction: "and",
+    items: [],
   })
 
   const [activeDrawerRow, setActiveDrawerRow] = React.useState<TData | null>(null)
@@ -324,9 +337,21 @@ export function DataTable<TData extends RowData>({
     [searchKey, searchableColumns]
   )
 
+  const filteredData = React.useMemo(() => {
+    if (!filterTree.items || filterTree.items.length === 0) {
+      return data
+    }
+    return data.filter((row) => {
+      const rowGetter = (colId: string) => {
+        return (row as Record<string, unknown>)[colId]
+      }
+      return evaluateFilterTree(rowGetter, filterTree)
+    })
+  }, [data, filterTree])
+
   const table = useTable({
     features,
-    data,
+    data: filteredData,
     columns: tableColumns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -384,11 +409,28 @@ export function DataTable<TData extends RowData>({
     }
   }
 
-  const activeFiltersCount = columnFilters.length + (globalFilter ? 1 : 0)
+  const treeRuleCount = React.useMemo(() => {
+    const count = (grp: FilterGroupItem): number => {
+      return grp.items.reduce((acc, it) => {
+        if (it.type === "rule") return acc + 1
+        if (it.type === "group") return acc + count(it)
+        return acc
+      }, 0)
+    }
+    return count(filterTree)
+  }, [filterTree])
+
+  const activeFiltersCount = columnFilters.length + (globalFilter ? 1 : 0) + treeRuleCount
 
   const clearAllFilters = () => {
     setColumnFilters([])
     setGlobalFilter("")
+    setFilterTree({
+      id: "root",
+      type: "group",
+      conjunction: "and",
+      items: [],
+    })
   }
 
   const removeFilter = (id: string) => {
@@ -654,87 +696,27 @@ export function DataTable<TData extends RowData>({
                 <Button variant="outline" size="sm" className="h-9 gap-1.5">
                   <IconFilter className="h-4 w-4 text-muted-foreground" />
                   <span>Filters</span>
-                  {columnFilters.length > 0 && (
+                  {treeRuleCount > 0 && (
                     <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[11px]">
-                      {columnFilters.length}
+                      {treeRuleCount}
                     </Badge>
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-4" align="start">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between pb-2 border-b">
-                    <span className="font-semibold text-sm">Filter Records</span>
-                    {columnFilters.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setColumnFilters([])}
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Reset
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                    {filterConfigs.map((config) => {
-                      const currentVal = (table.getColumn(config.columnId)?.getFilterValue() as string) || ""
-
-                      if (config.type === "select" && config.options) {
-                        return (
-                          <div key={config.columnId} className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground">
-                              {config.title}
-                            </label>
-                            <Select
-                              value={currentVal || "ALL"}
-                              onValueChange={(val) => {
-                                const targetCol = table.getColumn(config.columnId)
-                                if (val === "ALL") {
-                                  targetCol?.setFilterValue(undefined)
-                                } else {
-                                  targetCol?.setFilterValue(val)
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder={`All ${config.title}`} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="ALL" className="text-xs">
-                                  All {config.title}
-                                </SelectItem>
-                                {config.options.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )
-                      }
-
-                      return (
-                        <div key={config.columnId} className="space-y-1.5">
-                          <label className="text-xs font-medium text-muted-foreground">
-                            {config.title}
-                          </label>
-                          <Input
-                            placeholder={`Filter by ${config.title.toLowerCase()}...`}
-                            value={currentVal}
-                            onChange={(e) => {
-                              const targetCol = table.getColumn(config.columnId)
-                              targetCol?.setFilterValue(e.target.value || undefined)
-                            }}
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
+              <PopoverContent className="w-auto p-0 border-0 bg-transparent shadow-none" align="start">
+                <FilterBuilder
+                  configs={filterConfigs as FilterColumnConfig[]}
+                  rootGroup={filterTree}
+                  onChange={setFilterTree}
+                  onClear={() => {
+                    setFilterTree({
+                      id: "root",
+                      type: "group",
+                      conjunction: "and",
+                      items: [],
+                    })
+                  }}
+                />
               </PopoverContent>
             </Popover>
           )}

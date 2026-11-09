@@ -20,16 +20,20 @@ interface DashboardShellProps {
   title?: string
   breadcrumb?: string
   children: React.ReactNode
+  sidebar?: React.ReactNode
+  headerActions?: React.ReactNode
 }
 
 export function DashboardShell({
   title: _title = "Dashboard",
   breadcrumb = "Dashboard",
   children,
+  sidebar,
+  headerActions,
 }: DashboardShellProps) {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      {sidebar || <AppSidebar />}
       <SidebarInset className="h-screen overflow-hidden flex flex-col">
         <header className="sticky top-0 z-40 flex h-10 shrink-0 items-center justify-between gap-2 px-3 border-b border-border bg-card">
           <div className="flex items-center gap-1.5">
@@ -47,7 +51,8 @@ export function DashboardShell({
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            {headerActions}
             <ModeToggle />
           </div>
         </header>

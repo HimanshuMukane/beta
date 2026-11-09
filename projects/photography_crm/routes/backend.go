@@ -26,4 +26,17 @@ func RegisterBackendRoutes(
 		r.With(middleware.RequireAuth(cfg)).Get("/me", coreHandlers.MeAPIHandler())
 		r.With(middleware.RequireAuth(cfg)).Get("/workspaces", handlers.WorkspacesAPIHandler())
 	})
+
+	r.Route("/api/billing", func(r chi.Router) {
+		r.Get("/payments", handlers.PaymentsHandler)
+		r.Get("/invoices", handlers.InvoicesHandler)
+		r.Get("/expenses", handlers.ProjectsHandler)
+		r.Get("/cancelled", handlers.ProjectsHandler)
+		r.Get("/refunds", handlers.PaymentsHandler)
+	})
+
+	r.Route("/api/orders", func(r chi.Router) {
+		r.Get("/", handlers.OrdersHandler)
+		r.Post("/", handlers.OrdersHandler)
+	})
 }
