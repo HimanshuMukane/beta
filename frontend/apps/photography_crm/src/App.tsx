@@ -12,6 +12,7 @@ import {
   Checkbox,
   Toaster,
   toast,
+  cn,
 } from '@repo/ui'
 import type { KanbanTask, KanbanColumnDef } from '@repo/ui/components/kanban/kanban'
 import { createColumnHelper } from '@tanstack/react-table'
@@ -126,22 +127,47 @@ const paymentColumns = columnHelper.columns([
   columnHelper.display({
     id: 'select',
     header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value: boolean | 'indeterminate') => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
+      <div className="flex items-center justify-center">
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={(value: boolean | 'indeterminate') => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      </div>
     ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value: boolean | 'indeterminate') => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
+    cell: ({ row }) => {
+      const isSelected = row.getIsSelected()
+      return (
+        <div className="relative flex items-center justify-center h-5 w-6 mx-auto">
+          {/* Serial number shown when row is not hovered and not selected */}
+          <span
+            className={cn(
+              "text-xs font-mono text-muted-foreground tabular-nums transition-opacity",
+              isSelected ? "hidden" : "block group-hover/row:hidden"
+            )}
+          >
+            {row.index + 1}
+          </span>
+          {/* Checkbox shown on row hover or when row is selected */}
+          <div
+            className={cn(
+              "transition-opacity",
+              isSelected ? "block" : "hidden group-hover/row:block"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(value: boolean | 'indeterminate') => row.toggleSelected(!!value)}
+              aria-label={`Select row ${row.index + 1}`}
+            />
+          </div>
+        </div>
+      )
+    },
     enableSorting: false,
     enableHiding: false,
   }),

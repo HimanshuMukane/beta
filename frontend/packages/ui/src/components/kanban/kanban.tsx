@@ -477,12 +477,12 @@ export function Kanban({
                       }
                     } catch {}
                   }}
-                  className="w-72 shrink-0 rounded-md border border-border bg-card/60 p-2 shadow-xs"
+                  className="w-64 shrink-0 rounded-md border border-border bg-card/40 p-1.5 shadow-none"
                 >
-                  <KanbanBoardColumnHeader className="flex items-center justify-between pb-2 border-b border-border/60">
+                  <KanbanBoardColumnHeader className="flex items-center justify-between pb-1.5 border-b border-border">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <KanbanColorCircle color={column.color || 'blue'} />
-                    <KanbanBoardColumnTitle columnId={column.id} className="text-xs font-semibold truncate text-foreground">
+                    <KanbanBoardColumnTitle columnId={column.id} className="text-xs font-medium truncate text-foreground">
                       {column.title}
                     </KanbanBoardColumnTitle>
                     <Badge variant="secondary" className="h-4 px-1 text-[10px] font-normal">
@@ -503,7 +503,7 @@ export function Kanban({
                         setNewTaskStatus(column.id);
                         setIsNewTaskOpen(true);
                       }}
-                      className="h-6 w-6 p-0 hover:bg-muted"
+                      className="h-5 w-5 p-0 hover:bg-muted"
                       title="Add card"
                     >
                       <IconPlus className="h-3 w-3 text-muted-foreground" />
@@ -512,7 +512,7 @@ export function Kanban({
                 </KanbanBoardColumnHeader>
 
                 {/* Column Items */}
-                <KanbanBoardColumnList className="flex flex-col gap-1.5 pt-2 min-h-[300px]">
+                <KanbanBoardColumnList className="flex flex-col gap-1 pt-1.5 min-h-[300px]">
                   {colItems.map((task, idx) => (
                     <KanbanBoardColumnListItem
                       key={task.id}
@@ -533,7 +533,7 @@ export function Kanban({
                           setActiveTask(task);
                           onTaskClick?.(task);
                         }}
-                        className="group relative flex flex-col gap-1.5 rounded-md border border-border bg-card p-2.5 shadow-xs transition-all hover:border-primary/40 hover:shadow-sm cursor-grab select-none text-left w-full"
+                        className="group relative flex flex-col gap-1 rounded border border-border bg-card p-2 transition-colors hover:border-border/80 cursor-grab select-none text-left w-full"
                       >
                         {/* Top: Customer or Category & Priority */}
                         <div className="flex items-center justify-between gap-1 w-full">

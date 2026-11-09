@@ -697,12 +697,12 @@ export function DataTable<TData extends RowData>({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-md border border-border bg-card">
         <div className="relative w-full overflow-x-auto">
           <Table>
-            <TableHeader className="bg-muted/40 border-b">
+            <TableHeader className="bg-muted/30 border-b border-border">
               {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-border">
                   {headerGroup.headers.map((header) => {
                     const canSort = header.column.getCanSort()
                     const isSorted = header.column.getIsSorted()
@@ -711,9 +711,9 @@ export function DataTable<TData extends RowData>({
                       <TableHead
                         key={header.id}
                         className={cn(
-                          "h-12 px-4 text-xs font-semibold tracking-wider text-muted-foreground select-none uppercase",
-                          header.id === "select" && "w-10 pr-0",
-                          header.id === "actions" && "w-12 text-right"
+                          "h-8 px-2.5 text-[11px] font-medium tracking-normal text-muted-foreground select-none",
+                          header.id === "select" && "w-9 px-1 text-center",
+                          header.id === "actions" && "w-10 text-right"
                         )}
                       >
                         {header.isPlaceholder ? null : canSort ? (
@@ -803,8 +803,8 @@ export function DataTable<TData extends RowData>({
                         }
                       }}
                       className={cn(
-                        "transition-colors",
-                        density === "compact" ? "h-11 py-1" : "h-14 py-3",
+                        "group/row transition-colors",
+                        density === "compact" ? "h-8 py-0.5" : "h-11 py-1.5",
                         hasClick && "cursor-pointer hover:bg-muted/60",
                         isSelected && "bg-muted/80 font-medium"
                       )}
@@ -813,10 +813,10 @@ export function DataTable<TData extends RowData>({
                         <TableCell
                           key={cell.id}
                           className={cn(
-                            "px-4 align-middle text-sm",
-                            density === "compact" ? "py-1.5" : "py-3",
-                            cell.column.id === "select" && "w-10 pr-0",
-                            cell.column.id === "actions" && "w-12 text-right"
+                            "px-2.5 align-middle text-xs",
+                            density === "compact" ? "py-1" : "py-2",
+                            cell.column.id === "select" && "w-9 px-1 text-center",
+                            cell.column.id === "actions" && "w-10 text-right"
                           )}
                         >
                           <table.FlexRender cell={cell} />
