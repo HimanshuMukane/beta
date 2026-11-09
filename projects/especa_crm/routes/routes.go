@@ -7,7 +7,6 @@ import (
 	coreMiddleware "core/middleware"
 	"core/utils"
 	"especa_crm/handlers"
-	"especa_crm/ui/static"
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 )
@@ -25,8 +24,8 @@ func SetupRouterWithAuth(database *sqlx.DB, companyID string, cfg utils.Config) 
 	r.Use(coreMiddleware.SecurityHeaders)
 	r.Use(coreMiddleware.CSRFProtection)
 
-	fs := http.StripPrefix("/static/", http.FileServer(static.FS()))
-	r.Handle("/static/*", fs)
+	spa := utils.ServeSPA("frontend/apps/especa_crm/dist")
+	r.Handle("/static/*", spa)
 
 	r.Get("/api/health", func(w http.ResponseWriter, req *http.Request) {
 		if database == nil || database.PingContext(req.Context()) != nil {
@@ -37,6 +36,7 @@ func SetupRouterWithAuth(database *sqlx.DB, companyID string, cfg utils.Config) 
 	})
 
 	r.Route("/api/auth", func(api chi.Router) {
+		api.Get("/csrf", coreHandlers.CSRFHandler())
 		api.Post("/login", coreHandlers.LoginAPIHandler(cfg))
 		api.Post("/signup", coreHandlers.SignupAPIHandler(cfg, "workspace_user"))
 		api.Post("/logout", coreHandlers.LogoutAPIHandler(cfg))

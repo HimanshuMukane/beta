@@ -1,9 +1,0 @@
-package chart
-
-templ chartOutput(st *chartState) {
-	{{ m := buildModel(ctx, st) }}
-	@templ.Raw(ModelScript(m))
-	if st.legend != nil {
-		@legendContent(legendItems(configFrom(ctx), m, st, st.legend), st.legend)
-	}
-}

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"especa_crm/models"
-	"especa_crm/ui/pages"
+	"especa_crm/pages"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"

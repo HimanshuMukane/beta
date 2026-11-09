@@ -4,24 +4,22 @@ import (
 	"net/http"
 
 	"core/utils"
-	"superadmin/ui/pages"
 )
 
-func (h *FinanceHandlers) SignInPageHandler(w http.ResponseWriter, r *http.Request) {
-	_ = pages.SignIn().Render(r.Context(), w)
+func (h *FinanceHandlers) SignInPageHandler(w http.ResponseWriter, _ *http.Request) {
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "SignIn endpoint"})
 }
 
-func (h *FinanceHandlers) SignUpPageHandler(w http.ResponseWriter, r *http.Request) {
-	_ = pages.SignUp().Render(r.Context(), w)
+func (h *FinanceHandlers) SignUpPageHandler(w http.ResponseWriter, _ *http.Request) {
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "SignUp endpoint"})
 }
 
-func (h *FinanceHandlers) ForgotPasswordPageHandler(w http.ResponseWriter, r *http.Request) {
-	_ = pages.ForgotPassword().Render(r.Context(), w)
+func (h *FinanceHandlers) ForgotPasswordPageHandler(w http.ResponseWriter, _ *http.Request) {
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "ForgotPassword endpoint"})
 }
 
-func (h *FinanceHandlers) NotFoundPageHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotFound)
-	_ = pages.NotFound().Render(r.Context(), w)
+func (h *FinanceHandlers) NotFoundPageHandler(w http.ResponseWriter, _ *http.Request) {
+	utils.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
 }
 
 func (h *FinanceHandlers) LogoutHandler(cfg utils.Config) http.HandlerFunc {
