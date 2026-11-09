@@ -22,18 +22,42 @@ func Chain(handler http.Handler, middlewares ...Middleware) http.Handler {
 	return handler
 }
 
-// RequestID injects an X-Request-ID header into request and response.
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		reqID := r.Header.Get("X-Request-ID")
-		if reqID == "" {
+		reqID := strings.TrimSpace(r.Header.Get("X-Request-ID"))
+
+		// Only accept safe, bounded request IDs.
+		if len(reqID) > 64 || !isValidRequestID(reqID) {
 			buf := make([]byte, 16)
-			_, _ = rand.Read(buf)
+			if _, err := rand.Read(buf); err != nil {
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
 			reqID = hex.EncodeToString(buf)
 		}
+
+		r.Header.Set("X-Request-ID", reqID)
 		w.Header().Set("X-Request-ID", reqID)
+
 		next.ServeHTTP(w, r)
 	})
+}
+
+func isValidRequestID(id string) bool {
+	if id == "" {
+		return false
+	}
+
+	for _, char := range id {
+		if !(char >= 'a' && char <= 'z') &&
+			!(char >= 'A' && char <= 'Z') &&
+			!(char >= '0' && char <= '9') &&
+			char != '-' && char != '_' {
+			return false
+		}
+	}
+
+	return true
 }
 
 // RequestLogger logs incoming HTTP requests using slog and records non-2XX responses to logs/<project>/<domain>/errors.log.
@@ -41,58 +65,64 @@ func RequestLogger(next http.Handler) http.Handler {
 	return RequestLoggerWithProject("")(next)
 }
 
-// RequestLoggerWithProject attaches a specific project name to the request logger and binds a contextual slog logger.
 func RequestLoggerWithProject(projectName string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 			if projectName != "" {
-				r = r.WithContext(utils.WithProjectName(r.Context(), projectName))
+				r = r.WithContext(
+					utils.WithProjectName(r.Context(), projectName),
+				)
 			}
 
 			reqID := r.Header.Get("X-Request-ID")
-			if reqID == "" {
-				reqID = w.Header().Get("X-Request-ID")
-			}
 
-			// Contextual logger enriched with request metadata
 			scopedLogger := utils.GetGlobalLogger().With(
 				"request_id", reqID,
 				"method", r.Method,
 				"path", r.URL.Path,
 			)
-			r = r.WithContext(utils.WithLogger(r.Context(), scopedLogger))
+
+			r = r.WithContext(
+				utils.WithLogger(r.Context(), scopedLogger),
+			)
 
 			start := time.Now()
-			ww := &responseWriterInterceptor{ResponseWriter: w, statusCode: http.StatusOK}
 
-			next.ServeHTTP(ww, r)
+			wrappedWriter := &responseWriterInterceptor{
+				ResponseWriter: w,
+				statusCode:     http.StatusOK,
+			}
+
+			next.ServeHTTP(wrappedWriter, r)
 
 			duration := time.Since(start)
 
-			// Determine log level: 5xx -> Error, 4xx -> Warn, 2xx/3xx -> Info
-			switch {
-			case ww.statusCode >= 500:
-				scopedLogger.Error("http request completed",
-					"status", ww.statusCode,
-					"duration_ms", duration.Milliseconds(),
-					"ip", r.RemoteAddr,
-				)
-			case ww.statusCode >= 400:
-				scopedLogger.Warn("http request completed",
-					"status", ww.statusCode,
-					"duration_ms", duration.Milliseconds(),
-					"ip", r.RemoteAddr,
-				)
-			default:
-				scopedLogger.Info("http request completed",
-					"status", ww.statusCode,
-					"duration_ms", duration.Milliseconds(),
-					"ip", r.RemoteAddr,
-				)
+			attrs := []any{
+				"status", wrappedWriter.statusCode,
+				"duration_ms", duration.Milliseconds(),
+				"ip", r.RemoteAddr,
 			}
 
-			if ww.statusCode < 200 || ww.statusCode >= 300 {
-				utils.LogNonSuccessRequest(r, ww.statusCode, duration, reqID, ww.body)
+			switch {
+			case wrappedWriter.statusCode >= 500:
+				scopedLogger.Error("http request completed", attrs...)
+
+			case wrappedWriter.statusCode >= 400:
+				scopedLogger.Warn("http request completed", attrs...)
+
+			default:
+				scopedLogger.Info("http request completed", attrs...)
+			}
+
+			if wrappedWriter.statusCode >= 400 {
+				utils.LogNonSuccessRequest(
+					r,
+					wrappedWriter.statusCode,
+					duration,
+					reqID,
+					wrappedWriter.body,
+				)
 			}
 		})
 	}
@@ -102,25 +132,39 @@ type responseWriterInterceptor struct {
 	http.ResponseWriter
 	statusCode int
 	body       []byte
+	written    bool
 }
 
 func (w *responseWriterInterceptor) WriteHeader(code int) {
+	if w.written {
+		return
+	}
+
 	w.statusCode = code
+	w.written = true
 	w.ResponseWriter.WriteHeader(code)
 }
 
-func (w *responseWriterInterceptor) Write(b []byte) (int, error) {
-	if w.statusCode < 200 || w.statusCode >= 300 {
-		if len(w.body) < 1024 {
-			remaining := 1024 - len(w.body)
-			if len(b) > remaining {
-				w.body = append(w.body, b[:remaining]...)
-			} else {
-				w.body = append(w.body, b...)
-			}
+func (w *responseWriterInterceptor) Write(data []byte) (int, error) {
+	if !w.written {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	if w.statusCode >= 400 && len(w.body) < 1024 {
+		remaining := 1024 - len(w.body)
+
+		if len(data) > remaining {
+			w.body = append(w.body, data[:remaining]...)
+		} else {
+			w.body = append(w.body, data...)
 		}
 	}
-	return w.ResponseWriter.Write(b)
+
+	return w.ResponseWriter.Write(data)
+}
+
+func (w *responseWriterInterceptor) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
 }
 
 // Recoverer catches panics, captures full stack trace with debug.Stack, logs securely without leaking secrets, and returns safe HTTP 500 JSON.
@@ -253,8 +297,8 @@ func RequireAuthPage(cfg utils.Config) func(http.Handler) http.Handler {
 
 func RequireRole(roles ...string) func(http.Handler) http.Handler {
 	allowed := make(map[string]struct{}, len(roles))
-	for _, r := range roles {
-		allowed[r] = struct{}{}
+	for _, role := range roles {
+		allowed[role] = struct{}{}
 	}
 
 	return func(next http.Handler) http.Handler {

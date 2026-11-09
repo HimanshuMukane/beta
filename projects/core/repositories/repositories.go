@@ -25,26 +25,26 @@ var (
 )
 
 type RoleRepository struct {
-	q *sqlc.Queries
+	queries *sqlc.Queries
 }
 
-func NewRoleRepository(db *sqlx.DB) *RoleRepository {
-	return &RoleRepository{q: sqlc.New(db.DB)}
+func NewRoleRepository(database *sqlx.DB) *RoleRepository {
+	return &RoleRepository{queries: sqlc.New(database.DB)}
 }
 
-func (r *RoleRepository) CreateRole(ctx context.Context, name string) (*models.Role, error) {
+func (repo *RoleRepository) CreateRole(ctx context.Context, name string) (*models.Role, error) {
 	name = strings.TrimSpace(name)
 	if name == "" || len(name) > 50 {
 		return nil, errors.New("role name must be between 1 and 50 bytes")
 	}
 
-	id, err := uuid.NewV7()
+	roleID, err := uuid.NewV7()
 	if err != nil {
 		return nil, fmt.Errorf("generate role id: %w", err)
 	}
 
-	err = r.q.CreateRole(ctx, sqlc.CreateRoleParams{
-		ID:   id,
+	err = repo.queries.CreateRole(ctx, sqlc.CreateRoleParams{
+		ID:   roleID,
 		Name: name,
 	})
 	if err != nil {
@@ -54,15 +54,15 @@ func (r *RoleRepository) CreateRole(ctx context.Context, name string) (*models.R
 		return nil, fmt.Errorf("create role: %w", err)
 	}
 
-	return r.GetRoleByID(ctx, id)
+	return repo.GetRoleByID(ctx, roleID)
 }
 
-func (r *RoleRepository) GetRoleByID(ctx context.Context, id uuid.UUID) (*models.Role, error) {
-	if id == uuid.Nil {
+func (repo *RoleRepository) GetRoleByID(ctx context.Context, roleID uuid.UUID) (*models.Role, error) {
+	if roleID == uuid.Nil {
 		return nil, ErrRoleNotFound
 	}
 
-	row, err := r.q.GetRoleByID(ctx, id)
+	roleRow, err := repo.queries.GetRoleByID(ctx, roleID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrRoleNotFound
 	}
@@ -71,24 +71,24 @@ func (r *RoleRepository) GetRoleByID(ctx context.Context, id uuid.UUID) (*models
 	}
 
 	role := &models.Role{
-		ID:        row.ID,
-		Name:      row.Name,
-		CreatedAt: row.CreatedAt,
-		UpdatedAt: row.UpdatedAt,
+		ID:        roleRow.ID,
+		Name:      roleRow.Name,
+		CreatedAt: roleRow.CreatedAt,
+		UpdatedAt: roleRow.UpdatedAt,
 	}
-	if row.DeletedAt.Valid {
-		role.DeletedAt = &row.DeletedAt.Time
+	if roleRow.DeletedAt.Valid {
+		role.DeletedAt = &roleRow.DeletedAt.Time
 	}
 	return role, nil
 }
 
-func (r *RoleRepository) GetRoleByName(ctx context.Context, name string) (*models.Role, error) {
+func (repo *RoleRepository) GetRoleByName(ctx context.Context, name string) (*models.Role, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, ErrRoleNotFound
 	}
 
-	row, err := r.q.GetRoleByName(ctx, name)
+	roleRow, err := repo.queries.GetRoleByName(ctx, name)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrRoleNotFound
 	}
@@ -97,23 +97,23 @@ func (r *RoleRepository) GetRoleByName(ctx context.Context, name string) (*model
 	}
 
 	role := &models.Role{
-		ID:        row.ID,
-		Name:      row.Name,
-		CreatedAt: row.CreatedAt,
-		UpdatedAt: row.UpdatedAt,
+		ID:        roleRow.ID,
+		Name:      roleRow.Name,
+		CreatedAt: roleRow.CreatedAt,
+		UpdatedAt: roleRow.UpdatedAt,
 	}
-	if row.DeletedAt.Valid {
-		role.DeletedAt = &row.DeletedAt.Time
+	if roleRow.DeletedAt.Valid {
+		role.DeletedAt = &roleRow.DeletedAt.Time
 	}
 	return role, nil
 }
 
 type UserRepository struct {
-	q *sqlc.Queries
+	queries *sqlc.Queries
 }
 
-func NewUserRepository(db *sqlx.DB) *UserRepository {
-	return &UserRepository{q: sqlc.New(db.DB)}
+func NewUserRepository(database *sqlx.DB) *UserRepository {
+	return &UserRepository{queries: sqlc.New(database.DB)}
 }
 
 type CreateUserParam struct {
@@ -127,36 +127,36 @@ type CreateUserParam struct {
 	TokenVersion   int
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, p *CreateUserParam) (*models.User, error) {
-	if p == nil {
+func (repo *UserRepository) CreateUser(ctx context.Context, param *CreateUserParam) (*models.User, error) {
+	if param == nil {
 		return nil, errors.New("params cannot be nil")
 	}
 
-	if p.ID == uuid.Nil {
-		id, err := uuid.NewV7()
+	if param.ID == uuid.Nil {
+		userID, err := uuid.NewV7()
 		if err != nil {
 			return nil, fmt.Errorf("generate user id: %w", err)
 		}
-		p.ID = id
+		param.ID = userID
 	}
 
-	arg := sqlc.CreateUserParams{
-		ID:           p.ID,
-		FirstName:    strings.TrimSpace(p.FirstName),
-		LastName:     strings.TrimSpace(p.LastName),
-		Email:        strings.ToLower(strings.TrimSpace(p.Email)),
-		PasswordHash: p.PasswordHash,
-		TokenVersion: p.TokenVersion,
+	createUserParams := sqlc.CreateUserParams{
+		ID:           param.ID,
+		FirstName:    strings.TrimSpace(param.FirstName),
+		LastName:     strings.TrimSpace(param.LastName),
+		Email:        strings.ToLower(strings.TrimSpace(param.Email)),
+		PasswordHash: param.PasswordHash,
+		TokenVersion: param.TokenVersion,
 	}
 
-	if p.AuthProviderID != nil {
-		arg.AuthProviderID = sql.NullString{String: *p.AuthProviderID, Valid: true}
+	if param.AuthProviderID != nil {
+		createUserParams.AuthProviderID = sql.NullString{String: *param.AuthProviderID, Valid: true}
 	}
-	if p.RoleID != nil {
-		arg.RoleID = uuid.NullUUID{UUID: *p.RoleID, Valid: true}
+	if param.RoleID != nil {
+		createUserParams.RoleID = uuid.NullUUID{UUID: *param.RoleID, Valid: true}
 	}
 
-	err := r.q.CreateUser(ctx, arg)
+	err := repo.queries.CreateUser(ctx, createUserParams)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return nil, ErrEmailAlreadyExists
@@ -164,16 +164,16 @@ func (r *UserRepository) CreateUser(ctx context.Context, p *CreateUserParam) (*m
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 
-	return r.GetUserByID(ctx, p.ID)
+	return repo.GetUserByID(ctx, param.ID)
 }
 
-func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+func (repo *UserRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	if email == "" {
 		return nil, ErrUserNotFound
 	}
 
-	row, err := r.q.GetUserByEmail(ctx, email)
+	userRow, err := repo.queries.GetUserByEmail(ctx, email)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrUserNotFound
 	}
@@ -182,31 +182,31 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 	}
 
 	user := &models.User{
-		ID:           row.ID,
-		FirstName:    row.FirstName,
-		LastName:     row.LastName,
-		Email:        row.Email,
-		PasswordHash: row.PasswordHash,
-		RoleName:     row.RoleName,
-		TokenVersion: row.TokenVersion,
-		CreatedAt:    row.CreatedAt,
-		UpdatedAt:    row.UpdatedAt,
+		ID:           userRow.ID,
+		FirstName:    userRow.FirstName,
+		LastName:     userRow.LastName,
+		Email:        userRow.Email,
+		PasswordHash: userRow.PasswordHash,
+		RoleName:     userRow.RoleName,
+		TokenVersion: userRow.TokenVersion,
+		CreatedAt:    userRow.CreatedAt,
+		UpdatedAt:    userRow.UpdatedAt,
 	}
-	if row.RoleID.Valid {
-		user.RoleID = row.RoleID.UUID
+	if userRow.RoleID.Valid {
+		user.RoleID = userRow.RoleID.UUID
 	}
-	if row.DeletedAt.Valid {
-		user.DeletedAt = &row.DeletedAt.Time
+	if userRow.DeletedAt.Valid {
+		user.DeletedAt = &userRow.DeletedAt.Time
 	}
 	return user, nil
 }
 
-func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
-	if id == uuid.Nil {
+func (repo *UserRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (*models.User, error) {
+	if userID == uuid.Nil {
 		return nil, ErrUserNotFound
 	}
 
-	row, err := r.q.GetUserByID(ctx, id)
+	userRow, err := repo.queries.GetUserByID(ctx, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrUserNotFound
 	}
@@ -215,50 +215,50 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*models
 	}
 
 	user := &models.User{
-		ID:           row.ID,
-		FirstName:    row.FirstName,
-		LastName:     row.LastName,
-		Email:        row.Email,
-		PasswordHash: row.PasswordHash,
-		RoleName:     row.RoleName,
-		TokenVersion: row.TokenVersion,
-		CreatedAt:    row.CreatedAt,
-		UpdatedAt:    row.UpdatedAt,
+		ID:           userRow.ID,
+		FirstName:    userRow.FirstName,
+		LastName:     userRow.LastName,
+		Email:        userRow.Email,
+		PasswordHash: userRow.PasswordHash,
+		RoleName:     userRow.RoleName,
+		TokenVersion: userRow.TokenVersion,
+		CreatedAt:    userRow.CreatedAt,
+		UpdatedAt:    userRow.UpdatedAt,
 	}
-	if row.RoleID.Valid {
-		user.RoleID = row.RoleID.UUID
+	if userRow.RoleID.Valid {
+		user.RoleID = userRow.RoleID.UUID
 	}
-	if row.DeletedAt.Valid {
-		user.DeletedAt = &row.DeletedAt.Time
+	if userRow.DeletedAt.Valid {
+		user.DeletedAt = &userRow.DeletedAt.Time
 	}
 	return user, nil
 }
 
-func (r *UserRepository) IncrementTokenVersion(ctx context.Context, id uuid.UUID) error {
-	if id == uuid.Nil {
+func (repo *UserRepository) IncrementTokenVersion(ctx context.Context, userID uuid.UUID) error {
+	if userID == uuid.Nil {
 		return ErrUserNotFound
 	}
-	return r.q.IncrementUserTokenVersion(ctx, id)
+	return repo.queries.IncrementUserTokenVersion(ctx, userID)
 }
 
 type TenantRepository struct {
-	q *sqlc.Queries
+	queries *sqlc.Queries
 }
 
-func NewTenantRepository(db *sqlx.DB) *TenantRepository {
-	return &TenantRepository{q: sqlc.New(db.DB)}
+func NewTenantRepository(database *sqlx.DB) *TenantRepository {
+	return &TenantRepository{queries: sqlc.New(database.DB)}
 }
 
-func (r *TenantRepository) CreateTenant(ctx context.Context, tenant *models.Tenant) error {
+func (repo *TenantRepository) CreateTenant(ctx context.Context, tenant *models.Tenant) error {
 	if tenant == nil {
 		return errors.New("tenant cannot be nil")
 	}
 	if tenant.ID == uuid.Nil {
-		id, err := uuid.NewV7()
+		tenantID, err := uuid.NewV7()
 		if err != nil {
 			return fmt.Errorf("generate tenant id: %w", err)
 		}
-		tenant.ID = id
+		tenant.ID = tenantID
 	}
 
 	if tenant.Status == "" {
@@ -274,7 +274,7 @@ func (r *TenantRepository) CreateTenant(ctx context.Context, tenant *models.Tena
 		tenant.Timezone = "Asia/Kolkata"
 	}
 
-	err := r.q.CreateTenant(ctx, sqlc.CreateTenantParams{
+	err := repo.queries.CreateTenant(ctx, sqlc.CreateTenantParams{
 		ID:                 tenant.ID,
 		Name:               tenant.Name,
 		Slug:               tenant.Slug,
@@ -293,8 +293,8 @@ func (r *TenantRepository) CreateTenant(ctx context.Context, tenant *models.Tena
 	return nil
 }
 
-func (r *TenantRepository) GetTenantByID(ctx context.Context, id uuid.UUID) (*models.Tenant, error) {
-	row, err := r.q.GetTenantByID(ctx, id)
+func (repo *TenantRepository) GetTenantByID(ctx context.Context, tenantID uuid.UUID) (*models.Tenant, error) {
+	tenantRow, err := repo.queries.GetTenantByID(ctx, tenantID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTenantNotFound
 	}
@@ -302,50 +302,50 @@ func (r *TenantRepository) GetTenantByID(ctx context.Context, id uuid.UUID) (*mo
 		return nil, fmt.Errorf("get tenant by id: %w", err)
 	}
 
-	t := &models.Tenant{
-		ID:                 row.ID,
-		Name:               row.Name,
-		Slug:               row.Slug,
-		BusinessType:       row.BusinessType,
-		Status:             row.Status,
-		SubscriptionStatus: row.SubscriptionStatus,
-		Currency:           row.Currency,
-		Timezone:           row.Timezone,
-		CreatedAt:          row.CreatedAt,
-		UpdatedAt:          row.UpdatedAt,
+	tenant := &models.Tenant{
+		ID:                 tenantRow.ID,
+		Name:               tenantRow.Name,
+		Slug:               tenantRow.Slug,
+		BusinessType:       tenantRow.BusinessType,
+		Status:             tenantRow.Status,
+		SubscriptionStatus: tenantRow.SubscriptionStatus,
+		Currency:           tenantRow.Currency,
+		Timezone:           tenantRow.Timezone,
+		CreatedAt:          tenantRow.CreatedAt,
+		UpdatedAt:          tenantRow.UpdatedAt,
 	}
-	if row.DeletedAt.Valid {
-		t.DeletedAt = &row.DeletedAt.Time
+	if tenantRow.DeletedAt.Valid {
+		tenant.DeletedAt = &tenantRow.DeletedAt.Time
 	}
-	return t, nil
+	return tenant, nil
 }
 
-func (r *TenantRepository) CreateMembership(ctx context.Context, m *models.Membership) error {
-	if m == nil {
+func (repo *TenantRepository) CreateMembership(ctx context.Context, membership *models.Membership) error {
+	if membership == nil {
 		return errors.New("membership cannot be nil")
 	}
-	if m.ID == uuid.Nil {
-		id, err := uuid.NewV7()
+	if membership.ID == uuid.Nil {
+		membershipID, err := uuid.NewV7()
 		if err != nil {
 			return fmt.Errorf("generate membership id: %w", err)
 		}
-		m.ID = id
+		membership.ID = membershipID
 	}
-	if m.Status == "" {
-		m.Status = "active"
+	if membership.Status == "" {
+		membership.Status = "active"
 	}
 
-	return r.q.CreateMembership(ctx, sqlc.CreateMembershipParams{
-		ID:       m.ID,
-		TenantID: m.TenantID,
-		UserID:   m.UserID,
-		Role:     m.Role,
-		Status:   m.Status,
+	return repo.queries.CreateMembership(ctx, sqlc.CreateMembershipParams{
+		ID:       membership.ID,
+		TenantID: membership.TenantID,
+		UserID:   membership.UserID,
+		Role:     membership.Role,
+		Status:   membership.Status,
 	})
 }
 
-func (r *TenantRepository) GetMembership(ctx context.Context, tenantID, userID uuid.UUID) (*models.Membership, error) {
-	row, err := r.q.GetMembership(ctx, tenantID, userID)
+func (repo *TenantRepository) GetMembership(ctx context.Context, tenantID, userID uuid.UUID) (*models.Membership, error) {
+	membershipRow, err := repo.queries.GetMembership(ctx, tenantID, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrMembershipNotFound
 	}
@@ -353,51 +353,51 @@ func (r *TenantRepository) GetMembership(ctx context.Context, tenantID, userID u
 		return nil, fmt.Errorf("get membership: %w", err)
 	}
 
-	m := &models.Membership{
-		ID:                       row.ID,
-		TenantID:                 row.TenantID,
-		UserID:                   row.UserID,
-		Role:                     row.Role,
-		Status:                   row.Status,
-		CreatedAt:                row.CreatedAt,
-		UpdatedAt:                row.UpdatedAt,
-		TenantName:               row.TenantName,
-		TenantSlug:               row.TenantSlug,
-		TenantBusinessType:       row.TenantBusinessType,
-		TenantStatus:             row.TenantStatus,
-		TenantSubscriptionStatus: row.TenantSubscriptionStatus,
+	membership := &models.Membership{
+		ID:                       membershipRow.ID,
+		TenantID:                 membershipRow.TenantID,
+		UserID:                   membershipRow.UserID,
+		Role:                     membershipRow.Role,
+		Status:                   membershipRow.Status,
+		CreatedAt:                membershipRow.CreatedAt,
+		UpdatedAt:                membershipRow.UpdatedAt,
+		TenantName:               membershipRow.TenantName,
+		TenantSlug:               membershipRow.TenantSlug,
+		TenantBusinessType:       membershipRow.TenantBusinessType,
+		TenantStatus:             membershipRow.TenantStatus,
+		TenantSubscriptionStatus: membershipRow.TenantSubscriptionStatus,
 	}
-	if row.DeletedAt.Valid {
-		m.DeletedAt = &row.DeletedAt.Time
+	if membershipRow.DeletedAt.Valid {
+		membership.DeletedAt = &membershipRow.DeletedAt.Time
 	}
-	return m, nil
+	return membership, nil
 }
 
-func (r *TenantRepository) ListUserMemberships(ctx context.Context, userID uuid.UUID) ([]models.Membership, error) {
-	rows, err := r.q.ListUserMemberships(ctx, userID)
+func (repo *TenantRepository) ListUserMemberships(ctx context.Context, userID uuid.UUID) ([]models.Membership, error) {
+	membershipRows, err := repo.queries.ListUserMemberships(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("list user memberships: %w", err)
 	}
 
-	results := make([]models.Membership, len(rows))
-	for i, r := range rows {
-		results[i] = models.Membership{
-			ID:                       r.ID,
-			TenantID:                 r.TenantID,
-			UserID:                   r.UserID,
-			Role:                     r.Role,
-			Status:                   r.Status,
-			CreatedAt:                r.CreatedAt,
-			UpdatedAt:                r.UpdatedAt,
-			TenantName:               r.TenantName,
-			TenantSlug:               r.TenantSlug,
-			TenantBusinessType:       r.TenantBusinessType,
-			TenantStatus:             r.TenantStatus,
-			TenantSubscriptionStatus: r.TenantSubscriptionStatus,
+	memberships := make([]models.Membership, len(membershipRows))
+	for index, membershipRow := range membershipRows {
+		memberships[index] = models.Membership{
+			ID:                       membershipRow.ID,
+			TenantID:                 membershipRow.TenantID,
+			UserID:                   membershipRow.UserID,
+			Role:                     membershipRow.Role,
+			Status:                   membershipRow.Status,
+			CreatedAt:                membershipRow.CreatedAt,
+			UpdatedAt:                membershipRow.UpdatedAt,
+			TenantName:               membershipRow.TenantName,
+			TenantSlug:               membershipRow.TenantSlug,
+			TenantBusinessType:       membershipRow.TenantBusinessType,
+			TenantStatus:             membershipRow.TenantStatus,
+			TenantSubscriptionStatus: membershipRow.TenantSubscriptionStatus,
 		}
-		if r.DeletedAt.Valid {
-			results[i].DeletedAt = &r.DeletedAt.Time
+		if membershipRow.DeletedAt.Valid {
+			memberships[index].DeletedAt = &membershipRow.DeletedAt.Time
 		}
 	}
-	return results, nil
+	return memberships, nil
 }

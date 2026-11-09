@@ -35,19 +35,19 @@ func TenantContextMiddleware(next http.Handler) http.Handler {
 		if err == nil && tenantCookie.Value != "" {
 			reqTenantID, parseErr := uuid.Parse(tenantCookie.Value)
 			if parseErr == nil {
-				for i := range memberships {
-					if memberships[i].TenantID == reqTenantID {
+				for index := range memberships {
+					if memberships[index].TenantID == reqTenantID {
 						activeMembership = &models.Membership{
-							ID:                       memberships[i].ID,
-							TenantID:                 memberships[i].TenantID,
-							UserID:                   memberships[i].UserID,
-							Role:                     memberships[i].Role,
-							Status:                   memberships[i].Status,
-							TenantName:               memberships[i].TenantName,
-							TenantSlug:               memberships[i].TenantSlug,
-							TenantBusinessType:       memberships[i].TenantBusinessType,
-							TenantStatus:             memberships[i].TenantStatus,
-							TenantSubscriptionStatus: memberships[i].TenantSubscriptionStatus,
+							ID:                       memberships[index].ID,
+							TenantID:                 memberships[index].TenantID,
+							UserID:                   memberships[index].UserID,
+							Role:                     memberships[index].Role,
+							Status:                   memberships[index].Status,
+							TenantName:               memberships[index].TenantName,
+							TenantSlug:               memberships[index].TenantSlug,
+							TenantBusinessType:       memberships[index].TenantBusinessType,
+							TenantStatus:             memberships[index].TenantStatus,
+							TenantSubscriptionStatus: memberships[index].TenantSubscriptionStatus,
 						}
 						break
 					}
@@ -72,7 +72,7 @@ func TenantContextMiddleware(next http.Handler) http.Handler {
 
 		isReadOnly := activeMembership.TenantSubscriptionStatus == "expired"
 
-		tc := &utils.TenantContext{
+		tenantContext := &utils.TenantContext{
 			TenantID:           activeMembership.TenantID,
 			TenantName:         activeMembership.TenantName,
 			TenantSlug:         activeMembership.TenantSlug,
@@ -81,7 +81,7 @@ func TenantContextMiddleware(next http.Handler) http.Handler {
 			IsReadOnly:         isReadOnly,
 		}
 
-		ctx := utils.WithTenantContext(r.Context(), tc)
+		ctx := utils.WithTenantContext(r.Context(), tenantContext)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

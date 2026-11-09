@@ -12,33 +12,33 @@ import (
 )
 
 type RegistrationRepository struct {
-	db *sqlx.DB
+	database *sqlx.DB
 }
 
-func NewRegistrationRepository(db *sqlx.DB) *RegistrationRepository {
-	return &RegistrationRepository{db: db}
+func NewRegistrationRepository(database *sqlx.DB) *RegistrationRepository {
+	return &RegistrationRepository{database: database}
 }
 
-func (r *RegistrationRepository) CreateRegistrationRequest(ctx context.Context, req *models.TenantRegistrationRequest) error {
-	if req == nil {
+func (repo *RegistrationRepository) CreateRegistrationRequest(ctx context.Context, request *models.TenantRegistrationRequest) error {
+	if request == nil {
 		return errors.New("registration request cannot be nil")
 	}
-	if req.ID == uuid.Nil {
-		id, err := uuid.NewV7()
+	if request.ID == uuid.Nil {
+		requestID, err := uuid.NewV7()
 		if err != nil {
 			return fmt.Errorf("generate registration id: %w", err)
 		}
-		req.ID = id
+		request.ID = requestID
 	}
 
-	_, err := r.db.ExecContext(ctx, `
+	_, err := repo.database.ExecContext(ctx, `
 		INSERT INTO tenant_registration_requests (
 			id, business_name, business_type, owner_first_name, owner_last_name,
 			owner_email, password_hash, phone, notes, status
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-	`, req.ID.String(), strings.TrimSpace(req.BusinessName), strings.TrimSpace(req.BusinessType),
-		strings.TrimSpace(req.OwnerFirstName), strings.TrimSpace(req.OwnerLastName),
-		strings.ToLower(strings.TrimSpace(req.OwnerEmail)), req.PasswordHash,
-		strings.TrimSpace(req.Phone), strings.TrimSpace(req.Notes))
+	`, request.ID.String(), strings.TrimSpace(request.BusinessName), strings.TrimSpace(request.BusinessType),
+		strings.TrimSpace(request.OwnerFirstName), strings.TrimSpace(request.OwnerLastName),
+		strings.ToLower(strings.TrimSpace(request.OwnerEmail)), request.PasswordHash,
+		strings.TrimSpace(request.Phone), strings.TrimSpace(request.Notes))
 	return err
 }
