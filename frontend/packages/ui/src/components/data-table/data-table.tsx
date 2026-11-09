@@ -27,6 +27,18 @@ import {
   IconRefresh,
   IconAlertCircle,
   IconInbox,
+  IconCircleDot,
+  IconUser,
+  IconCalendar,
+  IconEdit,
+  IconTag,
+  IconArrowRight,
+  IconSubtask,
+  IconCopy,
+  IconSquarePlus,
+  IconArchive,
+  IconTrash,
+  IconDots,
 } from "@tabler/icons-react"
 
 import {
@@ -418,43 +430,197 @@ export function DataTable<TData extends RowData>({
 
   return (
     <div className="space-y-4">
+      {/* Floating Action Bar for Multiple / All Selected */}
       {selectedCount > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm transition-all animate-in fade-in-50">
-          <div className="flex items-center gap-2">
-            <Badge variant="default" className="font-medium">
-              {selectedCount} selected
-            </Badge>
-            <span className="text-muted-foreground text-xs md:text-sm">
-              of {totalFilteredCount} matching record(s)
-            </span>
-          </div>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 rounded-full border border-border/80 bg-neutral-900/95 text-neutral-100 px-3 py-1.5 shadow-2xl backdrop-blur-md transition-all animate-in fade-in-50 slide-in-from-bottom-3 max-w-[95vw] overflow-x-auto">
+          {/* Selected count pill with dismiss */}
+          <button
+            type="button"
+            onClick={() => setRowSelection({})}
+            className="flex items-center gap-1.5 rounded-full bg-neutral-800 hover:bg-neutral-700/80 text-neutral-200 px-2.5 py-1 text-xs font-medium transition-colors"
+          >
+            <span>{selectedCount} selected</span>
+            <IconX className="h-3 w-3 text-neutral-400 hover:text-neutral-200" />
+          </button>
 
-          <div className="flex items-center gap-2">
-            {bulkActions.map((action, idx) => {
-              const Icon = action.icon
-              return (
-                <Button
-                  key={idx}
-                  size="sm"
-                  variant={action.variant || "outline"}
-                  onClick={() => handleBulkActionClick(action)}
-                  disabled={isBulkProcessing}
-                  className="h-8 gap-1.5 text-xs font-medium"
-                >
-                  {Icon && <Icon className="h-3.5 w-3.5" />}
-                  {action.label}
-                </Button>
-              )
-            })}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setRowSelection({})}
-              disabled={isBulkProcessing}
-              className="h-8 text-xs text-muted-foreground hover:text-foreground"
+          {/* Action buttons */}
+          <div className="flex items-center gap-1 text-xs text-neutral-300">
+            <button
+              type="button"
+              onClick={() => {
+                const action = bulkActions.find(a => a.label.toLowerCase().includes("status"))
+                if (action) handleBulkActionClick(action)
+                else toast.info(`Update status for ${selectedCount} record(s)`)
+              }}
+              className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
             >
-              Clear selection
-            </Button>
+              <IconCircleDot className="h-3.5 w-3.5 text-neutral-400" />
+              <span>Status</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const action = bulkActions.find(a => a.label.toLowerCase().includes("assign"))
+                if (action) handleBulkActionClick(action)
+                else toast.info(`Update assignees for ${selectedCount} record(s)`)
+              }}
+              className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
+            >
+              <IconUser className="h-3.5 w-3.5 text-neutral-400" />
+              <span>Assignees</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const action = bulkActions.find(a => a.label.toLowerCase().includes("date"))
+                if (action) handleBulkActionClick(action)
+                else toast.info(`Set dates for ${selectedCount} record(s)`)
+              }}
+              className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
+            >
+              <IconCalendar className="h-3.5 w-3.5 text-neutral-400" />
+              <span>Dates</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                toast.info(`Edit custom fields for ${selectedCount} record(s)`)
+              }}
+              className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
+            >
+              <IconEdit className="h-3.5 w-3.5 text-neutral-400" />
+              <span>Custom Fields</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const action = bulkActions.find(a => a.label.toLowerCase().includes("tag"))
+                if (action) handleBulkActionClick(action)
+                else toast.info(`Add tags for ${selectedCount} record(s)`)
+              }}
+              className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
+            >
+              <IconTag className="h-3.5 w-3.5 text-neutral-400" />
+              <span>Tags</span>
+            </button>
+
+            <span className="h-3.5 w-[1px] bg-neutral-700 mx-0.5" />
+
+            <button
+              type="button"
+              onClick={() => {
+                toast.info(`Move/Add ${selectedCount} record(s)`)
+              }}
+              className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
+            >
+              <IconArrowRight className="h-3.5 w-3.5 text-neutral-400" />
+              <span>Move/Add</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                toast.info(`Convert ${selectedCount} record(s) to subtasks`)
+              }}
+              className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
+            >
+              <IconSubtask className="h-3.5 w-3.5 text-neutral-400" />
+              <span>Convert to Subtasks</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const action = bulkActions.find(a => a.label.toLowerCase().includes("copy"))
+                if (action) handleBulkActionClick(action)
+                else {
+                  navigator.clipboard.writeText(JSON.stringify(selectedRowsModel.map(r => r.original), null, 2))
+                  toast.success(`Copied ${selectedCount} record(s) data`)
+                }
+              }}
+              className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
+              title="Copy"
+            >
+              <IconCopy className="h-3.5 w-3.5 text-neutral-400" />
+              <span>Copy</span>
+            </button>
+
+            {/* Quick icon buttons: Duplicate, Archive, Delete */}
+            <button
+              type="button"
+              onClick={() => toast.info(`Duplicate ${selectedCount} record(s)`)}
+              className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
+              title="Duplicate"
+            >
+              <IconSquarePlus className="h-3.5 w-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const action = bulkActions.find(a => a.label.toLowerCase().includes("archive"))
+                if (action) handleBulkActionClick(action)
+                else toast.info(`Archive ${selectedCount} record(s)`)
+              }}
+              className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
+              title="Archive"
+            >
+              <IconArchive className="h-3.5 w-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const action = bulkActions.find(a => a.variant === "destructive" || a.label.toLowerCase().includes("delete"))
+                if (action) handleBulkActionClick(action)
+                else toast.info(`Delete ${selectedCount} record(s)`)
+              }}
+              className="p-1 rounded hover:bg-red-950/60 text-red-400 hover:text-red-300 transition-colors"
+              title="Delete"
+            >
+              <IconTrash className="h-3.5 w-3.5" />
+            </button>
+
+            <span className="h-3.5 w-[1px] bg-neutral-700 mx-0.5" />
+
+            {/* More dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-1 px-2 py-1 rounded hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
+                >
+                  <IconDots className="h-3.5 w-3.5" />
+                  <span>More</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-neutral-900 border-neutral-800 text-neutral-200">
+                {bulkActions.map((action, idx) => (
+                  <DropdownMenuItem
+                    key={idx}
+                    onClick={() => handleBulkActionClick(action)}
+                    className={cn(
+                      "text-xs gap-2 cursor-pointer focus:bg-neutral-800 focus:text-white",
+                      action.variant === "destructive" && "text-red-400 focus:text-red-300 focus:bg-red-950/40"
+                    )}
+                  >
+                    {action.icon && <action.icon className="h-3.5 w-3.5" />}
+                    <span>{action.label}</span>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator className="bg-neutral-800" />
+                <DropdownMenuItem
+                  onClick={() => setRowSelection({})}
+                  className="text-xs text-neutral-400 focus:bg-neutral-800 focus:text-neutral-200 cursor-pointer"
+                >
+                  Clear Selection
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       )}
