@@ -35,24 +35,90 @@ type PackageDTO struct {
 	Deliverables  []string                 `json:"deliverables"`
 }
 
-func parsePackageServiceGroups(raw []byte) []PackageServiceGroupDTO {
-	if len(raw) == 0 {
-		return []PackageServiceGroupDTO{}
+func getStringVal(v any) string {
+	if v == nil {
+		return ""
 	}
-	var out []PackageServiceGroupDTO
-	if err := json.Unmarshal(raw, &out); err == nil && out != nil {
-		return out
+	if s, ok := v.(string); ok {
+		return s
 	}
-	return []PackageServiceGroupDTO{}
+	return ""
 }
 
-func parsePackageDeliverables(raw []byte) []string {
+func getInt64Val(v any) int64 {
+	if v == nil {
+		return 0
+	}
+	switch n := v.(type) {
+	case float64:
+		return int64(n)
+	case int64:
+		return n
+	case int:
+		return int64(n)
+	}
+	return 0
+}
+
+func parsePackageServiceGroups(raw []byte) ([]PackageServiceGroupDTO, error) {
 	if len(raw) == 0 {
-		return []string{}
+		return []PackageServiceGroupDTO{}, nil
+	}
+	var out []PackageServiceGroupDTO
+	if err := json.Unmarshal(raw, &out); err != nil {
+		var rawGroups []map[string]any
+		if errLegacy := json.Unmarshal(raw, &rawGroups); errLegacy == nil {
+			result := make([]PackageServiceGroupDTO, 0, len(rawGroups))
+			for _, g := range rawGroups {
+				gName := getStringVal(g["group_name"])
+				if gName == "" {
+					gName = getStringVal(g["groupName"])
+				}
+				gDTO := PackageServiceGroupDTO{
+					GroupName: gName,
+					Services:  make([]PackageServiceItemDTO, 0),
+				}
+				if svcs, ok := g["services"].([]any); ok {
+					for _, s := range svcs {
+						if sm, ok := s.(map[string]any); ok {
+							cost := getInt64Val(sm["cost"])
+							if cost == 0 {
+								cost = getInt64Val(sm["amount"])
+							}
+							qty := int(getInt64Val(sm["quantity"]))
+							if qty == 0 {
+								qty = int(getInt64Val(sm["qty"]))
+							}
+							if qty == 0 {
+								qty = 1
+							}
+							gDTO.Services = append(gDTO.Services, PackageServiceItemDTO{
+								Name:     getStringVal(sm["name"]),
+								Cost:     cost,
+								Quantity: qty,
+							})
+						}
+					}
+				}
+				result = append(result, gDTO)
+			}
+			return result, nil
+		}
+		return []PackageServiceGroupDTO{}, err
+	}
+	if out == nil {
+		return []PackageServiceGroupDTO{}, nil
+	}
+	return out, nil
+}
+
+func parsePackageDeliverables(raw []byte) ([]string, error) {
+	if len(raw) == 0 {
+		return []string{}, nil
 	}
 	var out []string
 	if err := json.Unmarshal(raw, &out); err == nil && out != nil {
-		return out
+		return out, nil
 	}
 	var rawItems []any
 	if err := json.Unmarshal(raw, &rawItems); err == nil {
@@ -66,9 +132,10 @@ func parsePackageDeliverables(raw []byte) []string {
 				}
 			}
 		}
-		return res
+		return res, nil
+	} else {
+		return []string{}, err
 	}
-	return []string{}
 }
 
 func PackagesListHandler(w http.ResponseWriter, r *http.Request) {
@@ -82,14 +149,8 @@ func PackagesListHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	tid := getTenantID(r, db)
-	if tid == "" {
-		utils.WriteJSON(w, http.StatusForbidden, map[string]any{
-			"error": map[string]any{
-				"code":    "FORBIDDEN",
-				"message": "Valid workspace membership required",
-			},
-		})
+	tid, ok := requireTenantID(w, r)
+	if !ok {
 		return
 	}
 
@@ -123,8 +184,18 @@ func PackagesListHandler(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		item.ServiceGroups = parsePackageServiceGroups(rawSG)
-		item.Deliverables = parsePackageDeliverables(rawDel)
+		sg, errSG := parsePackageServiceGroups(rawSG)
+		if errSG != nil {
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Package contains corrupted service groups data", errSG)
+			return
+		}
+		deliv, errDel := parsePackageDeliverables(rawDel)
+		if errDel != nil {
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Package contains corrupted deliverables data", errDel)
+			return
+		}
+		item.ServiceGroups = sg
+		item.Deliverables = deliv
 		packages = append(packages, item)
 	}
 	if err := rows.Err(); err != nil {
@@ -151,14 +222,8 @@ func CreatePackageHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	tid := getTenantID(r, db)
-	if tid == "" {
-		utils.WriteJSON(w, http.StatusForbidden, map[string]any{
-			"error": map[string]any{
-				"code":    "FORBIDDEN",
-				"message": "Valid workspace membership required",
-			},
-		})
+	tid, ok := requireTenantID(w, r)
+	if !ok {
 		return
 	}
 
@@ -237,7 +302,10 @@ func UpdatePackageHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
@@ -316,7 +384,10 @@ func DeletePackageHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{

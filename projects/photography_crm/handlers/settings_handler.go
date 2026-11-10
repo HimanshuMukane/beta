@@ -39,14 +39,17 @@ func toJSONBytes(data any) []byte {
 func StudioSettingsGetHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	rows, err := db.QueryContext(r.Context(), "SELECT setting_key, data FROM studio_settings WHERE tenant_id = ?", tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to retrieve studio settings", err)
 		return
 	}
 	defer rows.Close()
@@ -56,7 +59,7 @@ func StudioSettingsGetHandler(w http.ResponseWriter, r *http.Request) {
 		var key string
 		var dataRaw []byte
 		if err := rows.Scan(&key, &dataRaw); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read setting"})
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read setting", err)
 			return
 		}
 		var val any
@@ -64,7 +67,7 @@ func StudioSettingsGetHandler(w http.ResponseWriter, r *http.Request) {
 		settings[key] = val
 	}
 	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating settings"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating settings", err)
 		return
 	}
 
@@ -74,25 +77,44 @@ func StudioSettingsGetHandler(w http.ResponseWriter, r *http.Request) {
 func StudioSettingsSaveHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var payload map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
+
+	tx, err := db.BeginTxx(r.Context(), nil)
+	if err != nil {
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to begin transaction", err)
+		return
+	}
+	defer tx.Rollback()
 
 	for k, v := range payload {
 		b := toJSONBytes(v)
 		settingID := uuid.New().String()
-		_, _ = db.ExecContext(r.Context(), `
+		_, err := tx.ExecContext(r.Context(), `
 			INSERT INTO studio_settings (id, tenant_id, setting_key, data)
 			VALUES (?, ?, ?, ?)
 			ON DUPLICATE KEY UPDATE data = VALUES(data), updated_at = NOW(6)
 		`, settingID, tid, k, b)
+		if err != nil {
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to save studio settings", err)
+			return
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to commit studio settings", err)
+		return
 	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})

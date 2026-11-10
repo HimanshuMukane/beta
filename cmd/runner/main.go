@@ -12,14 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	cmsRoutes "cms/routes"
 	"core/utils"
-	crmRoutes "especa_crm/routes"
-	financeRoutes "especa_finance/routes"
 	"github.com/joho/godotenv"
-	hrmsRoutes "hrms/routes"
 	photoCrmRoutes "photography_crm/routes"
-	superadminRoutes "superadmin/routes"
 )
 
 type ServiceApp struct {
@@ -43,16 +38,6 @@ func main() {
 		routerBuilder func(pool *utils.DBPool, cfg utils.Config) http.Handler
 	}{
 		{
-			name:          "CMS",
-			projectID:     "cms",
-			envFile:       "projects/cms/.env",
-			portEnv:       "CMS_PORT",
-			defaultPort:   "8081",
-			dbName:        "cms_db",
-			cookieName:    "cms_session",
-			routerBuilder: cmsRoutes.SetupRouter,
-		},
-		{
 			name:          "Photography CRM",
 			projectID:     "photography_crm",
 			envFile:       "projects/photography_crm/.env",
@@ -61,60 +46,6 @@ func main() {
 			dbName:        "photography_crm_db",
 			cookieName:    "photography_session",
 			routerBuilder: photoCrmRoutes.SetupRouter,
-		},
-		{
-			name:          "Superadmin",
-			projectID:     "superadmin",
-			envFile:       "projects/superadmin/.env",
-			portEnv:       "SUPERADMIN_PORT",
-			defaultPort:   "8083",
-			dbName:        "superadmin_db",
-			cookieName:    "superadmin_session",
-			routerBuilder: superadminRoutes.SetupRouter,
-		},
-		{
-			name:          "Finance",
-			projectID:     "especa_finance",
-			envFile:       "projects/especa_finance/.env",
-			portEnv:       "FINANCE_PORT",
-			defaultPort:   "8084",
-			dbName:        "finance_db",
-			cookieName:    "finance_session",
-			routerBuilder: func(pool *utils.DBPool, cfg utils.Config) http.Handler {
-				if pool.Primary != nil {
-					return financeRoutes.SetupRouterWithAuth(pool.Primary, "comp_default_01", cfg)
-				}
-				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					http.Error(w, "Database unavailable", http.StatusServiceUnavailable)
-				})
-			},
-		},
-		{
-			name:          "Especa CRM",
-			projectID:     "especa_crm",
-			envFile:       "projects/especa_crm/.env",
-			portEnv:       "ESPECA_CRM_PORT",
-			defaultPort:   "8086",
-			dbName:        "especa_crm_db",
-			cookieName:    "crm_session",
-			routerBuilder: func(pool *utils.DBPool, cfg utils.Config) http.Handler {
-				if pool.Primary != nil {
-					return crmRoutes.SetupRouterWithAuth(pool.Primary, "comp_default_01", cfg)
-				}
-				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					http.Error(w, "Database unavailable", http.StatusServiceUnavailable)
-				})
-			},
-		},
-		{
-			name:          "HRMS",
-			projectID:     "hrms",
-			envFile:       "projects/hrms/.env",
-			portEnv:       "HRMS_PORT",
-			defaultPort:   "8087",
-			dbName:        "hrms_db",
-			cookieName:    "hrms_session",
-			routerBuilder: hrmsRoutes.SetupRouter,
 		},
 	}
 

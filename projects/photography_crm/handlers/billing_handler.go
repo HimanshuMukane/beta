@@ -97,10 +97,13 @@ func clientInitials(name string) string {
 func BillingPaymentsListHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	rows, err := db.QueryContext(r.Context(), `
 		SELECT id, payment_date, client_name, client_avatar, client_initials,
@@ -110,7 +113,7 @@ func BillingPaymentsListHandler(w http.ResponseWriter, r *http.Request) {
 		ORDER BY created_at DESC
 	`, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list payments", err)
 		return
 	}
 	defer rows.Close()
@@ -124,7 +127,7 @@ func BillingPaymentsListHandler(w http.ResponseWriter, r *http.Request) {
 			&p.ID, &p.PaymentDate, &p.ClientName, &sAvatar, &sInit,
 			&p.Type, &p.PaymentAmount, &p.PaymentStatus, &sProj, &sUrl, &createdAt,
 		); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read payment"})
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read payment", err)
 			return
 		}
 		if sAvatar.Valid {
@@ -145,7 +148,7 @@ func BillingPaymentsListHandler(w http.ResponseWriter, r *http.Request) {
 		result = append(result, p)
 	}
 	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating payments"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating payments", err)
 		return
 	}
 	if result == nil {
@@ -157,14 +160,17 @@ func BillingPaymentsListHandler(w http.ResponseWriter, r *http.Request) {
 func CreateBillingPaymentHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var p PaymentDTO
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 	if p.ID == "" {
@@ -183,7 +189,7 @@ func CreateBillingPaymentHandler(w http.ResponseWriter, r *http.Request) {
 		p.Type, p.PaymentAmount, p.PaymentStatus, p.ProjectName, p.DownloadUrl)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create payment", err)
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, p)
@@ -192,14 +198,17 @@ func CreateBillingPaymentHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteBillingPaymentHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 	_, err := db.ExecContext(r.Context(), "DELETE FROM billing_payments WHERE id = ? AND tenant_id = ?", id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete payment", err)
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted", "id": id})
@@ -208,10 +217,13 @@ func DeleteBillingPaymentHandler(w http.ResponseWriter, r *http.Request) {
 func BillingInvoicesListHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	rows, err := db.QueryContext(r.Context(), `
 		SELECT id, invoice_name, client_name, client_avatar, client_initials,
@@ -222,7 +234,7 @@ func BillingInvoicesListHandler(w http.ResponseWriter, r *http.Request) {
 		ORDER BY created_at DESC
 	`, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list invoices", err)
 		return
 	}
 	defer rows.Close()
@@ -272,7 +284,10 @@ func CreateBillingInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var inv InvoiceDTO
 	if err := json.NewDecoder(r.Body).Decode(&inv); err != nil {
@@ -304,7 +319,7 @@ func CreateBillingInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 		inv.InvoiceDate, inv.DownloadUrl)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create invoice", err)
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, inv)
@@ -316,11 +331,14 @@ func DeleteBillingInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 	_, err := db.ExecContext(r.Context(), "DELETE FROM billing_invoices WHERE id = ? AND tenant_id = ?", id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete invoice", err)
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted", "id": id})
@@ -332,7 +350,10 @@ func BillingExpensesListHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	rows, err := db.QueryContext(r.Context(), `
 		SELECT id, expense_name, expense_date, amount, expense_type, vendor_or_client, payment_method
@@ -341,7 +362,7 @@ func BillingExpensesListHandler(w http.ResponseWriter, r *http.Request) {
 		ORDER BY created_at DESC
 	`, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list expenses", err)
 		return
 	}
 	defer rows.Close()
@@ -353,7 +374,7 @@ func BillingExpensesListHandler(w http.ResponseWriter, r *http.Request) {
 		if err := rows.Scan(
 			&exp.ID, &exp.ExpenseName, &exp.Date, &exp.Amount, &exp.Type, &sVendor, &sMethod,
 		); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read expense"})
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read expense", err)
 			return
 		}
 		if sVendor.Valid {
@@ -366,7 +387,7 @@ func BillingExpensesListHandler(w http.ResponseWriter, r *http.Request) {
 		result = append(result, exp)
 	}
 	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating expenses"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating expenses", err)
 		return
 	}
 	if result == nil {
@@ -381,7 +402,10 @@ func CreateBillingExpenseHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var exp ExpenseDTO
 	if err := json.NewDecoder(r.Body).Decode(&exp); err != nil {
@@ -400,7 +424,7 @@ func CreateBillingExpenseHandler(w http.ResponseWriter, r *http.Request) {
 	`, exp.ID, tid, exp.ExpenseName, exp.Date, exp.Amount, exp.Type, exp.VendorOrClient, exp.PaymentMethod)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create expense", err)
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, exp)
@@ -412,11 +436,14 @@ func DeleteBillingExpenseHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 	_, err := db.ExecContext(r.Context(), "DELETE FROM billing_expenses WHERE id = ? AND tenant_id = ?", id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete expense", err)
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted", "id": id})
@@ -428,7 +455,10 @@ func BillingCancelledListHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	rows, err := db.QueryContext(r.Context(), `
 		SELECT id, action, cancellation_date, payment_date, payment_type, client_name,
@@ -438,7 +468,7 @@ func BillingCancelledListHandler(w http.ResponseWriter, r *http.Request) {
 		ORDER BY created_at DESC
 	`, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list cancellations", err)
 		return
 	}
 	defer rows.Close()
@@ -451,7 +481,7 @@ func BillingCancelledListHandler(w http.ResponseWriter, r *http.Request) {
 			&c.ID, &c.Action, &c.CancellationDate, &sPayDate, &sPayType, &c.ClientName,
 			&sAvatar, &sInit, &sProj, &c.PaymentAmount, &sReason,
 		); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read cancellation"})
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read cancellation", err)
 			return
 		}
 		if sPayDate.Valid {
@@ -478,7 +508,7 @@ func BillingCancelledListHandler(w http.ResponseWriter, r *http.Request) {
 		result = append(result, c)
 	}
 	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating cancellations"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating cancellations", err)
 		return
 	}
 	if result == nil {
@@ -493,7 +523,10 @@ func BillingRefundsListHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	rows, err := db.QueryContext(r.Context(), `
 		SELECT id, invoice_name, refund_date, client_name, client_avatar, client_initials,
@@ -503,7 +536,7 @@ func BillingRefundsListHandler(w http.ResponseWriter, r *http.Request) {
 		ORDER BY created_at DESC
 	`, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list refunds", err)
 		return
 	}
 	defer rows.Close()
@@ -516,7 +549,7 @@ func BillingRefundsListHandler(w http.ResponseWriter, r *http.Request) {
 			&ref.ID, &ref.InvoiceName, &ref.RefundDate, &ref.ClientName, &sAvatar, &sInit,
 			&sProj, &ref.PaymentAmount, &ref.CancellationCharges, &ref.RefundAmount, &sNote, &ref.Status,
 		); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read refund"})
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read refund", err)
 			return
 		}
 		if sAvatar.Valid {
@@ -537,7 +570,7 @@ func BillingRefundsListHandler(w http.ResponseWriter, r *http.Request) {
 		result = append(result, ref)
 	}
 	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating refunds"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating refunds", err)
 		return
 	}
 	if result == nil {
@@ -552,7 +585,10 @@ func CreateBillingRefundHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var ref RefundedDTO
 	if err := json.NewDecoder(r.Body).Decode(&ref); err != nil {
@@ -578,7 +614,7 @@ func CreateBillingRefundHandler(w http.ResponseWriter, r *http.Request) {
 		ref.ProjectsName, ref.PaymentAmount, ref.CancellationCharges, ref.RefundAmount, ref.Note, ref.Status)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create refund", err)
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, ref)

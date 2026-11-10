@@ -12,44 +12,82 @@ import (
 	"github.com/google/uuid"
 )
 
-type ProjectDTO struct {
-	ID                string  `json:"id"`
-	ProjectName       string  `json:"projectName"`
-	ClientID          string  `json:"clientId,omitempty"`
-	ClientName        string  `json:"clientName"`
-	ClientInitials    string  `json:"clientInitials"`
-	ClientMobile      string  `json:"clientMobile"`
-	ClientCountryCode string  `json:"clientCountryCode"`
-	ClientEmail       string  `json:"clientEmail"`
-	ClientAddress     string  `json:"clientAddress,omitempty"`
-	LeadSource        string  `json:"leadSource,omitempty"`
-	ProjectManager    any     `json:"projectManager"`
-	ProjectType       string  `json:"projectType"`
-	ProjectAddress    string  `json:"projectAddress,omitempty"`
-	SessionsCount     int     `json:"sessionsCount"`
-	TasksCount        any     `json:"tasksCount"`
-	DeliverablesCount any     `json:"deliverablesCount"`
-	Status            string  `json:"status"`
-	Stage             string  `json:"stage"`
-	StartDate         string  `json:"startDate"`
-	EndDate           string  `json:"endDate"`
-	CreatedDate       string  `json:"createdDate"`
-	ShootHours        float64 `json:"shootHours"`
-	ShootMembersCount int     `json:"shootMembersCount"`
-	ShootExpense      int64   `json:"shootExpense"`
-	GalleriesCount    int     `json:"galleriesCount"`
-	Notes             string  `json:"notes"`
-	Segments          any     `json:"segments"`
-	Documents         any     `json:"documents"`
-	Sessions          any     `json:"sessions"`
-	Tasks             any     `json:"tasks"`
-	Printing          any     `json:"printing"`
-	Deliverables      any     `json:"deliverables"`
-	Expenses          any     `json:"expenses"`
-	Finance           any     `json:"finance"`
+type ProjectManagerDTO struct {
+	Name     string `json:"name"`
+	Initials string `json:"initials"`
+	Avatar   string `json:"avatar,omitempty"`
 }
 
-func calculateTasksCount(tasks any) map[string]int {
+type ProjectTasksCountDTO struct {
+	Completed int `json:"completed"`
+	Total     int `json:"total"`
+}
+
+type ProjectDeliverablesCountDTO struct {
+	Ready int `json:"ready"`
+	Total int `json:"total"`
+}
+
+type ProjectDTO struct {
+	ID                string                      `json:"id"`
+	ProjectName       string                      `json:"projectName"`
+	ClientID          string                      `json:"clientId,omitempty"`
+	ClientName        string                      `json:"clientName"`
+	ClientInitials    string                      `json:"clientInitials"`
+	ClientMobile      string                      `json:"clientMobile"`
+	ClientCountryCode string                      `json:"clientCountryCode"`
+	ClientEmail       string                      `json:"clientEmail"`
+	ClientAddress     string                      `json:"clientAddress,omitempty"`
+	LeadSource        string                      `json:"leadSource,omitempty"`
+	ProjectManager    ProjectManagerDTO           `json:"projectManager"`
+	ProjectType       string                      `json:"projectType"`
+	ProjectAddress    string                      `json:"projectAddress,omitempty"`
+	SessionsCount     int                         `json:"sessionsCount"`
+	TasksCount        ProjectTasksCountDTO        `json:"tasksCount"`
+	DeliverablesCount ProjectDeliverablesCountDTO `json:"deliverablesCount"`
+	Status            string                      `json:"status"`
+	Stage             string                      `json:"stage"`
+	StartDate         string                      `json:"startDate"`
+	EndDate           string                      `json:"endDate"`
+	CreatedDate       string                      `json:"createdDate"`
+	ShootHours        float64                     `json:"shootHours"`
+	ShootMembersCount int                         `json:"shootMembersCount"`
+	ShootExpense      int64                       `json:"shootExpense"`
+	GalleriesCount    int                         `json:"galleriesCount"`
+	Notes             string                      `json:"notes"`
+	Segments          any                         `json:"segments"`
+	Documents         any                         `json:"documents"`
+	Sessions          any                         `json:"sessions"`
+	Tasks             any                         `json:"tasks"`
+	Printing          any                         `json:"printing"`
+	Deliverables      any                         `json:"deliverables"`
+	Expenses          any                         `json:"expenses"`
+	Finance           any                         `json:"finance"`
+}
+
+func parseProjectManager(raw []byte) ProjectManagerDTO {
+	if len(raw) == 0 {
+		return ProjectManagerDTO{Name: "Unassigned", Initials: "UA"}
+	}
+	var pm ProjectManagerDTO
+	if err := json.Unmarshal(raw, &pm); err == nil && (pm.Name != "" || pm.Initials != "") {
+		if pm.Initials == "" && len(pm.Name) > 0 {
+			pm.Initials = strings.ToUpper(pm.Name[:1])
+		}
+		return pm
+	}
+	var strName string
+	if err := json.Unmarshal(raw, &strName); err == nil && strName != "" {
+		initials := "PM"
+		if len(strName) > 0 {
+			initials = strings.ToUpper(strName[:1])
+		}
+		return ProjectManagerDTO{Name: strName, Initials: initials}
+	}
+	return ProjectManagerDTO{Name: "Unassigned", Initials: "UA"}
+}
+
+func calculateTasksCount(tasks any) ProjectTasksCountDTO {
 	completed := 0
 	total := 0
 	if list, ok := tasks.([]any); ok {
@@ -64,10 +102,10 @@ func calculateTasksCount(tasks any) map[string]int {
 			}
 		}
 	}
-	return map[string]int{"completed": completed, "total": total}
+	return ProjectTasksCountDTO{Completed: completed, Total: total}
 }
 
-func calculateDeliverablesCount(deliverables any) map[string]int {
+func calculateDeliverablesCount(deliverables any) ProjectDeliverablesCountDTO {
 	ready := 0
 	total := 0
 	if list, ok := deliverables.([]any); ok {
@@ -80,16 +118,19 @@ func calculateDeliverablesCount(deliverables any) map[string]int {
 			}
 		}
 	}
-	return map[string]int{"ready": ready, "total": total}
+	return ProjectDeliverablesCountDTO{Ready: ready, Total: total}
 }
 
 func ProjectsListHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	rows, err := db.QueryContext(r.Context(), `
 		SELECT p.id, p.project_name, p.client_name, p.client_initials, p.client_mobile,
@@ -104,7 +145,7 @@ func ProjectsListHandler(w http.ResponseWriter, r *http.Request) {
 		ORDER BY p.created_at DESC
 	`, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to load projects", err)
 		return
 	}
 	defer rows.Close()
@@ -208,7 +249,7 @@ func ProjectsListHandler(w http.ResponseWriter, r *http.Request) {
 			ClientEmail:       clientEmail,
 			ClientAddress:     clientAddress,
 			LeadSource:        leadSource,
-			ProjectManager:    mgr,
+			ProjectManager:    parseProjectManager(mgrRaw),
 			ProjectType:       projType,
 			ProjectAddress:    projectAddress,
 			SessionsCount:     finalSessionsCount,
@@ -242,10 +283,13 @@ func ProjectsListHandler(w http.ResponseWriter, r *http.Request) {
 func GetProjectHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var (
@@ -281,7 +325,7 @@ func GetProjectHandler(w http.ResponseWriter, r *http.Request) {
 		&liveSessionsCount,
 	)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "Project not found"})
+		utils.WriteError(w, http.StatusNotFound, "Project not found")
 		return
 	}
 
@@ -349,7 +393,7 @@ func GetProjectHandler(w http.ResponseWriter, r *http.Request) {
 		ClientEmail:       clientEmail,
 		ClientAddress:     clientAddress,
 		LeadSource:        leadSource,
-		ProjectManager:    mgr,
+		ProjectManager:    parseProjectManager(mgrRaw),
 		ProjectType:       projType,
 		ProjectAddress:    projectAddress,
 		SessionsCount:     liveSessionsCount,
@@ -381,14 +425,17 @@ func GetProjectHandler(w http.ResponseWriter, r *http.Request) {
 func CreateProjectHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var payload ProjectDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -432,7 +479,7 @@ func CreateProjectHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create project", err)
 		return
 	}
 
@@ -474,15 +521,18 @@ func CreateProjectHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateProjectHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var payload ProjectDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -516,7 +566,7 @@ func UpdateProjectHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update project", err)
 		return
 	}
 
@@ -527,10 +577,13 @@ func UpdateProjectHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateProjectStageHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var req struct {
@@ -538,7 +591,7 @@ func UpdateProjectStageHandler(w http.ResponseWriter, r *http.Request) {
 		Status string `json:"status"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -553,7 +606,7 @@ func UpdateProjectStageHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err := db.ExecContext(r.Context(), query, args...)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update project stage", err)
 		return
 	}
 
@@ -563,17 +616,20 @@ func UpdateProjectStageHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteProjectHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	_, err := db.ExecContext(r.Context(), `
 		UPDATE projects SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
 	`, id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete project", err)
 		return
 	}
 

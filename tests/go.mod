@@ -3,14 +3,11 @@ module tests
 go 1.26.6
 
 require (
-	cms v0.0.0
 	core v0.0.0
-	especa_finance v0.0.0
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/google/uuid v1.6.0
 	github.com/jmoiron/sqlx v1.4.0
 	photography_crm v0.0.0
-	superadmin v0.0.0
 )
 
 require (
@@ -23,9 +20,6 @@ require (
 )
 
 replace (
-	cms => ../projects/cms
 	core => ../projects/core
-	especa_finance => ../projects/especa_finance
 	photography_crm => ../projects/photography_crm
-	superadmin => ../projects/superadmin
 )

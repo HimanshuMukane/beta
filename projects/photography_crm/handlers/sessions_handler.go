@@ -34,10 +34,13 @@ type SessionDTO struct {
 func SessionsListHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	projectIDFilter := r.URL.Query().Get("projectId")
 
 	query := `
@@ -58,7 +61,7 @@ func SessionsListHandler(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := db.QueryContext(r.Context(), query, args...)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list project sessions", err)
 		return
 	}
 	defer rows.Close()
@@ -134,14 +137,17 @@ func SessionsListHandler(w http.ResponseWriter, r *http.Request) {
 func CreateSessionHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var payload SessionDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -189,7 +195,7 @@ func CreateSessionHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create session", err)
 		return
 	}
 
@@ -199,15 +205,18 @@ func CreateSessionHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateSessionHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var payload SessionDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -241,7 +250,7 @@ func UpdateSessionHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update session", err)
 		return
 	}
 
@@ -252,17 +261,20 @@ func UpdateSessionHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateSessionStatusHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var req struct {
 		Status string `json:"status"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -270,7 +282,7 @@ func UpdateSessionStatusHandler(w http.ResponseWriter, r *http.Request) {
 		UPDATE project_sessions SET status = ? WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
 	`, req.Status, id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update session status", err)
 		return
 	}
 
@@ -280,17 +292,20 @@ func UpdateSessionStatusHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteSessionHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	_, err := db.ExecContext(r.Context(), `
 		UPDATE project_sessions SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
 	`, id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete session", err)
 		return
 	}
 

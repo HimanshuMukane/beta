@@ -44,10 +44,13 @@ type OrderDTO struct {
 func OrdersListHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	rows, err := db.QueryContext(r.Context(), `
 		SELECT id, order_number, client_name, mobile_no, country_code, email, address,
@@ -60,7 +63,7 @@ func OrdersListHandler(w http.ResponseWriter, r *http.Request) {
 		ORDER BY created_at DESC
 	`, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list orders", err)
 		return
 	}
 	defer rows.Close()
@@ -155,14 +158,17 @@ func OrdersListHandler(w http.ResponseWriter, r *http.Request) {
 func CreateOrderHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var payload OrderDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -215,7 +221,7 @@ func CreateOrderHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create order", err)
 		return
 	}
 
@@ -226,15 +232,18 @@ func CreateOrderHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateOrderHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var payload OrderDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -267,7 +276,7 @@ func UpdateOrderHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update order", err)
 		return
 	}
 
@@ -278,17 +287,20 @@ func UpdateOrderHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateOrderStageHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var req struct {
 		Stage string `json:"stage"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -296,7 +308,7 @@ func UpdateOrderStageHandler(w http.ResponseWriter, r *http.Request) {
 		UPDATE orders SET stage = ? WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
 	`, req.Stage, id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update order stage", err)
 		return
 	}
 
@@ -306,17 +318,20 @@ func UpdateOrderStageHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteOrderHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	_, err := db.ExecContext(r.Context(), `
 		UPDATE orders SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
 	`, id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete order", err)
 		return
 	}
 

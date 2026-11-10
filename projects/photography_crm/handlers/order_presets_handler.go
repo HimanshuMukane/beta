@@ -20,17 +20,20 @@ type OrderPresetDTO struct {
 func OrderPresetsListHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	rows, err := db.QueryContext(r.Context(),
 		"SELECT id, name, quantity, amount, expense FROM order_presets WHERE tenant_id = ? AND deleted_at IS NULL ORDER BY created_at ASC",
 		tid,
 	)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list order presets", err)
 		return
 	}
 	defer rows.Close()
@@ -39,13 +42,13 @@ func OrderPresetsListHandler(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var p OrderPresetDTO
 		if err := rows.Scan(&p.ID, &p.Name, &p.Quantity, &p.Amount, &p.Expense); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read order preset"})
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read order preset", err)
 			return
 		}
 		presets = append(presets, p)
 	}
 	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating order presets"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating order presets", err)
 		return
 	}
 
@@ -55,19 +58,22 @@ func OrderPresetsListHandler(w http.ResponseWriter, r *http.Request) {
 func CreateOrderPresetHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var p OrderPresetDTO
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
 
 	if p.Name == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Name is required"})
+		utils.WriteError(w, http.StatusBadRequest, "Name is required")
 		return
 	}
 	if p.Quantity <= 0 {
@@ -80,7 +86,7 @@ func CreateOrderPresetHandler(w http.ResponseWriter, r *http.Request) {
 		id, tid, p.Name, p.Quantity, p.Amount, p.Expense,
 	)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create order preset", err)
 		return
 	}
 
@@ -91,15 +97,18 @@ func CreateOrderPresetHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateOrderPresetHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var p OrderPresetDTO
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
 
@@ -112,7 +121,7 @@ func UpdateOrderPresetHandler(w http.ResponseWriter, r *http.Request) {
 		p.Name, p.Quantity, p.Amount, p.Expense, id, tid,
 	)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update order preset", err)
 		return
 	}
 
@@ -123,10 +132,13 @@ func UpdateOrderPresetHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteOrderPresetHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	_, err := db.ExecContext(r.Context(),
@@ -134,7 +146,7 @@ func DeleteOrderPresetHandler(w http.ResponseWriter, r *http.Request) {
 		id, tid,
 	)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete order preset", err)
 		return
 	}
 
@@ -144,26 +156,29 @@ func DeleteOrderPresetHandler(w http.ResponseWriter, r *http.Request) {
 func SaveOrderPresetsBatchHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var items []OrderPresetDTO
 	if err := json.NewDecoder(r.Body).Decode(&items); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
 
 	tx, err := db.BeginTx(r.Context(), nil)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to begin transaction", err)
 		return
 	}
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(r.Context(), "DELETE FROM order_presets WHERE tenant_id = ?", tid); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to clear order presets", err)
 		return
 	}
 
@@ -183,13 +198,13 @@ func SaveOrderPresetsBatchHandler(w http.ResponseWriter, r *http.Request) {
 			"INSERT INTO order_presets (id, tenant_id, name, quantity, amount, expense, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(6), NOW(6))",
 			id, tid, item.Name, qty, item.Amount, item.Expense,
 		); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to insert order preset", err)
 			return
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to commit order presets", err)
 		return
 	}
 

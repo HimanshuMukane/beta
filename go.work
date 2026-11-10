@@ -2,12 +2,7 @@ go 1.26.6
 
 use (
 	./cmd/runner
-	./projects/cms
 	./projects/core
-	./projects/especa_crm
-	./projects/especa_finance
-	./projects/hrms
 	./projects/photography_crm
-	./projects/superadmin
 	./tests
 )

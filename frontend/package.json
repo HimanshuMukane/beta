@@ -3,11 +3,7 @@
   "private": true,
   "scripts": {
     "build": "pnpm -r --filter './apps/*' run build",
-    "dev:superadmin": "pnpm --filter @apps/superadmin dev",
-    "dev:cms": "pnpm --filter @apps/cms dev",
-    "dev:crm": "pnpm --filter @apps/especa_crm dev",
-    "dev:finance": "pnpm --filter @apps/especa_finance dev",
-    "dev:hrms": "pnpm --filter @apps/hrms dev",
+    "dev": "pnpm --filter @apps/photography_crm dev",
     "dev:photography": "pnpm --filter @apps/photography_crm dev"
   },
   "devDependencies": {

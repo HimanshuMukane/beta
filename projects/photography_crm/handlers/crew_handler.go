@@ -35,14 +35,8 @@ func CrewMembersListHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	tid := getTenantID(r, db)
-	if tid == "" {
-		utils.WriteJSON(w, http.StatusForbidden, map[string]any{
-			"error": map[string]any{
-				"code":    "FORBIDDEN",
-				"message": "Valid workspace membership required",
-			},
-		})
+	tid, ok := requireTenantID(w, r)
+	if !ok {
 		return
 	}
 
@@ -109,14 +103,8 @@ func CreateCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	tid := getTenantID(r, db)
-	if tid == "" {
-		utils.WriteJSON(w, http.StatusForbidden, map[string]any{
-			"error": map[string]any{
-				"code":    "FORBIDDEN",
-				"message": "Valid workspace membership required",
-			},
-		})
+	tid, ok := requireTenantID(w, r)
+	if !ok {
 		return
 	}
 
@@ -292,7 +280,10 @@ func DeleteCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{

@@ -19,12 +19,6 @@ projects/*/.env
 /runner
 /cmd/runner/runner
 /photography_crm
-/cms
-/finance
-/superadmin
-/projects/cms/cms
-/projects/photography_crm/photography_crm
-/projects/superadmin/superadmin
 merged.go
 
 # Database files

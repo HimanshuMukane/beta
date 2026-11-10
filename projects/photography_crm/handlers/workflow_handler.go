@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 )
 
 type WorkflowStageItem struct {
@@ -22,11 +21,12 @@ type WorkflowStageItem struct {
 	OrderIndex   int    `json:"order_index"`
 }
 
-func getTenantID(r *http.Request, _ *sqlx.DB) string {
+func requireTenantID(w http.ResponseWriter, r *http.Request) (string, bool) {
 	if tc := utils.TenantFromContext(r.Context()); tc != nil && tc.TenantID != uuid.Nil {
-		return tc.TenantID.String()
+		return tc.TenantID.String(), true
 	}
-	return ""
+	utils.WriteError(w, http.StatusForbidden, "Valid workspace membership required")
+	return "", false
 }
 
 func WorkflowsListHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +35,10 @@ func WorkflowsListHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	workflowType := strings.TrimSpace(r.URL.Query().Get("type"))
 	if workflowType == "" {
 		workflowType = "lead"
@@ -48,7 +51,7 @@ func WorkflowsListHandler(w http.ResponseWriter, r *http.Request) {
 		ORDER BY order_index ASC, created_at ASC
 	`, tid, workflowType)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list workflow stages", err)
 		return
 	}
 	defer rows.Close()
@@ -57,13 +60,13 @@ func WorkflowsListHandler(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var item WorkflowStageItem
 		if err := rows.Scan(&item.ID, &item.TenantID, &item.WorkflowType, &item.Pipeline, &item.Stage, &item.ColorCode, &item.OrderIndex); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read workflow stage"})
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read workflow stage", err)
 			return
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating workflow stages"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating workflow stages", err)
 		return
 	}
 
@@ -76,7 +79,10 @@ func CreateWorkflowStageHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var req struct {
 		WorkflowType string `json:"workflow_type"`
@@ -113,7 +119,7 @@ func CreateWorkflowStageHandler(w http.ResponseWriter, r *http.Request) {
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`, id, tid, workflowType, pipeline, stage, colorCode, req.OrderIndex)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create workflow stage"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create workflow stage", err)
 		return
 	}
 
@@ -139,7 +145,10 @@ func UpdateWorkflowStageHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Stage ID is required"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var req struct {
 		Pipeline   string `json:"pipeline"`
@@ -170,7 +179,7 @@ func UpdateWorkflowStageHandler(w http.ResponseWriter, r *http.Request) {
 		WHERE id = ? AND tenant_id = ?
 	`, pipeline, stage, colorCode, req.OrderIndex, id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to update workflow stage"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update workflow stage", err)
 		return
 	}
 
@@ -188,11 +197,14 @@ func DeleteWorkflowStageHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Stage ID is required"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	_, err := db.ExecContext(r.Context(), "UPDATE workflows SET deleted_at = NOW(6) WHERE id = ? AND tenant_id = ?", id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to delete workflow stage"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete workflow stage", err)
 		return
 	}
 
@@ -205,7 +217,10 @@ func SaveWorkflowStagesBatchHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var req struct {
 		WorkflowType string `json:"workflow_type"`
@@ -229,7 +244,7 @@ func SaveWorkflowStagesBatchHandler(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := db.BeginTxx(r.Context(), nil)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to begin transaction"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to begin transaction", err)
 		return
 	}
 	defer tx.Rollback()
@@ -237,7 +252,7 @@ func SaveWorkflowStagesBatchHandler(w http.ResponseWriter, r *http.Request) {
 	// Replace existing stages for this tenant & workflow_type
 	_, err = tx.ExecContext(r.Context(), "UPDATE workflows SET deleted_at = NOW(6) WHERE tenant_id = ? AND workflow_type = ? AND deleted_at IS NULL", tid, workflowType)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to reset workflow stages"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to reset workflow stages", err)
 		return
 	}
 
@@ -261,13 +276,13 @@ func SaveWorkflowStagesBatchHandler(w http.ResponseWriter, r *http.Request) {
 			VALUES (?, ?, ?, ?, ?, ?, ?)
 		`, id, tid, workflowType, pipeline, stage, colorCode, idx+1)
 		if err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to save workflow stages"})
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to save workflow stages", err)
 			return
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to commit workflow stages"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to commit workflow stages", err)
 		return
 	}
 

@@ -46,10 +46,13 @@ type LeadDTO struct {
 func LeadsListHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	rows, err := db.QueryContext(r.Context(), `
 		SELECT id, name, mobile_no, country_code, email, address, lead_source, generate,
@@ -63,7 +66,7 @@ func LeadsListHandler(w http.ResponseWriter, r *http.Request) {
 		ORDER BY created_at DESC
 	`, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list leads", err)
 		return
 	}
 	defer rows.Close()
@@ -170,14 +173,17 @@ func LeadsListHandler(w http.ResponseWriter, r *http.Request) {
 func CreateLeadHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 
 	var payload LeadDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -226,7 +232,7 @@ func CreateLeadHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create lead", err)
 		return
 	}
 
@@ -237,15 +243,18 @@ func CreateLeadHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateLeadHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var payload LeadDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -286,7 +295,7 @@ func UpdateLeadHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update lead", err)
 		return
 	}
 
@@ -297,10 +306,13 @@ func UpdateLeadHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateLeadStageHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var req struct {
@@ -308,7 +320,7 @@ func UpdateLeadStageHandler(w http.ResponseWriter, r *http.Request) {
 		LeadStage     string `json:"leadStage"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -323,7 +335,7 @@ func UpdateLeadStageHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err := db.ExecContext(r.Context(), query, args...)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update lead stage", err)
 		return
 	}
 
@@ -338,17 +350,20 @@ func UpdateLeadStageHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteLeadHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	_, err := db.ExecContext(r.Context(), `
 		UPDATE leads SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
 	`, id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete lead", err)
 		return
 	}
 
@@ -358,10 +373,13 @@ func DeleteLeadHandler(w http.ResponseWriter, r *http.Request) {
 func ConvertLeadHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid := getTenantID(r, db)
+	tid, ok := requireTenantID(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var (
@@ -380,7 +398,7 @@ func ConvertLeadHandler(w http.ResponseWriter, r *http.Request) {
 		&projType, &projAddress, &startDate, &endDate, &segmentsRaw,
 	)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "Lead not found"})
+		utils.WriteError(w, http.StatusNotFound, "Lead not found")
 		return
 	}
 
@@ -399,12 +417,11 @@ func ConvertLeadHandler(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := db.BeginTx(r.Context(), nil)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to begin transaction"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to begin transaction", err)
 		return
 	}
 	defer tx.Rollback()
 
-	// Ensure client record exists
 	var clientID string
 	err = tx.QueryRowContext(r.Context(), `
 		SELECT id FROM clients WHERE tenant_id = ? AND email = ? LIMIT 1
@@ -422,7 +439,7 @@ func ConvertLeadHandler(w http.ResponseWriter, r *http.Request) {
 			VALUES (?, ?, ?, ?, ?, ?, ?)
 		`, clientID, tid, fn, ln, email, mobileNo, leadSource)
 		if err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create client record: " + err.Error()})
+			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create client record", err)
 			return
 		}
 	}
@@ -465,7 +482,7 @@ func ConvertLeadHandler(w http.ResponseWriter, r *http.Request) {
 		segmentsRaw, financeJSON,
 	)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create project: " + err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create project", err)
 		return
 	}
 
@@ -475,12 +492,12 @@ func ConvertLeadHandler(w http.ResponseWriter, r *http.Request) {
 		WHERE id = ? AND tenant_id = ?
 	`, clientID, projID, id, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to update lead: " + err.Error()})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update lead", err)
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to commit conversion"})
+		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to commit conversion", err)
 		return
 	}
 
