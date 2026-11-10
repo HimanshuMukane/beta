@@ -49,6 +49,7 @@ import {
 } from '@repo/ui/components/ui/collapsible'
 import { Button } from '@repo/ui/components/ui/button'
 import { useAuth } from '@repo/ui/hooks/use-auth'
+import { apiClient } from '@repo/ui/lib/api-client'
 import { cn } from '@repo/ui/lib/utils'
 import type { SettingsTab } from '../types/settings'
 
@@ -138,6 +139,33 @@ export function PhotographySidebar({
   const isReportsActive = currentRoute.startsWith('report')
   const isSettingsActive = currentRoute.startsWith('setting')
   const { user, logout } = useAuth()
+  const [workspaces, setWorkspaces] = React.useState<Array<{ tenantId: string; tenantName: string; role: string }>>([])
+  const [activeTenantId, setActiveTenantId] = React.useState<string>('')
+
+  const loadWorkspaces = React.useCallback(async () => {
+    try {
+      const data = await apiClient<{ activeTenantId: string; workspaces: Array<{ tenantId: string; tenantName: string; role: string }> }>('/api/auth/workspaces')
+      if (data?.workspaces) {
+        setWorkspaces(data.workspaces)
+        setActiveTenantId(data.activeTenantId || '')
+      }
+    } catch { }
+  }, [])
+
+  React.useEffect(() => {
+    loadWorkspaces()
+  }, [loadWorkspaces])
+
+  const handleSwitchWorkspace = async (tenantId: string) => {
+    if (tenantId === activeTenantId) return
+    try {
+      await apiClient('/api/auth/switch-workspace', {
+        method: 'POST',
+        body: JSON.stringify({ tenantId }),
+      })
+      window.location.reload()
+    } catch { }
+  }
 
   const [reportsOpen, setReportsOpen] = React.useState(isReportsActive)
   const [settingsOpen, setSettingsOpen] = React.useState(isSettingsActive)
@@ -150,18 +178,36 @@ export function PhotographySidebar({
     if (isSettingsActive) setSettingsOpen(true)
   }, [isSettingsActive])
 
+  const activeWorkspaceName = workspaces.find((w) => w.tenantId === activeTenantId)?.tenantName || 'especa Studio'
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="border-b p-3">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-            <IconCamera className="h-4 w-4" />
-          </span>
-          <div className="truncate">
-            <h3 className="text-xs font-bold leading-tight text-foreground">
-              Photography CRM
-            </h3>
-            <p className="text-[10px] text-muted-foreground">especa Studio</p>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
+              <IconCamera className="h-4 w-4" />
+            </span>
+            <div className="truncate">
+              <h3 className="text-xs font-bold leading-tight text-foreground">
+                Photography CRM
+              </h3>
+              {workspaces.length > 1 ? (
+                <select
+                  value={activeTenantId}
+                  onChange={(e) => handleSwitchWorkspace(e.target.value)}
+                  className="text-[10px] text-muted-foreground bg-transparent border-0 cursor-pointer p-0 focus:outline-none focus:ring-0"
+                >
+                  {workspaces.map((w) => (
+                    <option key={w.tenantId} value={w.tenantId}>
+                      {w.tenantName}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">{activeWorkspaceName}</p>
+              )}
+            </div>
           </div>
         </div>
       </SidebarHeader>

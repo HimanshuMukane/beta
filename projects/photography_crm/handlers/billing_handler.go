@@ -123,24 +123,30 @@ func BillingPaymentsListHandler(w http.ResponseWriter, r *http.Request) {
 		if err := rows.Scan(
 			&p.ID, &p.PaymentDate, &p.ClientName, &sAvatar, &sInit,
 			&p.Type, &p.PaymentAmount, &p.PaymentStatus, &sProj, &sUrl, &createdAt,
-		); err == nil {
-			if sAvatar.Valid {
-				p.ClientAvatar = sAvatar.String
-			}
-			if sInit.Valid {
-				p.ClientInitials = sInit.String
-			} else {
-				p.ClientInitials = clientInitials(p.ClientName)
-			}
-			if sProj.Valid {
-				p.ProjectName = sProj.String
-			}
-			if sUrl.Valid {
-				p.DownloadUrl = sUrl.String
-			}
-			p.CreatedOn = p.PaymentDate
-			result = append(result, p)
+		); err != nil {
+			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read payment"})
+			return
 		}
+		if sAvatar.Valid {
+			p.ClientAvatar = sAvatar.String
+		}
+		if sInit.Valid {
+			p.ClientInitials = sInit.String
+		} else {
+			p.ClientInitials = clientInitials(p.ClientName)
+		}
+		if sProj.Valid {
+			p.ProjectName = sProj.String
+		}
+		if sUrl.Valid {
+			p.DownloadUrl = sUrl.String
+		}
+		p.CreatedOn = p.PaymentDate
+		result = append(result, p)
+	}
+	if err := rows.Err(); err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating payments"})
+		return
 	}
 	if result == nil {
 		result = []PaymentDTO{}
@@ -229,24 +235,30 @@ func BillingInvoicesListHandler(w http.ResponseWriter, r *http.Request) {
 			&inv.ID, &inv.InvoiceName, &inv.ClientName, &sAvatar, &sInit,
 			&sProj, &inv.TotalAmount, &inv.PaidAmount, &inv.PendingAmount,
 			&inv.PaymentStatus, &inv.InvoiceDate, &sUrl,
-		); err == nil {
-			if sAvatar.Valid {
-				inv.ClientAvatar = sAvatar.String
-			}
-			if sInit.Valid {
-				inv.ClientInitials = sInit.String
-			} else {
-				inv.ClientInitials = clientInitials(inv.ClientName)
-			}
-			if sProj.Valid {
-				inv.ProjectsName = sProj.String
-			}
-			if sUrl.Valid {
-				inv.DownloadUrl = sUrl.String
-			}
-			inv.CreatedDate = inv.InvoiceDate
-			result = append(result, inv)
+		); err != nil {
+			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read invoice"})
+			return
 		}
+		if sAvatar.Valid {
+			inv.ClientAvatar = sAvatar.String
+		}
+		if sInit.Valid {
+			inv.ClientInitials = sInit.String
+		} else {
+			inv.ClientInitials = clientInitials(inv.ClientName)
+		}
+		if sProj.Valid {
+			inv.ProjectsName = sProj.String
+		}
+		if sUrl.Valid {
+			inv.DownloadUrl = sUrl.String
+		}
+		inv.CreatedDate = inv.InvoiceDate
+		result = append(result, inv)
+	}
+	if err := rows.Err(); err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating invoices"})
+		return
 	}
 	if result == nil {
 		result = []InvoiceDTO{}
@@ -269,6 +281,13 @@ func CreateBillingInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if inv.ID == "" {
 		inv.ID = "INV-" + uuid.New().String()[:8]
+	}
+	if inv.InvoiceName == "" {
+		if seqNum, err := AllocateNextSequenceNumber(r.Context(), db, tid, "invoice"); err == nil && seqNum != "" {
+			inv.InvoiceName = seqNum
+		} else {
+			inv.InvoiceName = "INV-" + uuid.New().String()[:6]
+		}
 	}
 	if inv.ClientInitials == "" {
 		inv.ClientInitials = clientInitials(inv.ClientName)
@@ -333,16 +352,22 @@ func BillingExpensesListHandler(w http.ResponseWriter, r *http.Request) {
 		var sVendor, sMethod sql.NullString
 		if err := rows.Scan(
 			&exp.ID, &exp.ExpenseName, &exp.Date, &exp.Amount, &exp.Type, &sVendor, &sMethod,
-		); err == nil {
-			if sVendor.Valid {
-				exp.VendorOrClient = sVendor.String
-			}
-			if sMethod.Valid {
-				exp.PaymentMethod = sMethod.String
-			}
-			exp.CreatedDate = exp.Date
-			result = append(result, exp)
+		); err != nil {
+			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read expense"})
+			return
 		}
+		if sVendor.Valid {
+			exp.VendorOrClient = sVendor.String
+		}
+		if sMethod.Valid {
+			exp.PaymentMethod = sMethod.String
+		}
+		exp.CreatedDate = exp.Date
+		result = append(result, exp)
+	}
+	if err := rows.Err(); err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating expenses"})
+		return
 	}
 	if result == nil {
 		result = []ExpenseDTO{}
@@ -425,30 +450,36 @@ func BillingCancelledListHandler(w http.ResponseWriter, r *http.Request) {
 		if err := rows.Scan(
 			&c.ID, &c.Action, &c.CancellationDate, &sPayDate, &sPayType, &c.ClientName,
 			&sAvatar, &sInit, &sProj, &c.PaymentAmount, &sReason,
-		); err == nil {
-			if sPayDate.Valid {
-				c.PaymentDate = sPayDate.String
-			}
-			if sPayType.Valid {
-				c.Type = sPayType.String
-			}
-			if sAvatar.Valid {
-				c.ClientAvatar = sAvatar.String
-			}
-			if sInit.Valid {
-				c.ClientInitials = sInit.String
-			} else {
-				c.ClientInitials = clientInitials(c.ClientName)
-			}
-			if sProj.Valid {
-				c.ProjectsName = sProj.String
-			}
-			if sReason.Valid {
-				c.Reason = sReason.String
-			}
-			c.CreatedOn = c.CancellationDate
-			result = append(result, c)
+		); err != nil {
+			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read cancellation"})
+			return
 		}
+		if sPayDate.Valid {
+			c.PaymentDate = sPayDate.String
+		}
+		if sPayType.Valid {
+			c.Type = sPayType.String
+		}
+		if sAvatar.Valid {
+			c.ClientAvatar = sAvatar.String
+		}
+		if sInit.Valid {
+			c.ClientInitials = sInit.String
+		} else {
+			c.ClientInitials = clientInitials(c.ClientName)
+		}
+		if sProj.Valid {
+			c.ProjectsName = sProj.String
+		}
+		if sReason.Valid {
+			c.Reason = sReason.String
+		}
+		c.CreatedOn = c.CancellationDate
+		result = append(result, c)
+	}
+	if err := rows.Err(); err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating cancellations"})
+		return
 	}
 	if result == nil {
 		result = []CancelledDTO{}
@@ -484,24 +515,30 @@ func BillingRefundsListHandler(w http.ResponseWriter, r *http.Request) {
 		if err := rows.Scan(
 			&ref.ID, &ref.InvoiceName, &ref.RefundDate, &ref.ClientName, &sAvatar, &sInit,
 			&sProj, &ref.PaymentAmount, &ref.CancellationCharges, &ref.RefundAmount, &sNote, &ref.Status,
-		); err == nil {
-			if sAvatar.Valid {
-				ref.ClientAvatar = sAvatar.String
-			}
-			if sInit.Valid {
-				ref.ClientInitials = sInit.String
-			} else {
-				ref.ClientInitials = clientInitials(ref.ClientName)
-			}
-			if sProj.Valid {
-				ref.ProjectsName = sProj.String
-			}
-			if sNote.Valid {
-				ref.Note = sNote.String
-			}
-			ref.CreatedOn = ref.RefundDate
-			result = append(result, ref)
+		); err != nil {
+			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read refund"})
+			return
 		}
+		if sAvatar.Valid {
+			ref.ClientAvatar = sAvatar.String
+		}
+		if sInit.Valid {
+			ref.ClientInitials = sInit.String
+		} else {
+			ref.ClientInitials = clientInitials(ref.ClientName)
+		}
+		if sProj.Valid {
+			ref.ProjectsName = sProj.String
+		}
+		if sNote.Valid {
+			ref.Note = sNote.String
+		}
+		ref.CreatedOn = ref.RefundDate
+		result = append(result, ref)
+	}
+	if err := rows.Err(); err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating refunds"})
+		return
 	}
 	if result == nil {
 		result = []RefundedDTO{}

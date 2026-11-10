@@ -22,7 +22,6 @@ import { Badge } from '@repo/ui/components/ui/badge'
 import { toast } from '@repo/ui/components/ui/sonner'
 import { apiClient } from '@repo/ui/lib/api-client'
 import { DeliverablesDropdown } from '../../components/DeliverablesDropdown'
-import { settingsApi } from '../../api/settingsApi'
 
 export interface PackageServiceItem {
   id: string
@@ -57,73 +56,52 @@ const DEFAULT_SERVICE_GROUPS = [
   'Delivery',
 ]
 
-const SAMPLE_PACKAGES: StudioPackage[] = [
-  {
-    id: 'pkg-1',
-    name: 'Sample Wedding Package',
-    description: 'Complete 2-day traditional and candid wedding coverage with luxury albums.',
-    totalCost: 60000,
-    serviceGroups: [
-      {
-        id: 'grp-1',
-        groupName: 'Wedding',
-        quantity: 1,
-        services: [
-          { id: 's-1', name: 'Traditional Photography', cost: 200, quantity: 1 },
-          { id: 's-2', name: 'Traditional Videography', cost: 200, quantity: 1, isCustom: true },
-        ],
-      },
-    ],
-    deliverables: ['Raw Photos', 'Pen Drive', 'Handcrafted Album'],
-  },
-]
-
 export function PackagesSettingsPage() {
-  const [packages, setPackages] = React.useState<StudioPackage[]>(SAMPLE_PACKAGES)
+  const [packages, setPackages] = React.useState<StudioPackage[]>([])
+  const [, setLoading] = React.useState<boolean>(true)
+  const [, setError] = React.useState<string | null>(null)
   const [availableServiceGroups, setAvailableServiceGroups] = React.useState<string[]>(DEFAULT_SERVICE_GROUPS)
   const [availableServices, setAvailableServices] = React.useState<Array<{ id: string; name: string; cost: number; groupName: string }>>([])
   const [viewMode, setViewMode] = React.useState<'list' | 'editor'>('list')
   const [editingPackageId, setEditingPackageId] = React.useState<string | null>(null)
 
-  // Load from /api/packages and /api/services
-  React.useEffect(() => {
-    apiClient<StudioPackage[]>('/api/packages')
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setPackages(data)
-        } else {
-          settingsApi.getSettings().then((store) => {
-            if (store.packages && store.packages.length > 0) {
-              setPackages(store.packages)
-            }
-          }).catch(() => { })
-        }
-      })
-      .catch(() => {
-        settingsApi.getSettings().then((store) => {
-          if (store.packages && store.packages.length > 0) {
-            setPackages(store.packages)
-          }
-        }).catch(() => { })
-      })
+  const fetchPackages = React.useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await apiClient<StudioPackage[]>('/api/packages')
+      if (Array.isArray(data)) {
+        setPackages(data)
+      } else {
+        setPackages([])
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load packages')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-    // Load available service groups and services from /api/services
-    apiClient<Array<{ id: string; group_name: string; services: any }>>('/api/services')
+  React.useEffect(() => {
+    fetchPackages()
+
+    apiClient<Array<{ id: string; groupName: string; services: any[] }>>('/api/services')
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           const groups: string[] = []
           const srvList: Array<{ id: string; name: string; cost: number; groupName: string }> = []
           for (const grp of data) {
-            if (grp.group_name && !groups.includes(grp.group_name)) {
-              groups.push(grp.group_name)
+            const gName = grp.groupName || (grp as any).group_name
+            if (gName && !groups.includes(gName)) {
+              groups.push(gName)
             }
             if (Array.isArray(grp.services)) {
               for (const s of grp.services) {
                 srvList.push({
                   id: s.id,
                   name: s.serviceName || s.name || '',
-                  cost: s.amount || s.cost || 200,
-                  groupName: grp.group_name,
+                  cost: s.amount || s.cost || 0,
+                  groupName: gName,
                 })
               }
             }
@@ -133,7 +111,7 @@ export function PackagesSettingsPage() {
         }
       })
       .catch(() => { })
-  }, [])
+  }, [fetchPackages])
 
   // Editor Form State
   const [packageName, setPackageName] = React.useState('')
@@ -174,13 +152,11 @@ export function PackagesSettingsPage() {
   const handleDeletePackage = async (id: string) => {
     try {
       await apiClient(`/api/packages/${id}`, { method: 'DELETE' })
-    } catch { }
-    setPackages((prev) => {
-      const updated = prev.filter((p) => p.id !== id)
-      settingsApi.updateSettings({ packages: updated }).catch(() => { })
-      return updated
-    })
-    toast.success('Package deleted')
+      setPackages((prev) => prev.filter((p) => p.id !== id))
+      toast.success('Package deleted')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete package')
+    }
   }
 
   // Duplicate package
@@ -191,17 +167,15 @@ export function PackagesSettingsPage() {
       name: `${pkg.name} (Copy)`,
     }
     try {
-      await apiClient('/api/packages', {
+      const created = await apiClient<StudioPackage>('/api/packages', {
         method: 'POST',
         body: JSON.stringify(duplicated),
       })
-    } catch { }
-    setPackages((prev) => {
-      const updated = [duplicated, ...prev]
-      settingsApi.updateSettings({ packages: updated }).catch(() => { })
-      return updated
-    })
-    toast.success('Package duplicated')
+      setPackages((prev) => [created || duplicated, ...prev])
+      toast.success('Package duplicated')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to duplicate package')
+    }
   }
 
   // Add new Service Group in editor
@@ -299,22 +273,25 @@ export function PackagesSettingsPage() {
           body: JSON.stringify(saved),
         })
       } else {
-        await apiClient('/api/packages', {
+        const created = await apiClient<StudioPackage>('/api/packages', {
           method: 'POST',
           body: JSON.stringify(saved),
         })
+        if (created?.id) {
+          saved.id = created.id
+        }
       }
-    } catch { }
 
-    setPackages((prev) => {
-      const exists = prev.some((p) => p.id === saved.id)
-      const updated = exists ? prev.map((p) => (p.id === saved.id ? saved : p)) : [saved, ...prev]
-      settingsApi.updateSettings({ packages: updated }).catch(() => { })
-      return updated
-    })
+      setPackages((prev) => {
+        const exists = prev.some((p) => p.id === saved.id)
+        return exists ? prev.map((p) => (p.id === saved.id ? saved : p)) : [saved, ...prev]
+      })
 
-    toast.success(editingPackageId ? 'Package updated!' : 'Package created!')
-    setViewMode('list')
+      toast.success(editingPackageId ? 'Package updated!' : 'Package created!')
+      setViewMode('list')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save package')
+    }
   }
 
   // 1. LIST VIEW (matching Image 4)

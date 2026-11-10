@@ -38,9 +38,15 @@ func OrderPresetsListHandler(w http.ResponseWriter, r *http.Request) {
 	presets := make([]OrderPresetDTO, 0)
 	for rows.Next() {
 		var p OrderPresetDTO
-		if err := rows.Scan(&p.ID, &p.Name, &p.Quantity, &p.Amount, &p.Expense); err == nil {
-			presets = append(presets, p)
+		if err := rows.Scan(&p.ID, &p.Name, &p.Quantity, &p.Amount, &p.Expense); err != nil {
+			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read order preset"})
+			return
 		}
+		presets = append(presets, p)
+	}
+	if err := rows.Err(); err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating order presets"})
+		return
 	}
 
 	utils.WriteJSON(w, http.StatusOK, presets)

@@ -16,7 +16,6 @@ import { Label } from '@repo/ui/components/ui/label'
 import { toast } from '@repo/ui/components/ui/sonner'
 import { apiClient } from '@repo/ui/lib/api-client'
 import type { SequenceIdSettings, SequenceConfig } from '../../types/settings'
-import { settingsApi } from '../../api/settingsApi'
 
 export function SequenceIdPage() {
   const [activeTab, setActiveTab] = React.useState<'sequence' | 'visibility'>('sequence')
@@ -49,24 +48,9 @@ export function SequenceIdPage() {
           }))
         }
       })
-      .catch(() => {
-        settingsApi.getSettings().then((s) => {
-          if (s.sequenceSettings && Object.keys(s.sequenceSettings).length > 0) {
-            setSettings(s.sequenceSettings)
-          }
-        }).catch(console.error)
+      .catch((err: any) => {
+        toast.error(err?.message || 'Failed to load sequence configuration')
       })
-
-    // Also load visibility settings
-    settingsApi.getSettings().then((s) => {
-      if (s.sequenceSettings) {
-        setSettings((prev) => ({
-          ...prev,
-          showClientTaxNo: s.sequenceSettings.showClientTaxNo ?? prev.showClientTaxNo,
-          studioTaxNo: s.sequenceSettings.studioTaxNo || prev.studioTaxNo,
-        }))
-      }
-    }).catch(console.error)
   }, [])
 
   const handleSequenceChange = (
@@ -85,7 +69,6 @@ export function SequenceIdPage() {
 
   const handleSave = async () => {
     try {
-      // Save to sequence_id table endpoint
       await apiClient('/api/sequence-id', {
         method: 'POST',
         body: JSON.stringify({
@@ -99,8 +82,6 @@ export function SequenceIdPage() {
         }),
       })
 
-      // Also sync full settings
-      await settingsApi.updateSettings({ sequenceSettings: settings })
       toast.success('Sequence & Visibility settings saved successfully')
     } catch (err: any) {
       toast.error(err.message || 'Failed to save settings')

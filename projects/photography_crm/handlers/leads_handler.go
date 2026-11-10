@@ -397,7 +397,36 @@ func ConvertLeadHandler(w http.ResponseWriter, r *http.Request) {
 		initials = strings.ToUpper(string([]rune(parts[0])[:1]))
 	}
 
-	mgrJSON, _ := json.Marshal(map[string]string{"name": "Rohan Mehta", "initials": "RM"})
+	tx, err := db.BeginTx(r.Context(), nil)
+	if err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to begin transaction"})
+		return
+	}
+	defer tx.Rollback()
+
+	// Ensure client record exists
+	var clientID string
+	err = tx.QueryRowContext(r.Context(), `
+		SELECT id FROM clients WHERE tenant_id = ? AND email = ? LIMIT 1
+	`, tid, email).Scan(&clientID)
+	if err != nil || clientID == "" {
+		clientID = "CLI-" + uuid.New().String()[:8]
+		fn := name
+		ln := ""
+		if len(parts) > 1 {
+			fn = parts[0]
+			ln = strings.Join(parts[1:], " ")
+		}
+		_, err = tx.ExecContext(r.Context(), `
+			INSERT INTO clients (id, tenant_id, first_name, last_name, email, phone, source)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		`, clientID, tid, fn, ln, email, mobileNo, leadSource)
+		if err != nil {
+			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create client record: " + err.Error()})
+			return
+		}
+	}
+
 	financeJSON, _ := json.Marshal(map[string]any{
 		"profit": 0, "currentProfit": 0, "netPayableAmount": 0,
 		"paidAmount": 0, "balanceAmount": 0, "paymentDue": 0,
@@ -415,35 +444,45 @@ func ConvertLeadHandler(w http.ResponseWriter, r *http.Request) {
 		sEndDate = endDate.String
 	}
 
-	_, err = db.ExecContext(r.Context(), `
+	_, err = tx.ExecContext(r.Context(), `
 		INSERT INTO projects (
-			id, tenant_id, project_name, client_name, client_initials, client_mobile,
+			id, tenant_id, client_id, project_name, client_name, client_initials, client_mobile,
 			client_country_code, client_email, client_address, lead_source, project_manager,
 			project_type, project_address, status, stage, start_date, end_date,
 			shoot_hours, shoot_members_count, shoot_expense, galleries_count, notes,
 			segments, documents, sessions, tasks, printing, deliverables, expenses, finance
 		) VALUES (
-			?, ?, ?, ?, ?, ?,
-			?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?, ?, ?,
+			?, ?, ?, ?, NULL,
 			?, ?, 'New', 'Booked', ?, ?,
 			8.00, 2, 0, 0, '',
 			?, '[]', '[]', '[]', '[]', '[]', '[]', ?
 		)
 	`,
-		projID, tid, projName, name, initials, mobileNo,
-		countryCode, email, address, leadSource, mgrJSON,
+		projID, tid, clientID, projName, name, initials, mobileNo,
+		countryCode, email, address, leadSource,
 		projType, sAddress, sStartDate, sEndDate,
 		segmentsRaw, financeJSON,
 	)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create project: " + err.Error()})
 		return
 	}
 
-	_, _ = db.ExecContext(r.Context(), `
-		UPDATE leads SET pipeline_stage = 'converted', lead_stage = 'Booked'
+	_, err = tx.ExecContext(r.Context(), `
+		UPDATE leads SET pipeline_stage = 'converted', lead_stage = 'Booked', status = 'converted',
+		converted_client_id = ?, converted_project_id = ?
 		WHERE id = ? AND tenant_id = ?
-	`, id, tid)
+	`, clientID, projID, id, tid)
+	if err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to update lead: " + err.Error()})
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to commit conversion"})
+		return
+	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]any{
 		"status":      "ok",

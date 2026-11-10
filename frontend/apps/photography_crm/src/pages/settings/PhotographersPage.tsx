@@ -31,37 +31,31 @@ import {
 import { toast } from '@repo/ui/components/ui/sonner'
 import { apiClient } from '@repo/ui/lib/api-client'
 import type { TeamDesignation, CrewMember } from '../../types/settings'
-import { settingsApi } from '../../api/settingsApi'
 import { PhoneInputField } from '../../components/PhoneInputField'
 
 export function PhotographersPage() {
   const [designations, setDesignations] = React.useState<TeamDesignation[]>([])
   const [crewMembers, setCrewMembers] = React.useState<CrewMember[]>([])
 
-  const loadData = React.useCallback(() => {
-    apiClient<CrewMember[]>('/api/crew')
-      .then((users) => {
-        if (Array.isArray(users)) {
-          setCrewMembers(users)
-        }
-      })
-      .catch(() => {
-        settingsApi.getSettings().then((s) => {
-          if (s.crewMembers) setCrewMembers(s.crewMembers)
-        }).catch(console.error)
-      })
+  const loadData = React.useCallback(async () => {
+    try {
+      const users = await apiClient<CrewMember[]>('/api/crew')
+      if (Array.isArray(users)) {
+        setCrewMembers(users)
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to load crew members')
+    }
 
-    apiClient<TeamDesignation[]>('/api/roles')
-      .then((roles) => {
-        if (Array.isArray(roles)) {
-          // Never show admin designation; no crew member can be admin
-          const nonAdminRoles = roles.filter(
-            (r) => r.name.toLowerCase() !== 'admin'
-          )
-          setDesignations(nonAdminRoles)
-        }
-      })
-      .catch(console.error)
+    try {
+      const roles = await apiClient<TeamDesignation[]>('/api/roles')
+      if (Array.isArray(roles)) {
+        const nonAdminRoles = roles.filter(
+          (r) => r.name.toLowerCase() !== 'admin'
+        )
+        setDesignations(nonAdminRoles)
+      }
+    } catch { }
   }, [])
 
   React.useEffect(() => {
@@ -152,21 +146,8 @@ export function PhotographersPage() {
       setEmail('')
       setNote('')
       toast.success(`Added crew member ${created.fullName}`)
-    } catch {
-      // Fallback to local settings store if API fails
-      const fallbackCrew: CrewMember = {
-        id: `crew-${Date.now()}`,
-        ...payload,
-      }
-      const updated = [fallbackCrew, ...crewMembers]
-      setCrewMembers(updated)
-      settingsApi.updateSettings({ crewMembers: updated }).catch(console.error)
-      setIsAddCrewDrawerOpen(false)
-      setFullName('')
-      setMobileNo('')
-      setEmail('')
-      setNote('')
-      toast.success(`Added crew member ${fallbackCrew.fullName}`)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to add crew member')
     }
   }
 
@@ -175,11 +156,8 @@ export function PhotographersPage() {
       await apiClient(`/api/crew/${id}`, { method: 'DELETE' })
       setCrewMembers((prev) => prev.filter((c) => c.id !== id))
       toast.success('Crew member removed')
-    } catch {
-      const updated = crewMembers.filter((c) => c.id !== id)
-      setCrewMembers(updated)
-      settingsApi.updateSettings({ crewMembers: updated }).catch(console.error)
-      toast.success('Crew member removed')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete crew member')
     }
   }
 

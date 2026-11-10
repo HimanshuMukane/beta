@@ -10,16 +10,16 @@ import (
 	"github.com/google/uuid"
 )
 
-type CrewMemberItem struct {
+type CrewMemberDTO struct {
 	ID          string  `json:"id"`
-	TenantID    string  `json:"tenant_id"`
+	TenantID    string  `json:"tenantId"`
 	FullName    string  `json:"fullName"`
 	FirstName   string  `json:"firstName"`
 	LastName    string  `json:"lastName"`
 	Email       string  `json:"email"`
-	Phone       string  `json:"mobileNo"`
+	MobileNo    string  `json:"mobileNo"`
 	CountryCode string  `json:"countryCode"`
-	RoleID      string  `json:"role_id"`
+	RoleID      string  `json:"roleId"`
 	Designation string  `json:"designation"`
 	Note        *string `json:"note,omitempty"`
 }
@@ -27,10 +27,24 @@ type CrewMemberItem struct {
 func CrewMembersListHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"error": map[string]any{
+				"code":    "DATABASE_ERROR",
+				"message": "Database unavailable",
+			},
+		})
 		return
 	}
 	tid := getTenantID(r, db)
+	if tid == "" {
+		utils.WriteJSON(w, http.StatusForbidden, map[string]any{
+			"error": map[string]any{
+				"code":    "FORBIDDEN",
+				"message": "Valid workspace membership required",
+			},
+		})
+		return
+	}
 
 	rows, err := db.QueryContext(r.Context(), `
 		SELECT u.id, u.first_name, u.last_name, u.email, COALESCE(u.phone, ''),
@@ -42,32 +56,43 @@ func CrewMembersListHandler(w http.ResponseWriter, r *http.Request) {
 		ORDER BY u.created_at DESC
 	`, tid)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": map[string]any{
+				"code":    "DATABASE_ERROR",
+				"message": "Failed to list crew members",
+			},
+		})
 		return
 	}
 	defer rows.Close()
 
-	members := make([]CrewMemberItem, 0)
+	members := make([]CrewMemberDTO, 0)
 	for rows.Next() {
 		var id, fn, ln, email, phone, roleID, roleName string
-		if err := rows.Scan(&id, &fn, &ln, &email, &phone, &roleID, &roleName); err == nil {
-			fullName := strings.TrimSpace(fn + " " + ln)
-			if fullName == "" {
-				fullName = fn
-			}
-			members = append(members, CrewMemberItem{
-				ID:          id,
-				TenantID:    tid,
-				FullName:    fullName,
-				FirstName:   fn,
-				LastName:    ln,
-				Email:       email,
-				Phone:       phone,
-				CountryCode: "+91",
-				RoleID:      roleID,
-				Designation: roleName,
-			})
+		if err := rows.Scan(&id, &fn, &ln, &email, &phone, &roleID, &roleName); err != nil {
+			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read crew member"})
+			return
 		}
+		fullName := strings.TrimSpace(fn + " " + ln)
+		if fullName == "" {
+			fullName = fn
+		}
+		members = append(members, CrewMemberDTO{
+			ID:          id,
+			TenantID:    tid,
+			FullName:    fullName,
+			FirstName:   fn,
+			LastName:    ln,
+			Email:       email,
+			MobileNo:    phone,
+			CountryCode: "+91",
+			RoleID:      roleID,
+			Designation: roleName,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating crew members"})
+		return
 	}
 
 	utils.WriteJSON(w, http.StatusOK, members)
@@ -76,10 +101,24 @@ func CrewMembersListHandler(w http.ResponseWriter, r *http.Request) {
 func CreateCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"error": map[string]any{
+				"code":    "DATABASE_ERROR",
+				"message": "Database unavailable",
+			},
+		})
 		return
 	}
 	tid := getTenantID(r, db)
+	if tid == "" {
+		utils.WriteJSON(w, http.StatusForbidden, map[string]any{
+			"error": map[string]any{
+				"code":    "FORBIDDEN",
+				"message": "Valid workspace membership required",
+			},
+		})
+		return
+	}
 
 	var req struct {
 		FullName    string `json:"fullName"`
@@ -89,11 +128,16 @@ func CreateCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 		MobileNo    string `json:"mobileNo"`
 		CountryCode string `json:"countryCode"`
 		Designation string `json:"designation"`
-		RoleID      string `json:"role_id"`
+		RoleID      string `json:"roleId"`
 		Note        string `json:"note"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
+			"error": map[string]any{
+				"code":    "VALIDATION_ERROR",
+				"message": "Invalid request body",
+			},
+		})
 		return
 	}
 
@@ -109,7 +153,12 @@ func CreateCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if firstName == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "First name or full name is required"})
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
+			"error": map[string]any{
+				"code":    "VALIDATION_ERROR",
+				"message": "First name or full name is required",
+			},
+		})
 		return
 	}
 
@@ -120,14 +169,24 @@ func CreateCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 		var roleName string
 		if err := db.QueryRowContext(r.Context(), "SELECT name FROM roles WHERE id = ? AND deleted_at IS NULL", roleID).Scan(&roleName); err == nil {
 			if strings.ToLower(roleName) == "admin" {
-				utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "No crew member can be assigned the admin role"})
+				utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
+					"error": map[string]any{
+						"code":    "VALIDATION_ERROR",
+						"message": "Cannot assign admin role to crew member",
+					},
+				})
 				return
 			}
 			designation = roleName
 		}
 	} else if designation != "" {
 		if strings.ToLower(designation) == "admin" {
-			utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "No crew member can be admin"})
+			utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
+				"error": map[string]any{
+					"code":    "VALIDATION_ERROR",
+					"message": "Cannot assign admin role to crew member",
+				},
+			})
 			return
 		}
 		var matchedID string
@@ -148,7 +207,12 @@ func CreateCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := db.BeginTxx(r.Context(), nil)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to begin transaction"})
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": map[string]any{
+				"code":    "DATABASE_ERROR",
+				"message": "Failed to start transaction",
+			},
+		})
 		return
 	}
 	defer tx.Rollback()
@@ -163,7 +227,12 @@ func CreateCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 		VALUES (?, ?, ?, ?, ?, ?)
 	`, userID, firstName, lastName, email, phone, rID)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create user: " + err.Error()})
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": map[string]any{
+				"code":    "DATABASE_ERROR",
+				"message": "Failed to create user",
+			},
+		})
 		return
 	}
 
@@ -178,24 +247,34 @@ func CreateCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 		VALUES (?, ?, ?, ?, 'active')
 	`, membershipID, tid, userID, roleNameInMembership)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to add tenant membership: " + err.Error()})
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": map[string]any{
+				"code":    "DATABASE_ERROR",
+				"message": "Failed to assign workspace membership",
+			},
+		})
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to commit transaction"})
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": map[string]any{
+				"code":    "DATABASE_ERROR",
+				"message": "Failed to commit crew member",
+			},
+		})
 		return
 	}
 
 	dispFullName := strings.TrimSpace(firstName + " " + lastName)
-	utils.WriteJSON(w, http.StatusCreated, CrewMemberItem{
+	utils.WriteJSON(w, http.StatusCreated, CrewMemberDTO{
 		ID:          userID,
 		TenantID:    tid,
 		FullName:    dispFullName,
 		FirstName:   firstName,
 		LastName:    lastName,
 		Email:       email,
-		Phone:       phone,
+		MobileNo:    phone,
 		CountryCode: "+91",
 		RoleID:      roleID,
 		Designation: designation,
@@ -205,19 +284,34 @@ func CreateCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"error": map[string]any{
+				"code":    "DATABASE_ERROR",
+				"message": "Database unavailable",
+			},
+		})
 		return
 	}
 	tid := getTenantID(r, db)
 	id := chi.URLParam(r, "id")
 	if id == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "User ID is required"})
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
+			"error": map[string]any{
+				"code":    "VALIDATION_ERROR",
+				"message": "User ID is required",
+			},
+		})
 		return
 	}
 
 	tx, err := db.BeginTxx(r.Context(), nil)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to start transaction"})
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": map[string]any{
+				"code":    "DATABASE_ERROR",
+				"message": "Failed to start transaction",
+			},
+		})
 		return
 	}
 	defer tx.Rollback()
@@ -230,15 +324,24 @@ func DeleteCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 		UPDATE users SET deleted_at = NOW(6) WHERE id = ?
 	`, id)
 	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": map[string]any{
+				"code":    "DATABASE_ERROR",
+				"message": "Failed to delete crew member",
+			},
+		})
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to commit delete"})
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": map[string]any{
+				"code":    "DATABASE_ERROR",
+				"message": "Failed to commit delete",
+			},
+		})
 		return
 	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
-

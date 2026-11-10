@@ -65,68 +65,55 @@ const DEFAULT_SERVICES: ServiceItem[] = [
 
 export function ServicesSettingsPage() {
   const [serviceGroups, setServiceGroups] = React.useState<string[]>(DEFAULT_SERVICE_GROUPS)
-  const [services, setServices] = React.useState<ServiceItem[]>(DEFAULT_SERVICES)
+  const [services, setServices] = React.useState<ServiceItem[]>([])
+  const [, setLoading] = React.useState<boolean>(true)
 
-  // Load from /api/services database table first, fallback to studio_settings
-  React.useEffect(() => {
-    apiClient<Array<{ id: string; group_name: string; services: any }>>('/api/services')
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const loadedGroups: string[] = []
-          const loadedServices: ServiceItem[] = []
-          for (const item of data) {
-            if (item.group_name && !loadedGroups.includes(item.group_name)) {
-              loadedGroups.push(item.group_name)
-            }
-            if (Array.isArray(item.services)) {
-              for (const s of item.services) {
-                loadedServices.push({
-                  id: s.id || `srv-${Date.now()}-${Math.random()}`,
-                  groupName: item.group_name,
-                  serviceName: s.serviceName || s.name || '',
-                  quantity: s.quantity || s.qty || 1,
-                  amount: s.amount || s.cost || 0,
-                })
-              }
+  const loadData = React.useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await apiClient<Array<{ id: string; groupName: string; services: any[] }>>('/api/services')
+      if (Array.isArray(data) && data.length > 0) {
+        const loadedGroups: string[] = []
+        const loadedServices: ServiceItem[] = []
+        for (const item of data) {
+          const gName = item.groupName || (item as any).group_name
+          if (gName && !loadedGroups.includes(gName)) {
+            loadedGroups.push(gName)
+          }
+          if (Array.isArray(item.services)) {
+            for (const s of item.services) {
+              loadedServices.push({
+                id: s.id || `srv-${Date.now()}-${Math.random()}`,
+                groupName: gName,
+                serviceName: s.serviceName || s.name || '',
+                quantity: s.quantity || s.qty || 1,
+                amount: s.amount || s.cost || 0,
+              })
             }
           }
-          if (loadedGroups.length > 0) {
-            setServiceGroups(loadedGroups)
-          }
-          if (loadedServices.length > 0) {
-            setServices(loadedServices)
-          }
-        } else {
-          // If empty, fallback to settings
-          settingsApi.getSettings().then((store) => {
-            if (store.serviceGroups && store.serviceGroups.length > 0) {
-              setServiceGroups(store.serviceGroups)
-            }
-            if (store.services && store.services.length > 0) {
-              setServices(store.services)
-            }
-          }).catch(() => { })
         }
-      })
-      .catch(() => {
-        settingsApi.getSettings().then((store) => {
-          if (store.serviceGroups && store.serviceGroups.length > 0) {
-            setServiceGroups(store.serviceGroups)
-          }
-          if (store.services && store.services.length > 0) {
-            setServices(store.services)
-          }
-        }).catch(() => { })
-      })
+        if (loadedGroups.length > 0) setServiceGroups(loadedGroups)
+        setServices(loadedServices)
+      } else {
+        setServices(DEFAULT_SERVICES)
+      }
+    } catch {
+      setServices(DEFAULT_SERVICES)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  // Sync to backend /api/services batch table
+  React.useEffect(() => {
+    loadData()
+  }, [loadData])
+
   const syncToDatabase = async (currentServices: ServiceItem[], currentGroups: string[]) => {
     try {
       const groupsPayload = currentGroups.map((grpName) => {
         const groupServices = currentServices.filter((s) => s.groupName === grpName)
         return {
-          group_name: grpName,
+          groupName: grpName,
           services: groupServices,
         }
       })
@@ -134,10 +121,9 @@ export function ServicesSettingsPage() {
         method: 'PUT',
         body: JSON.stringify({ groups: groupsPayload }),
       })
-      await settingsApi.updateSettings({ services: currentServices, serviceGroups: currentGroups })
       return true
-    } catch {
-      await settingsApi.updateSettings({ services: currentServices, serviceGroups: currentGroups })
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save services to database')
       return false
     }
   }

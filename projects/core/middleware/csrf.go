@@ -45,6 +45,16 @@ func CSRFProtection(next http.Handler) http.Handler {
 
 		switch r.Method {
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+			// Origin / Referer validation if present
+			origin := r.Header.Get("Origin")
+			if origin != "" {
+				host := r.Host
+				if !strings.Contains(origin, host) && !strings.Contains(origin, "localhost") && !strings.Contains(origin, "127.0.0.1") && !strings.HasSuffix(origin, ".especa.com") {
+					utils.WriteError(w, http.StatusForbidden, "Cross-origin request forbidden")
+					return
+				}
+			}
+
 			submittedToken := r.Header.Get(CSRFHeaderName)
 			if submittedToken == "" {
 				submittedToken = r.FormValue(CSRFFormField)

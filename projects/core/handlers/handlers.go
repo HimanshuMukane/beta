@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"core/repositories"
+	"core/security"
 	"core/services"
 	"core/utils"
 )
@@ -225,6 +226,32 @@ func SignupAPIHandler(config utils.Config, defaultRole ...string) http.HandlerFu
 func LogoutAPIHandler(config utils.Config) http.HandlerFunc {
 	return func(responseWriter http.ResponseWriter, request *http.Request) {
 		responseWriter.Header().Set("Cache-Control", "no-store")
+
+		user := utils.UserFromContext(request.Context())
+		if user == nil {
+			token := ""
+			if auth := request.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
+				token = strings.TrimPrefix(auth, "Bearer ")
+			} else if c, err := request.Cookie(config.SessionCookieName); err == nil && c.Value != "" {
+				token = c.Value
+			}
+			if token != "" {
+				if s, err := security.VerifySessionToken(token, []byte(config.SessionSecret)); err == nil {
+					db := utils.IdentityDBFromContext(request.Context())
+					if db != nil {
+						userRepo := repositories.NewUserRepository(db)
+						_ = userRepo.IncrementTokenVersion(request.Context(), s.UserID)
+					}
+				}
+			}
+		} else {
+			db := utils.IdentityDBFromContext(request.Context())
+			if db != nil {
+				userRepo := repositories.NewUserRepository(db)
+				_ = userRepo.IncrementTokenVersion(request.Context(), user.ID)
+			}
+		}
+
 		cookie := &http.Cookie{
 			Name:     config.SessionCookieName,
 			Value:    "",
@@ -239,6 +266,18 @@ func LogoutAPIHandler(config utils.Config) http.HandlerFunc {
 			cookie.Domain = config.SessionCookieDomain
 		}
 		http.SetCookie(responseWriter, cookie)
+
+		tenantCookie := &http.Cookie{
+			Name:     "active_tenant_id",
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Unix(0, 0),
+			MaxAge:   -1,
+			HttpOnly: true,
+			Secure:   config.SessionSecure,
+			SameSite: http.SameSiteLaxMode,
+		}
+		http.SetCookie(responseWriter, tenantCookie)
 
 		utils.WriteJSON(responseWriter, http.StatusOK, map[string]string{
 			"message": "Logout successful",

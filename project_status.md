@@ -64,13 +64,17 @@ The supervisor `cmd/runner/main.go` assigns dedicated ports for each platform mi
 ## 2. Platform Services Overview
 
 ### 2.1 Photography CRM (`projects/photography_crm`)
-End-to-end studio management for commercial, portrait, and wedding photographers:
-- **Leads & Pipeline Management (`/leads`)**: Kanban pipeline and table views powered by SortableJS and HTMX.
-- **Client Directory (`/clients`)**: Relationship records, booking history, family/event notes.
-- **Projects & Shoots (`/projects`)**: Milestone tracking, crew assignments, gear checklists, location details.
-- **Sessions & Bookings (`/sessions`)**: Photoshoot session scheduling and slot booking.
-- **Studio Calendar (`/calendar`)**: FullCalendar.js integration displaying shoots and deliverables.
-- **Contracts & Invoices (`/contracts`, `/invoices`)**: Document management and financial tracking.
+End-to-end studio management for commercial, portrait, and wedding photographers, powered by a modern React SPA (`frontend/apps/photography_crm`) and a direct-SQL Go Chi backend (`:8082`):
+- **Dual-Portal Architecture**: Distinct role-based interfaces for studio leadership and field crew:
+  - **Admin Studio Portal**: Full management of Leads, Projects, Sessions, Orders, and Billings; 8 operational & financial reports; 12 customizable studio settings panels.
+  - **Team Member / User Portal**: Streamlined portal for photographers, cinematographers, and editors (`/home` agenda, `/shoots` shoot details & timings, `/tasks` Kanban production matrix, `/deliverables` culling and retouching tracking).
+- **Leads & Pipeline Management (`/leads`)**: Kanban drag-and-drop pipeline and table views with customizable stages, source attribution, and one-click lead-to-client conversion.
+- **Projects & Shoots (`/projects`)**: Milestone tracking, multi-day shoot segments, crew assignments, session scheduling, and shoot expenditure tracking.
+- **Sessions & Bookings (`/sessions`)**: Photoshoot session timetable, shoot timing slots, crew allocation, and session status drawer.
+- **Merchandise & Orders (`/orders`)**: Client orders for photobooks, frames, canvas wraps, and raw footage USBs.
+- **Billing & Financials (`/billings`)**: Double-entry financial tracking for invoices, client payments, operational expenses, cancellations, and refunds.
+- **Studio Configuration (`/settings/*`)**: Workflows, master data, crew roster, sequence ID generators, service presets, package bundles, order presets, deliverable presets, contract templates, and feedback surveys.
+- **Telemetry & Error Logging**: Centralized error reporting (`POST /api/logs/frontend`) connected to React Error Boundaries.
 
 ### 2.2 Especa Finance (`projects/especa_finance`)
 Comprehensive financial and accounting management:
@@ -1716,7 +1720,15 @@ Below is the complete, exhaustive catalog of every file across the `BETA` projec
 - **Purpose**: Client-side JavaScript managing client interactions, DOM operations, or library integrations.
 
 
-### 8. Photography CRM (`projects/photography_crm`) (15 files)
+### 8. Photography CRM (`projects/photography_crm`) (28 files)
+
+#### `/home/desktop/especa/beta/projects/photography_crm/.env`
+- **Relative Path**: `projects/photography_crm/.env`
+- **Purpose**: Local environment variables configuration file specifying ports and secrets.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/.env.example`
+- **Relative Path**: `projects/photography_crm/.env.example`
+- **Purpose**: Template environment variables documentation file.
 
 #### `/home/desktop/especa/beta/projects/photography_crm/go.mod`
 - **Relative Path**: `projects/photography_crm/go.mod`
@@ -1726,29 +1738,81 @@ Below is the complete, exhaustive catalog of every file across the `BETA` projec
 - **Relative Path**: `projects/photography_crm/go.sum`
 - **Purpose**: Checksum lockfile ensuring reproducible builds and dependency integrity for projects/photography_crm.
 
+#### `/home/desktop/especa/beta/projects/photography_crm/main.go`
+- **Relative Path**: `projects/photography_crm/main.go`
+- **Purpose**: Main entrypoint booting the photography CRM microservice on port 8082 via core.Run.
+
 #### `/home/desktop/especa/beta/projects/photography_crm/handlers/auth_handler.go`
 - **Relative Path**: `projects/photography_crm/handlers/auth_handler.go`
-- **Purpose**: HTTP controller handler implementing request decoding, validation, service coordination, and responses.
+- **Purpose**: HTTP controller handler implementing studio session authentication and signin/signup flows.
 
-#### `/home/desktop/especa/beta/projects/photography_crm/handlers/crm_handlers.go`
-- **Relative Path**: `projects/photography_crm/handlers/crm_handlers.go`
-- **Purpose**: HTTP controller handler implementing request decoding, validation, service coordination, and responses.
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/billing_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/billing_handler.go`
+- **Purpose**: Direct MySQL handlers for financial payments, invoices, expenses, refunds, and cancellations.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/crew_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/crew_handler.go`
+- **Purpose**: Direct MySQL handlers managing studio crew roster, photographers, and assignments.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/deliverables_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/deliverables_handler.go`
+- **Purpose**: Handlers managing deliverable groups and milestone templates with batch update support.
 
 #### `/home/desktop/especa/beta/projects/photography_crm/handlers/home_handler.go`
 - **Relative Path**: `projects/photography_crm/handlers/home_handler.go`
-- **Purpose**: HTTP controller handler implementing request decoding, validation, service coordination, and responses.
+- **Purpose**: HTTP handler for dashboard and home operational views.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/leads_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/leads_handler.go`
+- **Purpose**: Direct MySQL CRUD controller for inquiries, leads pipeline, Kanban stage updates, and lead-to-client conversion.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/order_presets_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/order_presets_handler.go`
+- **Purpose**: Handlers for merchandise product presets (albums, frames, canvas) with batch update support.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/orders_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/orders_handler.go`
+- **Purpose**: Direct MySQL CRUD controller for merchandise and print orders and manufacturing stages.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/packages_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/packages_handler.go`
+- **Purpose**: Handlers managing packaged service bundles and pricing tiers.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/projects_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/projects_handler.go`
+- **Purpose**: Direct MySQL CRUD controller for studio photoshoot projects, multi-day segments, milestones, and expenses.
 
 #### `/home/desktop/especa/beta/projects/photography_crm/handlers/registration_handler.go`
 - **Relative Path**: `projects/photography_crm/handlers/registration_handler.go`
-- **Purpose**: HTTP controller handler implementing request decoding, validation, service coordination, and responses.
+- **Purpose**: HTTP handler submitting tenant registration onboarding requests for administrative review.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/roles_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/roles_handler.go`
+- **Purpose**: Handlers managing studio roles (photographer, cinematographer, editor, assistant).
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/sequence_id_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/sequence_id_handler.go`
+- **Purpose**: Handlers retrieving and saving custom document sequence ID numbering and prefixes.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/services_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/services_handler.go`
+- **Purpose**: Handlers managing photography service categories and pricing with batch update support.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/sessions_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/sessions_handler.go`
+- **Purpose**: Direct MySQL CRUD controller for photoshoot session scheduling, timings, location, and crew allocation.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/settings_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/settings_handler.go`
+- **Purpose**: Atomic JSON key-value store handlers for studio settings, templates, and presets.
+
+#### `/home/desktop/especa/beta/projects/photography_crm/handlers/workflow_handler.go`
+- **Relative Path**: `projects/photography_crm/handlers/workflow_handler.go`
+- **Purpose**: Handlers managing production workflow pipelines, stage color coding, and batch ordering.
 
 #### `/home/desktop/especa/beta/projects/photography_crm/handlers/workspace_handler.go`
 - **Relative Path**: `projects/photography_crm/handlers/workspace_handler.go`
-- **Purpose**: HTTP controller handler implementing request decoding, validation, service coordination, and responses.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/main.go`
-- **Relative Path**: `projects/photography_crm/main.go`
-- **Purpose**: Main entrypoint initializing database connections, service dependencies, HTTP routers, and listeners for projects/photography_crm.
+- **Purpose**: HTTP handler listing user memberships and accessible studio workspaces.
 
 #### `/home/desktop/especa/beta/projects/photography_crm/repositories/crm_repository.go`
 - **Relative Path**: `projects/photography_crm/repositories/crm_repository.go`
@@ -1756,499 +1820,19 @@ Below is the complete, exhaustive catalog of every file across the `BETA` projec
 
 #### `/home/desktop/especa/beta/projects/photography_crm/routes/backend.go`
 - **Relative Path**: `projects/photography_crm/routes/backend.go`
-- **Purpose**: HTTP router configuration and endpoint routing definitions for projects/photography_crm/routes.
+- **Purpose**: HTTP router configuration and endpoint routing definitions for REST APIs and mutation routes.
 
 #### `/home/desktop/especa/beta/projects/photography_crm/routes/frontend.go`
 - **Relative Path**: `projects/photography_crm/routes/frontend.go`
-- **Purpose**: HTTP router configuration and endpoint routing definitions for projects/photography_crm/routes.
+- **Purpose**: HTTP router configuration serving the compiled React SPA from frontend/apps/photography_crm/dist.
 
 #### `/home/desktop/especa/beta/projects/photography_crm/routes/router.go`
 - **Relative Path**: `projects/photography_crm/routes/router.go`
-- **Purpose**: HTTP router configuration and endpoint routing definitions for projects/photography_crm/routes.
+- **Purpose**: Top-level HTTP middleware assembly and router constructor for Photography CRM.
 
 #### `/home/desktop/especa/beta/projects/photography_crm/services/crm_service.go`
 - **Relative Path**: `projects/photography_crm/services/crm_service.go`
 - **Purpose**: Business logic service layer handling core workflows, validation rules, and operations.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/billing_overview.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/billing_overview.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for billing_overview.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/billing_overview_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/billing_overview_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for billing_overview.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/cancelled.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/cancelled.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for cancelled.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/cancelled_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/cancelled_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for cancelled.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/columns_dropdown.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/columns_dropdown.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for columns_dropdown.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/columns_dropdown_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/columns_dropdown_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for columns_dropdown.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/edit_invoice_modal.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/edit_invoice_modal.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for edit_invoice_modal.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/edit_invoice_modal_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/edit_invoice_modal_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for edit_invoice_modal.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/expenses.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/expenses.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for expenses.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/expenses_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/expenses_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for expenses.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/invoices.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/invoices.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for invoices.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/invoices_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/invoices_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for invoices.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/payments.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/payments.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for payments.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/payments_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/payments_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for payments.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/refunds.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/refunds.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for refunds.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/refunds_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/refunds_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for refunds.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/subnav.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/subnav.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for subnav.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/billing/subnav_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/billing/subnav_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for subnav.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/calendar/calendar.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/calendar/calendar.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for calendar.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/calendar/calendar_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/calendar/calendar_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for calendar.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/clients/client_details.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/clients/client_details.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for client_details.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/clients/client_details_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/clients/client_details_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for client_details.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/clients/clients.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/clients/clients.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for clients.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/clients/clients_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/clients/clients_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for clients.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/contracts/contracts.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/contracts/contracts.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for contracts.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/contracts/contracts_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/contracts/contracts_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for contracts.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/dashboard.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/dashboard.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for dashboard.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/dashboard/dashboard.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/dashboard/dashboard.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for dashboard.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/dashboard/dashboard_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/dashboard/dashboard_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for dashboard.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/dashboard_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/dashboard_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for dashboard.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/deliverables/deliverables.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/deliverables/deliverables.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for deliverables.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/deliverables/deliverables_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/deliverables/deliverables_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for deliverables.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/followups/followups.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/followups/followups.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for followups.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/followups/followups_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/followups/followups_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for followups.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/forgot_password.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/forgot_password.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for forgot_password.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/forgot_password_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/forgot_password_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for forgot_password.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/inbox/inbox.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/inbox/inbox.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for inbox.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/inbox/inbox_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/inbox/inbox_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for inbox.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/internal_error.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/internal_error.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for internal_error.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/internal_error_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/internal_error_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for internal_error.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/leads/lead_details.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/leads/lead_details.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for lead_details.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/leads/lead_details_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/leads/lead_details_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for lead_details.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/leads/leads.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/leads/leads.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for leads.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/leads/leads_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/leads/leads_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for leads.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/not_found.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/not_found.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for not_found.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/not_found_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/not_found_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for not_found.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/orders/order_details.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/orders/order_details.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for order_details.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/orders/order_details_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/orders/order_details_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for order_details.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/orders/orders.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/orders/orders.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for orders.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/orders/orders_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/orders/orders_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for orders.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/projects/new_project.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/projects/new_project.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for new_project.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/projects/new_project_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/projects/new_project_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for new_project.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/projects/project_details.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/projects/project_details.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for project_details.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/projects/project_details_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/projects/project_details_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for project_details.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/projects/projects.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/projects/projects.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for projects.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/projects/projects_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/projects/projects_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for projects.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/projects/view_project_details.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/projects/view_project_details.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for view_project_details.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/projects/view_project_details_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/projects/view_project_details_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for view_project_details.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/reports/reports.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/reports/reports.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for reports.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/reports/reports_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/reports/reports_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for reports.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/sessions/sessions.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/sessions/sessions.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for sessions.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/sessions/sessions_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/sessions/sessions_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for sessions.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/business_settings.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/business_settings.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for business_settings.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/business_settings_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/business_settings_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for business_settings.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/contract_template_editor.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/contract_template_editor.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for contract_template_editor.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/contract_template_editor_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/contract_template_editor_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for contract_template_editor.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/contract_templates.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/contract_templates.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for contract_templates.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/contract_templates_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/contract_templates_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for contract_templates.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/crew.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/crew.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for crew.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/crew_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/crew_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for crew.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/deliverable_presets.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/deliverable_presets.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for deliverable_presets.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/deliverable_presets_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/deliverable_presets_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for deliverable_presets.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/feedback_template_editor.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/feedback_template_editor.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for feedback_template_editor.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/feedback_template_editor_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/feedback_template_editor_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for feedback_template_editor.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/feedback_templates.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/feedback_templates.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for feedback_templates.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/feedback_templates_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/feedback_templates_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for feedback_templates.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/forms.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/forms.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for forms.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/forms_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/forms_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for forms.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/integrations.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/integrations.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for integrations.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/integrations_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/integrations_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for integrations.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/invoice_templates.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/invoice_templates.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for invoice_templates.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/invoice_templates_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/invoice_templates_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for invoice_templates.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/order_presets.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/order_presets.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for order_presets.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/order_presets_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/order_presets_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for order_presets.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/package_editor.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/package_editor.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for package_editor.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/package_editor_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/package_editor_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for package_editor.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/packages.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/packages.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for packages.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/packages_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/packages_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for packages.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/quotation_templates.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/quotation_templates.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for quotation_templates.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/quotation_templates_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/quotation_templates_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for quotation_templates.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/sequence_ids.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/sequence_ids.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for sequence_ids.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/sequence_ids_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/sequence_ids_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for sequence_ids.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/services.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/services.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for services.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/services_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/services_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for services.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/settings.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/settings.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for settings.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/settings_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/settings_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for settings.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/workflow.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/workflow.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for workflow.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/settings/workflow_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/settings/workflow_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for workflow.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/signin.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/signin.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for signin.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/signin_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/signin_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for signin.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/signup.templ`
-- **Relative Path**: `projects/photography_crm/ui/pages/signup.templ`
-- **Purpose**: Templ presentation template component providing UI rendering and layout for signup.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/pages/signup_templ.go`
-- **Relative Path**: `projects/photography_crm/ui/pages/signup_templ.go`
-- **Purpose**: Compiled Go template code generated by templ for signup.templ.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/auth.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/auth.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for auth.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/crm_shared.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/crm_shared.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for crm_shared.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/dashboard.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/dashboard.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for dashboard.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/globals.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/globals.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for globals.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/pages/billing.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/pages/billing.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for billing.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/pages/calendar.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/pages/calendar.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for calendar.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/pages/leads.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/pages/leads.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for leads.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/pages/projects.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/pages/projects.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for projects.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/pages/sessions.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/pages/sessions.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for sessions.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/pages/settings.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/pages/settings.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for settings.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/pages/settings_extra.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/pages/settings_extra.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for settings_extra.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/css/style.css`
-- **Relative Path**: `projects/photography_crm/ui/static/css/style.css`
-- **Purpose**: Modular CSS stylesheet delivering styling and theme design tokens for style.css.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/embed.go`
-- **Relative Path**: `projects/photography_crm/ui/static/embed.go`
-- **Purpose**: Go embed directives packaging static CSS, JavaScript, and assets into the application binary.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/js/auth.js`
-- **Relative Path**: `projects/photography_crm/ui/static/js/auth.js`
-- **Purpose**: Client-side JavaScript managing client interactions, DOM operations, or library integrations.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/js/fullcalendar.min.js`
-- **Relative Path**: `projects/photography_crm/ui/static/js/fullcalendar.min.js`
-- **Purpose**: Client-side JavaScript managing client interactions, DOM operations, or library integrations.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/js/htmx.min.js`
-- **Relative Path**: `projects/photography_crm/ui/static/js/htmx.min.js`
-- **Purpose**: Client-side JavaScript managing client interactions, DOM operations, or library integrations.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/js/kanban.js`
-- **Relative Path**: `projects/photography_crm/ui/static/js/kanban.js`
-- **Purpose**: Client-side JavaScript managing client interactions, DOM operations, or library integrations.
-
-#### `/home/desktop/especa/beta/projects/photography_crm/ui/static/js/sortable.min.js`
-- **Relative Path**: `projects/photography_crm/ui/static/js/sortable.min.js`
-- **Purpose**: Client-side JavaScript managing client interactions, DOM operations, or library integrations.
 
 
 ### 9. Especa CRM (`projects/especa_crm`) (39 files)

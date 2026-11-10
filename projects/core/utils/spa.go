@@ -9,7 +9,22 @@ import (
 
 // ServeSPA serves static files from the given root directory and falls back to index.html
 // for client-side routing (React CSR). Automatically serves pre-compressed .br and .gz files.
+func resolveRootDir(root string) string {
+	candidates := []string{
+		root,
+		filepath.Join("..", "..", root),
+		filepath.Join("..", root),
+	}
+	for _, c := range candidates {
+		if fi, err := os.Stat(c); err == nil && fi.IsDir() {
+			return c
+		}
+	}
+	return root
+}
+
 func ServeSPA(root string) http.Handler {
+	root = resolveRootDir(root)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Clean and join requested path
 		requestedPath := filepath.Clean(r.URL.Path)

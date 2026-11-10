@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"core/utils"
@@ -14,6 +15,7 @@ import (
 type ProjectDTO struct {
 	ID                string  `json:"id"`
 	ProjectName       string  `json:"projectName"`
+	ClientID          string  `json:"clientId,omitempty"`
 	ClientName        string  `json:"clientName"`
 	ClientInitials    string  `json:"clientInitials"`
 	ClientMobile      string  `json:"clientMobile"`
@@ -45,6 +47,40 @@ type ProjectDTO struct {
 	Deliverables      any     `json:"deliverables"`
 	Expenses          any     `json:"expenses"`
 	Finance           any     `json:"finance"`
+}
+
+func calculateTasksCount(tasks any) map[string]int {
+	completed := 0
+	total := 0
+	if list, ok := tasks.([]any); ok {
+		total = len(list)
+		for _, item := range list {
+			if m, ok := item.(map[string]any); ok {
+				if s, ok := m["status"].(string); ok && strings.EqualFold(s, "completed") {
+					completed++
+				} else if b, ok := m["completed"].(bool); ok && b {
+					completed++
+				}
+			}
+		}
+	}
+	return map[string]int{"completed": completed, "total": total}
+}
+
+func calculateDeliverablesCount(deliverables any) map[string]int {
+	ready := 0
+	total := 0
+	if list, ok := deliverables.([]any); ok {
+		total = len(list)
+		for _, item := range list {
+			if m, ok := item.(map[string]any); ok {
+				if s, ok := m["status"].(string); ok && (strings.EqualFold(s, "ready") || strings.EqualFold(s, "completed")) {
+					ready++
+				}
+			}
+		}
+	}
+	return map[string]int{"ready": ready, "total": total}
 }
 
 func ProjectsListHandler(w http.ResponseWriter, r *http.Request) {
@@ -129,8 +165,6 @@ func ProjectsListHandler(w http.ResponseWriter, r *http.Request) {
 		var mgr, segments, docs, sessions, tasks, printing, deliverables, expenses, finance any
 		if len(mgrRaw) > 0 {
 			_ = json.Unmarshal(mgrRaw, &mgr)
-		} else {
-			mgr = map[string]string{"name": "Rohan Mehta", "initials": "RM"}
 		}
 		if len(segRaw) > 0 {
 			_ = json.Unmarshal(segRaw, &segments)
@@ -178,8 +212,8 @@ func ProjectsListHandler(w http.ResponseWriter, r *http.Request) {
 			ProjectType:       projType,
 			ProjectAddress:    projectAddress,
 			SessionsCount:     finalSessionsCount,
-			TasksCount:        map[string]int{"completed": 1, "total": 3},
-			DeliverablesCount: map[string]int{"ready": 1, "total": 2},
+			TasksCount:        calculateTasksCount(tasks),
+			DeliverablesCount: calculateDeliverablesCount(deliverables),
 			Status:            status,
 			Stage:             stage,
 			StartDate:         startDate,
@@ -319,8 +353,8 @@ func GetProjectHandler(w http.ResponseWriter, r *http.Request) {
 		ProjectType:       projType,
 		ProjectAddress:    projectAddress,
 		SessionsCount:     liveSessionsCount,
-		TasksCount:        map[string]int{"completed": 1, "total": 3},
-		DeliverablesCount: map[string]int{"ready": 1, "total": 2},
+		TasksCount:        calculateTasksCount(tasks),
+		DeliverablesCount: calculateDeliverablesCount(deliverables),
 		Status:            status,
 		Stage:             stage,
 		StartDate:         startDate,

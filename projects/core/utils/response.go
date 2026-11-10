@@ -10,6 +10,17 @@ import (
 	"github.com/goccy/go-json"
 )
 
+type StandardErrorDetail struct {
+	Code    string            `json:"code"`
+	Message string            `json:"message"`
+	Fields  map[string]string `json:"fields,omitempty"`
+}
+
+type StandardErrorEnvelope struct {
+	Error   StandardErrorDetail `json:"error"`
+	ErrorID string              `json:"error_id,omitempty"`
+}
+
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	ErrorID string `json:"error_id,omitempty"`
@@ -24,24 +35,53 @@ func WriteJSON(w http.ResponseWriter, status int, data any) {
 	_ = json.NewEncoder(w).Encode(data)
 }
 
-// WriteError sends a simple error response with backward-compatibility.
 func WriteError(w http.ResponseWriter, status int, message string) {
-	WriteJSON(w, status, ErrorResponse{Error: message})
+	code := "INTERNAL_ERROR"
+	switch status {
+	case http.StatusBadRequest:
+		code = "VALIDATION_ERROR"
+	case http.StatusUnauthorized:
+		code = "AUTHENTICATION_ERROR"
+	case http.StatusForbidden:
+		code = "FORBIDDEN"
+	case http.StatusNotFound:
+		code = "NOT_FOUND"
+	case http.StatusConflict:
+		code = "CONFLICT"
+	case http.StatusTooManyRequests:
+		code = "RATE_LIMIT"
+	case http.StatusServiceUnavailable:
+		code = "SERVICE_UNAVAILABLE"
+	}
+
+	WriteJSON(w, status, StandardErrorEnvelope{
+		Error: StandardErrorDetail{
+			Code:    code,
+			Message: message,
+		},
+	})
 }
 
-// HandleAppError logs the internal error diagnostics and returns a safe error payload with error_id to the client.
+func WriteValidationError(w http.ResponseWriter, message string, fields map[string]string) {
+	WriteJSON(w, http.StatusBadRequest, StandardErrorEnvelope{
+		Error: StandardErrorDetail{
+			Code:    "VALIDATION_ERROR",
+			Message: message,
+			Fields:  fields,
+		},
+	})
+}
+
 func HandleAppError(w http.ResponseWriter, r *http.Request, err error) {
 	var appErr *AppError
 	if !errors.As(err, &appErr) {
 		appErr = NewAppError(http.StatusInternalServerError, CategoryInternal, "An unexpected error occurred. Please try again.", err)
 	}
 
-	// Capture stack for 5xx errors if not already set
 	if appErr.StatusCode >= 500 && appErr.Stack == "" {
 		appErr.Stack = string(debug.Stack())
 	}
 
-	// Structured contextual slog
 	logger := LoggerFromContext(r.Context())
 	logger.Error("application error handled",
 		"error_id", appErr.ID,
@@ -52,20 +92,19 @@ func HandleAppError(w http.ResponseWriter, r *http.Request, err error) {
 		"caller", fmtCaller(appErr.File, appErr.Line),
 	)
 
-	// Persist to unified error log file
 	LogAppError(r, appErr)
 
-	// Safe JSON response (never leaks internal Err or Stack)
-	WriteJSON(w, appErr.StatusCode, ErrorResponse{
-		Error:   appErr.ClientMsg,
+	WriteJSON(w, appErr.StatusCode, StandardErrorEnvelope{
+		Error: StandardErrorDetail{
+			Code:    string(appErr.Category),
+			Message: appErr.ClientMsg,
+		},
 		ErrorID: appErr.ID,
 	})
 }
 
-// WriteAppError is a convenience wrapper to construct and immediately handle an AppError.
 func WriteAppError(w http.ResponseWriter, r *http.Request, status int, clientMsg string, internalErr error) {
 	appErr := WrapError(status, clientMsg, internalErr)
-	// Capture immediate callsite
 	if pc, file, line, ok := runtime.Caller(1); ok {
 		appErr.File = sanitizePath(file)
 		appErr.Line = line

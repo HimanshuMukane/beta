@@ -206,17 +206,27 @@ func SecurityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("X-XSS-Protection", "1; mode=block")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		if strings.HasPrefix(r.URL.Path, "/api/auth") || strings.HasPrefix(r.URL.Path, "/api/billing") {
+			w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
+			w.Header().Set("Pragma", "no-cache")
+		}
 		next.ServeHTTP(w, r)
 	})
 }
 
 func authenticate(r *http.Request, cfg utils.Config) (*models.User, int, string) {
-	cookie, err := r.Cookie(cfg.SessionCookieName)
-	if err != nil || cookie.Value == "" {
+	token := ""
+	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
+		token = strings.TrimPrefix(auth, "Bearer ")
+	} else if cookie, err := r.Cookie(cfg.SessionCookieName); err == nil && cookie.Value != "" {
+		token = cookie.Value
+	}
+
+	if token == "" {
 		return nil, http.StatusUnauthorized, "Authentication required"
 	}
 
-	session, err := security.VerifySessionToken(cookie.Value, []byte(cfg.SessionSecret))
+	session, err := security.VerifySessionToken(token, []byte(cfg.SessionSecret))
 	if err != nil {
 		return nil, http.StatusUnauthorized, "Invalid or expired session"
 	}

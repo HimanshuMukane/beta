@@ -22,22 +22,11 @@ type WorkflowStageItem struct {
 	OrderIndex   int    `json:"order_index"`
 }
 
-func getTenantID(r *http.Request, db *sqlx.DB) string {
+func getTenantID(r *http.Request, _ *sqlx.DB) string {
 	if tc := utils.TenantFromContext(r.Context()); tc != nil && tc.TenantID != uuid.Nil {
 		return tc.TenantID.String()
 	}
-	if cookie, err := r.Cookie("active_tenant_id"); err == nil && cookie.Value != "" {
-		if _, err := uuid.Parse(cookie.Value); err == nil {
-			return cookie.Value
-		}
-	}
-	if db != nil {
-		var tid string
-		if err := db.QueryRowContext(r.Context(), "SELECT id FROM tenants WHERE status = 'active' LIMIT 1").Scan(&tid); err == nil && tid != "" {
-			return tid
-		}
-	}
-	return "018e0000-0001-7000-8000-000000000020"
+	return ""
 }
 
 func WorkflowsListHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,9 +56,15 @@ func WorkflowsListHandler(w http.ResponseWriter, r *http.Request) {
 	items := make([]WorkflowStageItem, 0)
 	for rows.Next() {
 		var item WorkflowStageItem
-		if err := rows.Scan(&item.ID, &item.TenantID, &item.WorkflowType, &item.Pipeline, &item.Stage, &item.ColorCode, &item.OrderIndex); err == nil {
-			items = append(items, item)
+		if err := rows.Scan(&item.ID, &item.TenantID, &item.WorkflowType, &item.Pipeline, &item.Stage, &item.ColorCode, &item.OrderIndex); err != nil {
+			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read workflow stage"})
+			return
 		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating workflow stages"})
+		return
 	}
 
 	utils.WriteJSON(w, http.StatusOK, items)

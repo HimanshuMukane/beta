@@ -70,7 +70,16 @@ export async function apiClient<T = any>(
   }
 
   if (!response.ok) {
-    const errorMessage = data?.error || data?.message || `Request failed with status ${response.status}`
+    let errorMessage = `Request failed with status ${response.status}`
+    if (data?.error) {
+      if (typeof data.error === "string") {
+        errorMessage = data.error
+      } else if (typeof data.error === "object" && data.error.message) {
+        errorMessage = data.error.message
+      }
+    } else if (data?.message && typeof data.message === "string") {
+      errorMessage = data.message
+    }
     const error = new Error(errorMessage) as Error & { status?: number; data?: any }
     error.status = response.status
     error.data = data

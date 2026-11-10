@@ -26,8 +26,8 @@ func SetupRouter(pool *utils.DBPool, cfg utils.Config) http.Handler {
 	})
 	r.NotFound(handlers.NotFoundHandler)
 
-	RegisterFrontendRoutes(r, cfg)
 	RegisterBackendRoutes(r, pool, cfg)
+	RegisterFrontendRoutes(r, cfg)
 
 	return r
 }

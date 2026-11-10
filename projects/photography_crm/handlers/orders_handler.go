@@ -170,7 +170,11 @@ func CreateOrderHandler(w http.ResponseWriter, r *http.Request) {
 		payload.ID = "ORD-" + uuid.New().String()[:8]
 	}
 	if payload.OrderNumber == "" {
-		payload.OrderNumber = "ORD-" + uuid.New().String()[:6]
+		if seqNum, err := AllocateNextSequenceNumber(r.Context(), db, tid, "orders"); err == nil && seqNum != "" {
+			payload.OrderNumber = seqNum
+		} else {
+			payload.OrderNumber = "ORD-" + uuid.New().String()[:6]
+		}
 	}
 	if payload.PaymentStatus == "" {
 		payload.PaymentStatus = "Pending"

@@ -55,11 +55,17 @@ func StudioSettingsGetHandler(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var key string
 		var dataRaw []byte
-		if err := rows.Scan(&key, &dataRaw); err == nil {
-			var val any
-			parseJSONColumn(dataRaw, &val)
-			settings[key] = val
+		if err := rows.Scan(&key, &dataRaw); err != nil {
+			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read setting"})
+			return
 		}
+		var val any
+		parseJSONColumn(dataRaw, &val)
+		settings[key] = val
+	}
+	if err := rows.Err(); err != nil {
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating settings"})
+		return
 	}
 
 	utils.WriteJSON(w, http.StatusOK, settings)

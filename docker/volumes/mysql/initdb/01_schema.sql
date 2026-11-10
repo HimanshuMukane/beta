@@ -448,6 +448,40 @@ CREATE TABLE IF NOT EXISTS `packages` (
     CONSTRAINT `fk_packages_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS `media_files` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `owner_type` VARCHAR(50) NOT NULL,
+    `owner_id` VARCHAR(36) NOT NULL,
+    `file_name` VARCHAR(255) NOT NULL,
+    `storage_key` VARCHAR(500) NOT NULL,
+    `content_type` VARCHAR(100) NOT NULL,
+    `file_size` BIGINT NOT NULL DEFAULT 0,
+    `checksum` VARCHAR(64) NOT NULL DEFAULT '',
+    `uploaded_by` VARCHAR(36) NOT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL,
+    INDEX `idx_media_files_tenant_owner` (`tenant_id`, `owner_type`, `owner_id`),
+    CONSTRAINT `fk_media_files_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `audit_logs` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `actor_user_id` VARCHAR(36) NOT NULL,
+    `entity_type` VARCHAR(50) NOT NULL,
+    `entity_id` VARCHAR(36) NOT NULL,
+    `action` VARCHAR(50) NOT NULL,
+    `before_state` JSON DEFAULT NULL,
+    `after_state` JSON DEFAULT NULL,
+    `request_id` VARCHAR(64) DEFAULT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    INDEX `idx_audit_logs_tenant_entity` (`tenant_id`, `entity_type`, `entity_id`),
+    INDEX `idx_audit_logs_actor` (`tenant_id`, `actor_user_id`),
+    CONSTRAINT `fk_audit_logs_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE USER IF NOT EXISTS 'photography_crm_db'@'%' IDENTIFIED BY 'crm_password';
 GRANT ALL PRIVILEGES ON `photography_crm_db`.* TO 'photography_crm_db'@'%';
 CREATE USER IF NOT EXISTS 'photography_crm_db'@'localhost' IDENTIFIED BY 'crm_password';
