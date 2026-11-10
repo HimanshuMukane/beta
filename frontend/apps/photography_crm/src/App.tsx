@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, Suspense, lazy } from 'react'
+import { useState, useMemo, Suspense, lazy } from 'react'
 import {
   BrowserRouter,
   Routes,
@@ -8,6 +8,7 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { DashboardShell } from '@repo/ui/components/dashboard-shell'
 import { Toaster, toast } from '@repo/ui/components/ui/sonner'
 import { AuthProvider, useAuth } from '@repo/ui/hooks/use-auth'
@@ -128,42 +129,286 @@ const WorkflowPage = lazy(() =>
   import('./pages/settings/WorkflowPage').then((m) => ({ default: m.WorkflowPage }))
 )
 
+function ProjectsPageContainer({
+  onAddNewProject,
+  onEditProject,
+  onDeleteProject,
+  onStageChange,
+}: {
+  onAddNewProject: (prefill?: Partial<Project>) => void
+  onEditProject: (project: Project) => void
+  onDeleteProject: (projectId: string) => void
+  onStageChange: (projectId: string, newStage: ProjectStage) => void
+}) {
+  const { data: projects = [], isLoading } = useQuery({
+    queryKey: ['projects'],
+    queryFn: ({ signal }) => projectsApi.list(undefined, signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  if (isLoading && projects.length === 0) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-xs text-muted-foreground">
+        Loading projects...
+      </div>
+    )
+  }
+
+  return (
+    <ProjectsPage
+      projects={projects}
+      onAddNewProject={onAddNewProject}
+      onEditProject={onEditProject}
+      onDeleteProject={onDeleteProject}
+      onStageChange={onStageChange}
+    />
+  )
+}
+
+function LeadsPageContainer({
+  onAddNewLead,
+  onEditLead,
+  onDeleteLead,
+  onStageChange,
+  onConvertToProject,
+}: {
+  onAddNewLead: (stage?: PipelineStage) => void
+  onEditLead: (lead: Lead) => void
+  onDeleteLead: (leadId: string) => void
+  onStageChange: (leadId: string, newStage: PipelineStage) => void
+  onConvertToProject: (lead: Lead) => void
+}) {
+  const { data: leads = [], isLoading } = useQuery({
+    queryKey: ['leads'],
+    queryFn: ({ signal }) => leadsApi.list(undefined, signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  if (isLoading && leads.length === 0) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-xs text-muted-foreground">
+        Loading leads...
+      </div>
+    )
+  }
+
+  return (
+    <LeadsPage
+      leads={leads}
+      onAddNewLead={onAddNewLead}
+      onEditLead={onEditLead}
+      onDeleteLead={onDeleteLead}
+      onStageChange={onStageChange}
+      onConvertToProject={onConvertToProject}
+    />
+  )
+}
+
+function SessionsPageContainer({
+  onDeleteSession,
+  onStatusChange,
+  onSaveSession,
+}: {
+  onDeleteSession: (sessionId: string) => void
+  onStatusChange: (sessionId: string, newStatus: SessionStatus) => void
+  onSaveSession: (session: ProjectSession) => void
+}) {
+  const { data: sessions = [], isLoading } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: ({ signal }) => sessionsApi.list(signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: ({ signal }) => projectsApi.list(undefined, signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  if (isLoading && sessions.length === 0) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-xs text-muted-foreground">
+        Loading sessions...
+      </div>
+    )
+  }
+
+  return (
+    <SessionsPage
+      sessions={sessions}
+      onAddNewSession={() => { }}
+      onEditSession={() => { }}
+      onDeleteSession={onDeleteSession}
+      onStatusChange={onStatusChange}
+      onSaveSession={onSaveSession}
+      existingProjectNames={projects.map((p) => p.projectName)}
+    />
+  )
+}
+
+function OrdersPageContainer({
+  onAddNewOrder,
+  onEditOrder,
+  onDeleteOrder,
+  onStageChange,
+}: {
+  onAddNewOrder: () => void
+  onEditOrder: (order: Order) => void
+  onDeleteOrder: (orderId: string) => void
+  onStageChange: (orderId: string, newStage: OrderStage) => void
+}) {
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ['orders'],
+    queryFn: ({ signal }) => ordersApi.list(signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  if (isLoading && orders.length === 0) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-xs text-muted-foreground">
+        Loading orders...
+      </div>
+    )
+  }
+
+  return (
+    <OrdersPage
+      orders={orders}
+      onAddNewOrder={onAddNewOrder}
+      onEditOrder={onEditOrder}
+      onDeleteOrder={onDeleteOrder}
+      onStageChange={onStageChange}
+    />
+  )
+}
+
+function OrderFormPageWrapper({
+  initialOrder,
+  onBack,
+  onSave,
+}: {
+  initialOrder: Order | null
+  onBack: () => void
+  onSave: (o: Order) => void
+}) {
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: ({ signal }) => projectsApi.list(undefined, signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  return (
+    <OrderFormPage
+      initialOrder={initialOrder}
+      onBack={onBack}
+      onSave={onSave}
+      existingProjectOptions={projects.map((p) => ({ id: p.id, name: p.projectName }))}
+    />
+  )
+}
+
+function UserHomePageContainer() {
+  const { data: sessions = [] } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: ({ signal }) => sessionsApi.list(signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: ({ signal }) => projectsApi.list(undefined, signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  return <UserHomePage sessions={sessions} projects={projects} />
+}
+
+function UserShootsPageContainer({
+  onSaveSession,
+  onStatusChange,
+}: {
+  onSaveSession: (session: ProjectSession) => void
+  onStatusChange: (sessionId: string, newStatus: SessionStatus) => void
+}) {
+  const { data: sessions = [] } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: ({ signal }) => sessionsApi.list(signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: ({ signal }) => projectsApi.list(undefined, signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  return (
+    <UserShootsPage
+      sessions={sessions}
+      onSaveSession={onSaveSession}
+      onStatusChange={onStatusChange}
+      existingProjectNames={projects.map((p) => p.projectName)}
+    />
+  )
+}
+
+function UserTasksPageContainer({
+  onUpdateProject,
+}: {
+  onUpdateProject: (p: Project) => void
+}) {
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: ({ signal }) => projectsApi.list(undefined, signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  return <UserTasksPage projects={projects} onUpdateProject={onUpdateProject} />
+}
+
+function UserDeliverablesPageContainer({
+  onUpdateProject,
+}: {
+  onUpdateProject: (p: Project) => void
+}) {
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: ({ signal }) => projectsApi.list(undefined, signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  return <UserDeliverablesPage projects={projects} onUpdateProject={onUpdateProject} />
+}
+
 function AppContent() {
   const navigate = useNavigate()
   const location = useLocation()
   const pathname = location.pathname
   const { user } = useAuth()
+  const queryClient = useQueryClient()
   const isAdmin = useMemo(() => {
     if (!user) return false
     const role = (user.role_name || '').toLowerCase().trim()
     return role === 'admin'
   }, [user])
 
-  const [leads, setLeads] = useState<Lead[]>([])
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
-
-  const [projects, setProjects] = useState<Project[]>([])
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [projectPrefillData, setProjectPrefillData] = useState<Partial<Project> | null>(null)
-
-  const [orders, setOrders] = useState<Order[]>([])
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
 
-  const [sessions, setSessions] = useState<ProjectSession[]>([])
-
-  useEffect(() => {
-    if (pathname.startsWith('/leads')) {
-      leadsApi.list().then(setLeads).catch((err) => console.error('Failed to load leads:', err))
-    } else if (pathname.startsWith('/projects')) {
-      projectsApi.list().then(setProjects).catch((err) => console.error('Failed to load projects:', err))
-    } else if (pathname.startsWith('/sessions')) {
-      sessionsApi.list().then(setSessions).catch((err) => console.error('Failed to load sessions:', err))
-    } else if (pathname.startsWith('/orders')) {
-      ordersApi.list().then(setOrders).catch((err) => console.error('Failed to load orders:', err))
-    }
-  }, [pathname])
-
-  // Derive current route key for sidebar active states
   const currentRoute = useMemo(() => {
     if (pathname.startsWith('/projects')) return 'projects'
     if (pathname.startsWith('/sessions')) return 'sessions-list'
@@ -196,32 +441,30 @@ function AppContent() {
     return 'master-data'
   }, [pathname])
 
-  // Session Handlers
   const handleSaveSession = (savedSession: ProjectSession) => {
-    const exists = sessions.some((s) => s.id === savedSession.id)
-    if (exists) {
-      sessionsApi.update(savedSession.id, savedSession).then((updated) => {
-        setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
+    if (savedSession.id) {
+      sessionsApi.update(savedSession.id, savedSession).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['sessions'] })
+        toast.success('Session updated successfully')
       }).catch((err) => toast.error(err.message || 'Failed to update session'))
     } else {
-      sessionsApi.create(savedSession).then((created) => {
-        setSessions((prev) => [created, ...prev])
+      sessionsApi.create(savedSession).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['sessions'] })
+        toast.success('Session created successfully')
       }).catch((err) => toast.error(err.message || 'Failed to create session'))
     }
   }
 
   const handleDeleteSession = (sessionId: string) => {
     sessionsApi.delete(sessionId).then(() => {
-      setSessions((prev) => prev.filter((s) => s.id !== sessionId))
+      queryClient.invalidateQueries({ queryKey: ['sessions'] })
       toast.success('Session deleted')
     }).catch((err) => toast.error(err.message || 'Failed to delete session'))
   }
 
   const handleSessionStatusChange = (sessionId: string, newStatus: SessionStatus) => {
     sessionsApi.updateStatus(sessionId, newStatus).then(() => {
-      setSessions((prev) =>
-        prev.map((s) => (s.id === sessionId ? { ...s, status: newStatus } : s))
-      )
+      queryClient.invalidateQueries({ queryKey: ['sessions'] })
       toast.success(`Session status updated to ${newStatus}`)
     }).catch((err) => toast.error(err.message || 'Failed to update session status'))
   }
@@ -323,15 +566,15 @@ function AppContent() {
 
   // Lead CRUD
   const handleSaveLead = (leadToSave: Lead) => {
-    const exists = leads.some((l) => l.id === leadToSave.id)
-    if (exists) {
+    if (leadToSave.id) {
       leadsApi.update(leadToSave.id, leadToSave).then((saved) => {
-        setLeads((prev) => prev.map((l) => (l.id === saved.id ? saved : l)))
+        queryClient.invalidateQueries({ queryKey: ['leads'] })
+        queryClient.invalidateQueries({ queryKey: ['lead', leadToSave.id] })
         toast.success(`Lead "${saved.name}" updated successfully`)
       }).catch((err) => toast.error(err.message || 'Failed to update lead'))
     } else {
       leadsApi.create(leadToSave).then((saved) => {
-        setLeads((prev) => [saved, ...prev])
+        queryClient.invalidateQueries({ queryKey: ['leads'] })
         toast.success(`Lead "${saved.name}" created successfully`)
       }).catch((err) => toast.error(err.message || 'Failed to create lead'))
     }
@@ -339,7 +582,8 @@ function AppContent() {
 
   const handleDeleteLead = (leadId: string) => {
     leadsApi.delete(leadId).then(() => {
-      setLeads((prev) => prev.filter((l) => l.id !== leadId))
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['lead', leadId] })
       toast.success('Lead deleted successfully')
     }).catch((err) => toast.error(err.message || 'Failed to delete lead'))
   }
@@ -351,31 +595,23 @@ function AppContent() {
     else if (newStage === 'converted') newSubStage = 'Booked'
 
     leadsApi.updateStage(leadId, newStage, newSubStage as any).then(() => {
-      setLeads((prev) =>
-        prev.map((lead) => {
-          if (lead.id !== leadId) return lead
-          return {
-            ...lead,
-            pipelineStage: newStage,
-            leadStage: newSubStage as any,
-          }
-        })
-      )
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['lead', leadId] })
       toast.success(`Lead moved to ${newStage.replace('_', ' ').toUpperCase()}`)
     }).catch((err) => toast.error(err.message || 'Failed to update lead stage'))
   }
 
   // Project CRUD
   const handleSaveProject = (projectToSave: Project) => {
-    const exists = projects.some((p) => p.id === projectToSave.id)
-    if (exists) {
+    if (projectToSave.id) {
       projectsApi.update(projectToSave.id, projectToSave).then((saved) => {
-        setProjects((prev) => prev.map((p) => (p.id === saved.id ? saved : p)))
+        queryClient.invalidateQueries({ queryKey: ['projects'] })
+        queryClient.invalidateQueries({ queryKey: ['project', projectToSave.id] })
         toast.success(`Project "${saved.projectName}" updated successfully`)
       }).catch((err) => toast.error(err.message || 'Failed to update project'))
     } else {
       projectsApi.create(projectToSave).then((saved) => {
-        setProjects((prev) => [saved, ...prev])
+        queryClient.invalidateQueries({ queryKey: ['projects'] })
         toast.success(`Project "${saved.projectName}" created successfully`)
       }).catch((err) => toast.error(err.message || 'Failed to create project'))
     }
@@ -383,19 +619,16 @@ function AppContent() {
 
   const handleDeleteProject = (projectId: string) => {
     projectsApi.delete(projectId).then(() => {
-      setProjects((prev) => prev.filter((p) => p.id !== projectId))
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] })
       toast.success('Project deleted successfully')
     }).catch((err) => toast.error(err.message || 'Failed to delete project'))
   }
 
   const handleProjectStageChange = (projectId: string, newStage: ProjectStage) => {
     projectsApi.updateStage(projectId, newStage).then(() => {
-      setProjects((prev) =>
-        prev.map((p) => {
-          if (p.id !== projectId) return p
-          return { ...p, stage: newStage }
-        })
-      )
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] })
       toast.success(`Project moved to stage ${newStage}`)
     }).catch((err) => toast.error(err.message || 'Failed to update project stage'))
   }
@@ -417,15 +650,15 @@ function AppContent() {
   }
 
   const handleSaveOrder = (savedOrder: Order) => {
-    const exists = orders.some((o) => o.id === savedOrder.id)
-    if (exists) {
-      ordersApi.update(savedOrder.id, savedOrder).then((updated) => {
-        setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
+    if (savedOrder.id) {
+      ordersApi.update(savedOrder.id, savedOrder).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+        queryClient.invalidateQueries({ queryKey: ['order', savedOrder.id] })
         toast.success('Order updated successfully')
       }).catch((err) => toast.error(err.message || 'Failed to update order'))
     } else {
-      ordersApi.create(savedOrder).then((created) => {
-        setOrders((prev) => [created, ...prev])
+      ordersApi.create(savedOrder).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
         toast.success('Order created successfully')
       }).catch((err) => toast.error(err.message || 'Failed to create order'))
     }
@@ -434,19 +667,16 @@ function AppContent() {
 
   const handleDeleteOrder = (orderId: string) => {
     ordersApi.delete(orderId).then(() => {
-      setOrders((prev) => prev.filter((o) => o.id !== orderId))
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+      queryClient.invalidateQueries({ queryKey: ['order', orderId] })
       toast.success('Order deleted successfully')
     }).catch((err) => toast.error(err.message || 'Failed to delete order'))
   }
 
   const handleOrderStageChange = (orderId: string, newStage: OrderStage) => {
     ordersApi.updateStage(orderId, newStage).then(() => {
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id !== orderId) return o
-          return { ...o, stage: newStage }
-        })
-      )
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+      queryClient.invalidateQueries({ queryKey: ['order', orderId] })
       toast.success(`Order stage updated to ${newStage}`)
     }).catch((err) => toast.error(err.message || 'Failed to update order stage'))
   }
@@ -626,8 +856,7 @@ function AppContent() {
               <Route
                 path="/projects"
                 element={
-                  <ProjectsPage
-                    projects={projects}
+                  <ProjectsPageContainer
                     onAddNewProject={handleNavigateToCreateProject}
                     onEditProject={handleNavigateToEditProject}
                     onDeleteProject={handleDeleteProject}
@@ -649,7 +878,6 @@ function AppContent() {
                 path="/projects/edit/:id"
                 element={
                   <ProjectEditPageWrapper
-                    projects={projects}
                     editingProject={editingProject}
                     onBack={handleNavigateToProjectsList}
                     onSave={handleSaveProject}
@@ -661,14 +889,10 @@ function AppContent() {
               <Route
                 path="/sessions"
                 element={
-                  <SessionsPage
-                    sessions={sessions}
-                    onAddNewSession={() => { }}
-                    onEditSession={() => { }}
+                  <SessionsPageContainer
                     onDeleteSession={handleDeleteSession}
                     onStatusChange={handleSessionStatusChange}
                     onSaveSession={handleSaveSession}
-                    existingProjectNames={projects.map((p) => p.projectName)}
                   />
                 }
               />
@@ -676,8 +900,7 @@ function AppContent() {
               <Route
                 path="/leads"
                 element={
-                  <LeadsPage
-                    leads={leads}
+                  <LeadsPageContainer
                     onAddNewLead={handleNavigateToCreateLead}
                     onEditLead={handleNavigateToEditLead}
                     onDeleteLead={handleDeleteLead}
@@ -700,7 +923,6 @@ function AppContent() {
                 path="/leads/edit/:id"
                 element={
                   <LeadEditPageWrapper
-                    leads={leads}
                     editingLead={editingLead}
                     onBack={handleNavigateToLeadsList}
                     onSave={handleSaveLead}
@@ -713,8 +935,7 @@ function AppContent() {
               <Route
                 path="/orders"
                 element={
-                  <OrdersPage
-                    orders={orders}
+                  <OrdersPageContainer
                     onAddNewOrder={handleNavigateToCreateOrder}
                     onEditOrder={handleNavigateToEditOrder}
                     onDeleteOrder={handleDeleteOrder}
@@ -725,11 +946,10 @@ function AppContent() {
               <Route
                 path="/orders/create"
                 element={
-                  <OrderFormPage
+                  <OrderFormPageWrapper
                     initialOrder={editingOrder}
                     onBack={handleNavigateToOrdersList}
                     onSave={handleSaveOrder}
-                    existingProjectOptions={projects.map((p) => ({ id: p.id, name: p.projectName }))}
                   />
                 }
               />
@@ -737,11 +957,9 @@ function AppContent() {
                 path="/orders/edit/:id"
                 element={
                   <OrderEditPageWrapper
-                    orders={orders}
                     editingOrder={editingOrder}
                     onBack={handleNavigateToOrdersList}
                     onSave={handleSaveOrder}
-                    existingProjectOptions={projects.map((p) => ({ id: p.id, name: p.projectName }))}
                   />
                 }
               />
@@ -809,24 +1027,21 @@ function AppContent() {
               {/* User Portal Pages */}
               <Route
                 path="/home"
-                element={<UserHomePage sessions={sessions} projects={projects} />}
+                element={<UserHomePageContainer />}
               />
               <Route
                 path="/shoots"
                 element={
-                  <UserShootsPage
-                    sessions={sessions}
+                  <UserShootsPageContainer
                     onSaveSession={handleSaveSession}
                     onStatusChange={handleSessionStatusChange}
-                    existingProjectNames={projects.map((p) => p.projectName)}
                   />
                 }
               />
               <Route
                 path="/tasks"
                 element={
-                  <UserTasksPage
-                    projects={projects}
+                  <UserTasksPageContainer
                     onUpdateProject={handleSaveProject}
                   />
                 }
@@ -834,8 +1049,7 @@ function AppContent() {
               <Route
                 path="/deliverables"
                 element={
-                  <UserDeliverablesPage
-                    projects={projects}
+                  <UserDeliverablesPageContainer
                     onUpdateProject={handleSaveProject}
                   />
                 }
@@ -852,36 +1066,63 @@ function AppContent() {
 }
 
 function LeadEditPageWrapper({
-  leads,
   editingLead,
   onBack,
   onSave,
 }: {
-  leads: Lead[]
   editingLead: Lead | null
   onBack: () => void
   onSave: (l: Lead) => void
 }) {
   const { id } = useParams<{ id: string }>()
-  const targetLead = editingLead || leads.find((l) => l.id === id) || null
+  const { data: fetchedLead, isLoading } = useQuery({
+    queryKey: ['lead', id],
+    queryFn: ({ signal }) => (id ? leadsApi.get(id, signal) : Promise.reject('No ID')),
+    enabled: !editingLead && !!id,
+    staleTime: 60_000,
+  })
+
+  const targetLead = editingLead || fetchedLead || null
+
+  if (!editingLead && isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-xs text-muted-foreground">
+        Loading lead details...
+      </div>
+    )
+  }
+
   return <LeadFormPage initialLead={targetLead} onBack={onBack} onSave={onSave} />
 }
 
 function ProjectEditPageWrapper({
-  projects,
   editingProject,
   onBack,
   onSave,
   onDelete,
 }: {
-  projects: Project[]
   editingProject: Project | null
   onBack: () => void
   onSave: (p: Project) => void
   onDelete: (id: string) => void
 }) {
   const { id } = useParams<{ id: string }>()
-  const targetProject = editingProject || projects.find((p) => p.id === id) || null
+  const { data: fetchedProject, isLoading } = useQuery({
+    queryKey: ['project', id],
+    queryFn: ({ signal }) => (id ? projectsApi.get(id, signal) : Promise.reject('No ID')),
+    enabled: !editingProject && !!id,
+    staleTime: 60_000,
+  })
+
+  const targetProject = editingProject || fetchedProject || null
+
+  if (!editingProject && isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-xs text-muted-foreground">
+        Loading project details...
+      </div>
+    )
+  }
 
   if (!targetProject) {
     return <Navigate to="/projects" replace />
@@ -898,27 +1139,45 @@ function ProjectEditPageWrapper({
 }
 
 function OrderEditPageWrapper({
-  orders,
   editingOrder,
   onBack,
   onSave,
-  existingProjectOptions,
 }: {
-  orders: Order[]
   editingOrder: Order | null
   onBack: () => void
   onSave: (o: Order) => void
-  existingProjectOptions: { id: string; name: string }[]
 }) {
   const { id } = useParams<{ id: string }>()
-  const targetOrder = editingOrder || orders.find((o) => o.id === id) || null
+  const { data: fetchedOrder, isLoading } = useQuery({
+    queryKey: ['order', id],
+    queryFn: ({ signal }) => (id ? ordersApi.get(id, signal) : Promise.reject('No ID')),
+    enabled: !editingOrder && !!id,
+    staleTime: 60_000,
+  })
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: ({ signal }) => projectsApi.list(undefined, signal),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
+  const targetOrder = editingOrder || fetchedOrder || null
+
+  if (!editingOrder && isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-xs text-muted-foreground">
+        Loading order details...
+      </div>
+    )
+  }
 
   return (
     <OrderFormPage
       initialOrder={targetOrder}
       onBack={onBack}
       onSave={onSave}
-      existingProjectOptions={existingProjectOptions}
+      existingProjectOptions={projects.map((p) => ({ id: p.id, name: p.projectName }))}
     />
   )
 }

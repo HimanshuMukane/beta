@@ -6,20 +6,21 @@ import (
 
 	"core/utils"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 func parseJSONColumn(data any, target any) {
 	if data == nil {
 		return
 	}
-	switch v := data.(type) {
+	switch rawValue := data.(type) {
 	case []byte:
-		if len(v) > 0 {
-			_ = json.Unmarshal(v, target)
+		if len(rawValue) > 0 {
+			_ = json.Unmarshal(rawValue, target)
 		}
 	case string:
-		if len(v) > 0 {
-			_ = json.Unmarshal([]byte(v), target)
+		if len(rawValue) > 0 {
+			_ = json.Unmarshal([]byte(rawValue), target)
 		}
 	}
 }
@@ -28,95 +29,100 @@ func toJSONBytes(data any) []byte {
 	if data == nil {
 		return []byte("[]")
 	}
-	b, err := json.Marshal(data)
-	if err != nil {
+	byteData, marshalErr := json.Marshal(data)
+	if marshalErr != nil {
 		return []byte("[]")
 	}
-	return b
+	return byteData
 }
 
-
-func StudioSettingsGetHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+func StudioSettingsGetHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), "SELECT setting_key, data FROM studio_settings WHERE tenant_id = ?", tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to retrieve studio settings", err)
+	rows, queryErr := database.QueryContext(request.Context(), "SELECT setting_key, data FROM studio_settings WHERE tenant_id = ?", tenantID)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to retrieve studio settings", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	settings := make(map[string]any)
+	var settings = make(map[string]any)
 	for rows.Next() {
-		var key string
-		var dataRaw []byte
-		if err := rows.Scan(&key, &dataRaw); err != nil {
-			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read setting", err)
+		var settingKey string
+		var rawData []byte
+		var scanErr error = rows.Scan(&settingKey, &rawData)
+		if scanErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read setting", scanErr)
 			return
 		}
-		var val any
-		parseJSONColumn(dataRaw, &val)
-		settings[key] = val
+		var parsedValue any
+		parseJSONColumn(rawData, &parsedValue)
+		settings[settingKey] = parsedValue
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating settings", err)
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Error iterating settings", iterationErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, settings)
+	utils.WriteJSON(responseWriter, http.StatusOK, settings)
 }
 
-func StudioSettingsSaveHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+func StudioSettingsSaveHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
-		return
-	}
-
-	var payload map[string]any
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	tx, err := db.BeginTxx(r.Context(), nil)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to begin transaction", err)
+	var requestPayload map[string]any
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-	defer tx.Rollback()
 
-	for k, v := range payload {
-		b := toJSONBytes(v)
-		settingID := uuid.New().String()
-		_, err := tx.ExecContext(r.Context(), `
+	transaction, txErr := database.BeginTxx(request.Context(), nil)
+	if txErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to begin transaction", txErr)
+		return
+	}
+	defer transaction.Rollback()
+
+	for settingKey, settingValue := range requestPayload {
+		var bytePayload []byte = toJSONBytes(settingValue)
+		var settingID string = uuid.New().String()
+		_, execErr := transaction.ExecContext(request.Context(), `
 			INSERT INTO studio_settings (id, tenant_id, setting_key, data)
 			VALUES (?, ?, ?, ?)
 			ON DUPLICATE KEY UPDATE data = VALUES(data), updated_at = NOW(6)
-		`, settingID, tid, k, b)
-		if err != nil {
-			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to save studio settings", err)
+		`, settingID, tenantID, settingKey, bytePayload)
+		if execErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to save studio settings", execErr)
 			return
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to commit studio settings", err)
+	var commitErr error = transaction.Commit()
+	if commitErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to commit studio settings", commitErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var successResponse = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
 }
-

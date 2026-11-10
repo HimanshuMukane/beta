@@ -2,8 +2,8 @@ import { apiClient } from '@repo/ui/lib/api-client'
 import type { ProjectSession, SessionStatus } from '../types/session'
 
 export const sessionsApi = {
-  list: async (): Promise<ProjectSession[]> => {
-    return apiClient<ProjectSession[]>('/api/sessions')
+  list: async (signal?: AbortSignal): Promise<ProjectSession[]> => {
+    return apiClient<ProjectSession[]>('/api/sessions', { signal })
   },
   create: async (session: Partial<ProjectSession>): Promise<ProjectSession> => {
     return apiClient<ProjectSession>('/api/sessions', {

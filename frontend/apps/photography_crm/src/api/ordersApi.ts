@@ -2,8 +2,11 @@ import { apiClient } from '@repo/ui/lib/api-client'
 import type { Order, OrderStage } from '../types/order'
 
 export const ordersApi = {
-  list: async (): Promise<Order[]> => {
-    return apiClient<Order[]>('/api/orders')
+  list: async (signal?: AbortSignal): Promise<Order[]> => {
+    return apiClient<Order[]>('/api/orders', { signal })
+  },
+  get: async (id: string, signal?: AbortSignal): Promise<Order> => {
+    return apiClient<Order>(`/api/orders/${id}`, { signal })
   },
   create: async (order: Partial<Order>): Promise<Order> => {
     return apiClient<Order>('/api/orders', {

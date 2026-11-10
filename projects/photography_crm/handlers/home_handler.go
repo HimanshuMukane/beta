@@ -6,6 +6,15 @@ import (
 	"core/utils"
 )
 
-func HomeHandler(w http.ResponseWriter, _ *http.Request) {
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok", "service": "photography_crm"})
+type ServiceStatusResponse struct {
+	Status  string `json:"status"`
+	Service string `json:"service"`
+}
+
+func HomeHandler(responseWriter http.ResponseWriter, _ *http.Request) {
+	var serviceStatus = ServiceStatusResponse{
+		Status:  "ok",
+		Service: "photography_crm",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, serviceStatus)
 }

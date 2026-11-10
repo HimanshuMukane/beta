@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type RoleItem struct {
@@ -16,179 +17,118 @@ type RoleItem struct {
 	Name string `json:"name"`
 }
 
-func RolesListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+type CreateRoleRequest struct {
+	Name string `json:"name"`
+}
+
+func RolesListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), "SELECT id, name FROM roles WHERE LOWER(name) != 'admin' AND deleted_at IS NULL ORDER BY name ASC")
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to list roles",
-			},
-		})
+	rows, queryErr := database.QueryContext(request.Context(), "SELECT id, name FROM roles WHERE LOWER(name) != 'admin' AND deleted_at IS NULL ORDER BY name ASC")
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list roles", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	roles := make([]RoleItem, 0)
+	var roles = make([]RoleItem, 0)
 	for rows.Next() {
 		var role RoleItem
-		if err := rows.Scan(&role.ID, &role.Name); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"error": map[string]any{
-					"code":    "SCAN_ERROR",
-					"message": "Failed to read role item",
-				},
-			})
+		var scanErr error = rows.Scan(&role.ID, &role.Name)
+		if scanErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read role item", scanErr)
 			return
 		}
 		roles = append(roles, role)
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "ITERATION_ERROR",
-				"message": "Error iterating roles",
-			},
-		})
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Error iterating roles", iterationErr)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, roles)
+	utils.WriteJSON(responseWriter, http.StatusOK, roles)
 }
 
-func CreateRoleHandler(w http.ResponseWriter, r *http.Request) {
-	tc := utils.TenantFromContext(r.Context())
-	if tc == nil || strings.ToLower(tc.Role) != "admin" {
-		utils.WriteJSON(w, http.StatusForbidden, map[string]any{
-			"error": map[string]any{
-				"code":    "FORBIDDEN",
-				"message": "Only workspace administrators can create roles",
-			},
-		})
+func CreateRoleHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var tenantContext *utils.TenantContext = utils.TenantFromContext(request.Context())
+	if tenantContext == nil || strings.ToLower(tenantContext.Role) != "admin" {
+		utils.WriteError(responseWriter, http.StatusForbidden, "Only workspace administrators can create roles")
 		return
 	}
 
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
 
-	var req struct {
-		Name string `json:"name"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Invalid request body",
-			},
-		})
+	var requestPayload CreateRoleRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Role name is required",
-			},
-		})
+	var roleName string = strings.TrimSpace(requestPayload.Name)
+	if roleName == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Role name is required")
 		return
 	}
 
-	if strings.ToLower(name) == "admin" || strings.ToLower(name) == "superadmin" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Cannot create administrator roles",
-			},
-		})
+	if strings.ToLower(roleName) == "admin" || strings.ToLower(roleName) == "superadmin" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Cannot create administrator roles")
 		return
 	}
 
-	var existingID string
-	if err := db.QueryRowContext(r.Context(), "SELECT id FROM roles WHERE LOWER(name) = LOWER(?) AND deleted_at IS NULL", name).Scan(&existingID); err == nil && existingID != "" {
-		utils.WriteJSON(w, http.StatusOK, RoleItem{ID: existingID, Name: name})
+	var existingRoleID string
+	var existingErr error = database.QueryRowContext(request.Context(), "SELECT id FROM roles WHERE LOWER(name) = LOWER(?) AND deleted_at IS NULL", roleName).Scan(&existingRoleID)
+	if existingErr == nil && existingRoleID != "" {
+		var existingRole = RoleItem{ID: existingRoleID, Name: roleName}
+		utils.WriteJSON(responseWriter, http.StatusOK, existingRole)
 		return
 	}
 
-	id := uuid.New().String()
-	_, err := db.ExecContext(r.Context(), "INSERT INTO roles (id, name) VALUES (?, ?)", id, name)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to create role",
-			},
-		})
+	var roleID string = uuid.New().String()
+	_, insertErr := database.ExecContext(request.Context(), "INSERT INTO roles (id, name) VALUES (?, ?)", roleID, roleName)
+	if insertErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create role", insertErr)
 		return
 	}
-	utils.WriteJSON(w, http.StatusCreated, RoleItem{ID: id, Name: name})
+	var createdRole = RoleItem{ID: roleID, Name: roleName}
+	utils.WriteJSON(responseWriter, http.StatusCreated, createdRole)
 }
 
-func DeleteRoleHandler(w http.ResponseWriter, r *http.Request) {
-	tc := utils.TenantFromContext(r.Context())
-	if tc == nil || strings.ToLower(tc.Role) != "admin" {
-		utils.WriteJSON(w, http.StatusForbidden, map[string]any{
-			"error": map[string]any{
-				"code":    "FORBIDDEN",
-				"message": "Only workspace administrators can delete roles",
-			},
-		})
+func DeleteRoleHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var tenantContext *utils.TenantContext = utils.TenantFromContext(request.Context())
+	if tenantContext == nil || strings.ToLower(tenantContext.Role) != "admin" {
+		utils.WriteError(responseWriter, http.StatusForbidden, "Only workspace administrators can delete roles")
 		return
 	}
 
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
 
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Role ID is required",
-			},
-		})
+	var roleID string = chi.URLParam(request, "id")
+	if roleID == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Role ID is required")
 		return
 	}
 
-	var name string
-	if err := db.QueryRowContext(r.Context(), "SELECT name FROM roles WHERE id = ? AND deleted_at IS NULL", id).Scan(&name); err != nil {
-		utils.WriteJSON(w, http.StatusNotFound, map[string]any{
-			"error": map[string]any{
-				"code":    "NOT_FOUND",
-				"message": "Role not found",
-			},
-		})
+	var roleName string
+	var queryErr error = database.QueryRowContext(request.Context(), "SELECT name FROM roles WHERE id = ? AND deleted_at IS NULL", roleID).Scan(&roleName)
+	if queryErr != nil {
+		utils.WriteError(responseWriter, http.StatusNotFound, "Role not found")
 		return
 	}
 
-	systemRoles := map[string]bool{
+	var systemRoles = map[string]bool{
 		"admin":                    true,
 		"traditional photographer": true,
 		"candid photographer":      true,
@@ -198,25 +138,18 @@ func DeleteRoleHandler(w http.ResponseWriter, r *http.Request) {
 		"assistant":                true,
 	}
 
-	if systemRoles[strings.ToLower(name)] {
-		utils.WriteJSON(w, http.StatusForbidden, map[string]any{
-			"error": map[string]any{
-				"code":    "FORBIDDEN",
-				"message": "System default roles cannot be deleted",
-			},
-		})
+	if systemRoles[strings.ToLower(roleName)] {
+		utils.WriteError(responseWriter, http.StatusForbidden, "System default roles cannot be deleted")
 		return
 	}
 
-	_, err := db.ExecContext(r.Context(), "UPDATE roles SET deleted_at = NOW(6) WHERE id = ?", id)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to delete role",
-			},
-		})
+	_, deleteErr := database.ExecContext(request.Context(), "UPDATE roles SET deleted_at = NOW(6) WHERE id = ?", roleID)
+	if deleteErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete role", deleteErr)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var successResponse = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
 }

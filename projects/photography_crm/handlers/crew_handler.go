@@ -8,6 +8,7 @@ import (
 	"core/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type CrewMemberDTO struct {
@@ -24,23 +25,30 @@ type CrewMemberDTO struct {
 	Note        *string `json:"note,omitempty"`
 }
 
-func CrewMembersListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+type CreateCrewMemberRequest struct {
+	FullName    string `json:"fullName"`
+	FirstName   string `json:"firstName"`
+	LastName    string `json:"lastName"`
+	Email       string `json:"email"`
+	MobileNo    string `json:"mobileNo"`
+	CountryCode string `json:"countryCode"`
+	Designation string `json:"designation"`
+	RoleID      string `json:"roleId"`
+	Note        string `json:"note"`
+}
+
+func CrewMembersListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), `
+	rows, queryErr := database.QueryContext(request.Context(), `
 		SELECT u.id, u.first_name, u.last_name, u.email, COALESCE(u.phone, ''),
 		       COALESCE(u.role_id, ''), COALESCE(r.name, '')
 		FROM users u
@@ -48,35 +56,31 @@ func CrewMembersListHandler(w http.ResponseWriter, r *http.Request) {
 		LEFT JOIN roles r ON r.id = u.role_id AND r.deleted_at IS NULL
 		WHERE u.deleted_at IS NULL AND (r.name IS NULL OR LOWER(r.name) != 'admin')
 		ORDER BY u.created_at DESC
-	`, tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to list crew members",
-			},
-		})
+	`, tenantID)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list crew members", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	members := make([]CrewMemberDTO, 0)
+	var crewMembers = make([]CrewMemberDTO, 0)
 	for rows.Next() {
-		var id, fn, ln, email, phone, roleID, roleName string
-		if err := rows.Scan(&id, &fn, &ln, &email, &phone, &roleID, &roleName); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read crew member"})
+		var memberID, firstName, lastName, email, phone, roleID, roleName string
+		var scanErr error = rows.Scan(&memberID, &firstName, &lastName, &email, &phone, &roleID, &roleName)
+		if scanErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read crew member", scanErr)
 			return
 		}
-		fullName := strings.TrimSpace(fn + " " + ln)
+		var fullName string = strings.TrimSpace(firstName + " " + lastName)
 		if fullName == "" {
-			fullName = fn
+			fullName = firstName
 		}
-		members = append(members, CrewMemberDTO{
-			ID:          id,
-			TenantID:    tid,
+		crewMembers = append(crewMembers, CrewMemberDTO{
+			ID:          memberID,
+			TenantID:    tenantID,
 			FullName:    fullName,
-			FirstName:   fn,
-			LastName:    ln,
+			FirstName:   firstName,
+			LastName:    lastName,
 			Email:       email,
 			MobileNo:    phone,
 			CountryCode: "+91",
@@ -84,181 +88,131 @@ func CrewMembersListHandler(w http.ResponseWriter, r *http.Request) {
 			Designation: roleName,
 		})
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating crew members"})
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Error iterating crew members", iterationErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, members)
+	utils.WriteJSON(responseWriter, http.StatusOK, crewMembers)
 }
 
-func CreateCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func CreateCrewMemberHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var req struct {
-		FullName    string `json:"fullName"`
-		FirstName   string `json:"firstName"`
-		LastName    string `json:"lastName"`
-		Email       string `json:"email"`
-		MobileNo    string `json:"mobileNo"`
-		CountryCode string `json:"countryCode"`
-		Designation string `json:"designation"`
-		RoleID      string `json:"roleId"`
-		Note        string `json:"note"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Invalid request body",
-			},
-		})
+	var requestPayload CreateCrewMemberRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	fullName := strings.TrimSpace(req.FullName)
-	firstName := strings.TrimSpace(req.FirstName)
-	lastName := strings.TrimSpace(req.LastName)
+	var fullName string = strings.TrimSpace(requestPayload.FullName)
+	var firstName string = strings.TrimSpace(requestPayload.FirstName)
+	var lastName string = strings.TrimSpace(requestPayload.LastName)
 
 	if fullName != "" && firstName == "" {
-		parts := strings.Fields(fullName)
-		firstName = parts[0]
-		if len(parts) > 1 {
-			lastName = strings.Join(parts[1:], " ")
+		var nameParts = strings.Fields(fullName)
+		firstName = nameParts[0]
+		if len(nameParts) > 1 {
+			lastName = strings.Join(nameParts[1:], " ")
 		}
 	}
 	if firstName == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "First name or full name is required",
-			},
-		})
+		utils.WriteError(responseWriter, http.StatusBadRequest, "First name or full name is required")
 		return
 	}
 
-	designation := strings.TrimSpace(req.Designation)
-	roleID := strings.TrimSpace(req.RoleID)
+	var designation string = strings.TrimSpace(requestPayload.Designation)
+	var roleID string = strings.TrimSpace(requestPayload.RoleID)
 
 	if roleID != "" {
 		var roleName string
-		if err := db.QueryRowContext(r.Context(), "SELECT name FROM roles WHERE id = ? AND deleted_at IS NULL", roleID).Scan(&roleName); err == nil {
+		var roleQueryErr error = database.QueryRowContext(request.Context(), "SELECT name FROM roles WHERE id = ? AND deleted_at IS NULL", roleID).Scan(&roleName)
+		if roleQueryErr == nil {
 			if strings.ToLower(roleName) == "admin" {
-				utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-					"error": map[string]any{
-						"code":    "VALIDATION_ERROR",
-						"message": "Cannot assign admin role to crew member",
-					},
-				})
+				utils.WriteError(responseWriter, http.StatusBadRequest, "Cannot assign admin role to crew member")
 				return
 			}
 			designation = roleName
 		}
 	} else if designation != "" {
 		if strings.ToLower(designation) == "admin" {
-			utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"error": map[string]any{
-					"code":    "VALIDATION_ERROR",
-					"message": "Cannot assign admin role to crew member",
-				},
-			})
+			utils.WriteError(responseWriter, http.StatusBadRequest, "Cannot assign admin role to crew member")
 			return
 		}
-		var matchedID string
-		if err := db.QueryRowContext(r.Context(), "SELECT id FROM roles WHERE LOWER(name) = LOWER(?) AND deleted_at IS NULL LIMIT 1", designation).Scan(&matchedID); err == nil {
-			roleID = matchedID
+		var matchedRoleID string
+		var matchErr error = database.QueryRowContext(request.Context(), "SELECT id FROM roles WHERE LOWER(name) = LOWER(?) AND deleted_at IS NULL LIMIT 1", designation).Scan(&matchedRoleID)
+		if matchErr == nil {
+			roleID = matchedRoleID
 		} else {
 			roleID = uuid.New().String()
-			_, _ = db.ExecContext(r.Context(), "INSERT INTO roles (id, name) VALUES (?, ?)", roleID, designation)
+			_, _ = database.ExecContext(request.Context(), "INSERT INTO roles (id, name) VALUES (?, ?)", roleID, designation)
 		}
 	}
 
-	userID := uuid.New().String()
-	email := strings.TrimSpace(req.Email)
+	var userID string = uuid.New().String()
+	var email string = strings.TrimSpace(requestPayload.Email)
 	if email == "" {
 		email = strings.ToLower(strings.ReplaceAll(firstName, " ", ".")) + "." + userID[:6] + "@especacrew.local"
 	}
-	phone := strings.TrimSpace(req.MobileNo)
+	var phone string = strings.TrimSpace(requestPayload.MobileNo)
 
-	tx, err := db.BeginTxx(r.Context(), nil)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to start transaction",
-			},
-		})
+	transaction, beginTxErr := database.BeginTxx(request.Context(), nil)
+	if beginTxErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to start transaction", beginTxErr)
 		return
 	}
-	defer tx.Rollback()
+	defer transaction.Rollback()
 
-	var rID *string
+	var roleIDPointer *string = nil
 	if roleID != "" {
-		rID = &roleID
+		roleIDPointer = &roleID
 	}
 
-	_, err = tx.ExecContext(r.Context(), `
+	_, insertUserErr := transaction.ExecContext(request.Context(), `
 		INSERT INTO users (id, first_name, last_name, email, phone, role_id)
 		VALUES (?, ?, ?, ?, ?, ?)
-	`, userID, firstName, lastName, email, phone, rID)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to create user",
-			},
-		})
+	`, userID, firstName, lastName, email, phone, roleIDPointer)
+	if insertUserErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create user", insertUserErr)
 		return
 	}
 
-	membershipID := uuid.New().String()
-	roleNameInMembership := designation
-	if roleNameInMembership == "" {
-		roleNameInMembership = "photographer"
+	var membershipID string = uuid.New().String()
+	var membershipRole string = designation
+	if membershipRole == "" {
+		membershipRole = "photographer"
 	}
 
-	_, err = tx.ExecContext(r.Context(), `
+	_, insertMembershipErr := transaction.ExecContext(request.Context(), `
 		INSERT INTO memberships (id, tenant_id, user_id, role, status)
 		VALUES (?, ?, ?, ?, 'active')
-	`, membershipID, tid, userID, roleNameInMembership)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to assign workspace membership",
-			},
-		})
+	`, membershipID, tenantID, userID, membershipRole)
+	if insertMembershipErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to assign workspace membership", insertMembershipErr)
 		return
 	}
 
-	if err := tx.Commit(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to commit crew member",
-			},
-		})
+	var commitErr error = transaction.Commit()
+	if commitErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to commit crew member", commitErr)
 		return
 	}
 
-	dispFullName := strings.TrimSpace(firstName + " " + lastName)
-	utils.WriteJSON(w, http.StatusCreated, CrewMemberDTO{
+	var displayFullName string = strings.TrimSpace(firstName + " " + lastName)
+	var createdCrewMember = CrewMemberDTO{
 		ID:          userID,
-		TenantID:    tid,
-		FullName:    dispFullName,
+		TenantID:    tenantID,
+		FullName:    displayFullName,
 		FirstName:   firstName,
 		LastName:    lastName,
 		Email:       email,
@@ -266,73 +220,54 @@ func CreateCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
 		CountryCode: "+91",
 		RoleID:      roleID,
 		Designation: designation,
-	})
+	}
+	utils.WriteJSON(responseWriter, http.StatusCreated, createdCrewMember)
 }
 
-func DeleteCrewMemberHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func DeleteCrewMemberHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "User ID is required",
-			},
-		})
+	var memberID string = chi.URLParam(request, "id")
+	if memberID == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "User ID is required")
 		return
 	}
 
-	tx, err := db.BeginTxx(r.Context(), nil)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to start transaction",
-			},
-		})
+	transaction, beginTxErr := database.BeginTxx(request.Context(), nil)
+	if beginTxErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to start transaction", beginTxErr)
 		return
 	}
-	defer tx.Rollback()
+	defer transaction.Rollback()
 
-	_, _ = tx.ExecContext(r.Context(), `
+	_, _ = transaction.ExecContext(request.Context(), `
 		UPDATE memberships SET deleted_at = NOW(6) WHERE user_id = ? AND tenant_id = ?
-	`, id, tid)
+	`, memberID, tenantID)
 
-	_, err = tx.ExecContext(r.Context(), `
+	_, updateErr := transaction.ExecContext(request.Context(), `
 		UPDATE users SET deleted_at = NOW(6) WHERE id = ?
-	`, id)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to delete crew member",
-			},
-		})
+	`, memberID)
+	if updateErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete crew member", updateErr)
 		return
 	}
 
-	if err := tx.Commit(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to commit delete",
-			},
-		})
+	var commitErr error = transaction.Commit()
+	if commitErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to commit delete", commitErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var successResponse = ActionStatusResponse{
+		Success: true,
+		Message: "Crew member deleted successfully",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
 }

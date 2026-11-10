@@ -11,6 +11,7 @@ export function getCsrfToken(): string | null {
 
 export interface ApiRequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>
+  signal?: AbortSignal
 }
 
 // apiClient performs fetch requests with credentials="include" and automatic CSRF header injection for mutations

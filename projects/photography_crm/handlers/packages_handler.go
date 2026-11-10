@@ -8,6 +8,7 @@ import (
 	"core/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type PackageServiceItemDTO struct {
@@ -35,382 +36,329 @@ type PackageDTO struct {
 	Deliverables  []string                 `json:"deliverables"`
 }
 
-func getStringVal(v any) string {
-	if v == nil {
+type CreatePackageRequest struct {
+	Name          string                   `json:"name"`
+	Description   string                   `json:"description"`
+	TotalCost     int64                    `json:"totalCost"`
+	ServiceGroups []PackageServiceGroupDTO `json:"serviceGroups"`
+	Deliverables  []string                 `json:"deliverables"`
+}
+
+type UpdatePackageRequest struct {
+	Name          string                   `json:"name"`
+	Description   string                   `json:"description"`
+	TotalCost     int64                    `json:"totalCost"`
+	ServiceGroups []PackageServiceGroupDTO `json:"serviceGroups"`
+	Deliverables  []string                 `json:"deliverables"`
+}
+
+func getStringVal(value any) string {
+	if value == nil {
 		return ""
 	}
-	if s, ok := v.(string); ok {
-		return s
+	if stringVal, ok := value.(string); ok {
+		return stringVal
 	}
 	return ""
 }
 
-func getInt64Val(v any) int64 {
-	if v == nil {
+func getInt64Val(value any) int64 {
+	if value == nil {
 		return 0
 	}
-	switch n := v.(type) {
+	switch numberVal := value.(type) {
 	case float64:
-		return int64(n)
+		return int64(numberVal)
 	case int64:
-		return n
+		return numberVal
 	case int:
-		return int64(n)
+		return int64(numberVal)
 	}
 	return 0
 }
 
-func parsePackageServiceGroups(raw []byte) ([]PackageServiceGroupDTO, error) {
-	if len(raw) == 0 {
+func parsePackageServiceGroups(rawBytes []byte) ([]PackageServiceGroupDTO, error) {
+	if len(rawBytes) == 0 {
 		return []PackageServiceGroupDTO{}, nil
 	}
-	var out []PackageServiceGroupDTO
-	if err := json.Unmarshal(raw, &out); err != nil {
+	var directGroups []PackageServiceGroupDTO
+	var unmarshalErr error = json.Unmarshal(rawBytes, &directGroups)
+	if unmarshalErr != nil {
 		var rawGroups []map[string]any
-		if errLegacy := json.Unmarshal(raw, &rawGroups); errLegacy == nil {
-			result := make([]PackageServiceGroupDTO, 0, len(rawGroups))
-			for _, g := range rawGroups {
-				gName := getStringVal(g["group_name"])
-				if gName == "" {
-					gName = getStringVal(g["groupName"])
+		var legacyErr error = json.Unmarshal(rawBytes, &rawGroups)
+		if legacyErr == nil {
+			var result = make([]PackageServiceGroupDTO, 0, len(rawGroups))
+			for _, groupMap := range rawGroups {
+				var groupName string = getStringVal(groupMap["group_name"])
+				if groupName == "" {
+					groupName = getStringVal(groupMap["groupName"])
 				}
-				gDTO := PackageServiceGroupDTO{
-					GroupName: gName,
+				var groupDTO = PackageServiceGroupDTO{
+					GroupName: groupName,
 					Services:  make([]PackageServiceItemDTO, 0),
 				}
-				if svcs, ok := g["services"].([]any); ok {
-					for _, s := range svcs {
-						if sm, ok := s.(map[string]any); ok {
-							cost := getInt64Val(sm["cost"])
+				if servicesList, ok := groupMap["services"].([]any); ok {
+					for _, serviceItem := range servicesList {
+						if serviceMap, ok := serviceItem.(map[string]any); ok {
+							var cost int64 = getInt64Val(serviceMap["cost"])
 							if cost == 0 {
-								cost = getInt64Val(sm["amount"])
+								cost = getInt64Val(serviceMap["amount"])
 							}
-							qty := int(getInt64Val(sm["quantity"]))
-							if qty == 0 {
-								qty = int(getInt64Val(sm["qty"]))
+							var quantity int = int(getInt64Val(serviceMap["quantity"]))
+							if quantity == 0 {
+								quantity = int(getInt64Val(serviceMap["qty"]))
 							}
-							if qty == 0 {
-								qty = 1
+							if quantity == 0 {
+								quantity = 1
 							}
-							gDTO.Services = append(gDTO.Services, PackageServiceItemDTO{
-								Name:     getStringVal(sm["name"]),
+							groupDTO.Services = append(groupDTO.Services, PackageServiceItemDTO{
+								Name:     getStringVal(serviceMap["name"]),
 								Cost:     cost,
-								Quantity: qty,
+								Quantity: quantity,
 							})
 						}
 					}
 				}
-				result = append(result, gDTO)
+				result = append(result, groupDTO)
 			}
 			return result, nil
 		}
-		return []PackageServiceGroupDTO{}, err
+		return []PackageServiceGroupDTO{}, unmarshalErr
 	}
-	if out == nil {
+	if directGroups == nil {
 		return []PackageServiceGroupDTO{}, nil
 	}
-	return out, nil
+	return directGroups, nil
 }
 
-func parsePackageDeliverables(raw []byte) ([]string, error) {
-	if len(raw) == 0 {
+func parsePackageDeliverables(rawBytes []byte) ([]string, error) {
+	if len(rawBytes) == 0 {
 		return []string{}, nil
 	}
-	var out []string
-	if err := json.Unmarshal(raw, &out); err == nil && out != nil {
-		return out, nil
+	var directDeliverables []string
+	var unmarshalErr error = json.Unmarshal(rawBytes, &directDeliverables)
+	if unmarshalErr == nil && directDeliverables != nil {
+		return directDeliverables, nil
 	}
 	var rawItems []any
-	if err := json.Unmarshal(raw, &rawItems); err == nil {
-		res := make([]string, 0, len(rawItems))
+	var fallbackErr error = json.Unmarshal(rawBytes, &rawItems)
+	if fallbackErr == nil {
+		var result = make([]string, 0, len(rawItems))
 		for _, item := range rawItems {
-			if s, ok := item.(string); ok {
-				res = append(res, s)
-			} else if m, ok := item.(map[string]any); ok {
-				if s, ok := m["name"].(string); ok && s != "" {
-					res = append(res, s)
+			if stringVal, ok := item.(string); ok {
+				result = append(result, stringVal)
+			} else if mapVal, ok := item.(map[string]any); ok {
+				if nameVal, ok := mapVal["name"].(string); ok && nameVal != "" {
+					result = append(result, nameVal)
 				}
 			}
 		}
-		return res, nil
-	} else {
-		return []string{}, err
+		return result, nil
 	}
+	return []string{}, fallbackErr
 }
 
-func PackagesListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func PackagesListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), `
+	rows, queryErr := database.QueryContext(request.Context(), `
 		SELECT id, tenant_id, name, COALESCE(description, ''), total_cost, service_groups, deliverables
 		FROM packages
 		WHERE tenant_id = ? AND deleted_at IS NULL
 		ORDER BY created_at DESC
-	`, tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to list packages",
-			},
-		})
+	`, tenantID)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list packages", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	packages := make([]PackageDTO, 0)
+	var packagesList = make([]PackageDTO, 0)
 	for rows.Next() {
-		var item PackageDTO
-		var rawSG, rawDel []byte
-		if err := rows.Scan(&item.ID, &item.TenantID, &item.Name, &item.Description, &item.TotalCost, &rawSG, &rawDel); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"error": map[string]any{
-					"code":    "SCAN_ERROR",
-					"message": "Failed to read package",
-				},
-			})
+		var packageItem PackageDTO
+		var rawServiceGroupsBytes []byte
+		var rawDeliverablesBytes []byte
+		var scanErr error = rows.Scan(
+			&packageItem.ID,
+			&packageItem.TenantID,
+			&packageItem.Name,
+			&packageItem.Description,
+			&packageItem.TotalCost,
+			&rawServiceGroupsBytes,
+			&rawDeliverablesBytes,
+		)
+		if scanErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read package", scanErr)
 			return
 		}
-		sg, errSG := parsePackageServiceGroups(rawSG)
-		if errSG != nil {
-			utils.WriteAppError(w, r, http.StatusInternalServerError, "Package contains corrupted service groups data", errSG)
+		parsedServiceGroups, sgErr := parsePackageServiceGroups(rawServiceGroupsBytes)
+		if sgErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Package contains corrupted service groups data", sgErr)
 			return
 		}
-		deliv, errDel := parsePackageDeliverables(rawDel)
-		if errDel != nil {
-			utils.WriteAppError(w, r, http.StatusInternalServerError, "Package contains corrupted deliverables data", errDel)
+		parsedDeliverables, delivErr := parsePackageDeliverables(rawDeliverablesBytes)
+		if delivErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Package contains corrupted deliverables data", delivErr)
 			return
 		}
-		item.ServiceGroups = sg
-		item.Deliverables = deliv
-		packages = append(packages, item)
+		packageItem.ServiceGroups = parsedServiceGroups
+		packageItem.Deliverables = parsedDeliverables
+		packagesList = append(packagesList, packageItem)
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "ITERATION_ERROR",
-				"message": "Error iterating packages",
-			},
-		})
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Error iterating packages", iterationErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, packages)
+	utils.WriteJSON(responseWriter, http.StatusOK, packagesList)
 }
 
-func CreatePackageHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func CreatePackageHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var req struct {
-		Name          string                   `json:"name"`
-		Description   string                   `json:"description"`
-		TotalCost     int64                    `json:"totalCost"`
-		ServiceGroups []PackageServiceGroupDTO `json:"serviceGroups"`
-		Deliverables  []string                 `json:"deliverables"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Invalid request body",
-			},
-		})
+	var requestPayload CreatePackageRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Package name is required",
-			},
-		})
+	var packageName string = strings.TrimSpace(requestPayload.Name)
+	if packageName == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Package name is required")
 		return
 	}
 
-	if req.ServiceGroups == nil {
-		req.ServiceGroups = []PackageServiceGroupDTO{}
+	if requestPayload.ServiceGroups == nil {
+		requestPayload.ServiceGroups = []PackageServiceGroupDTO{}
 	}
-	if req.Deliverables == nil {
-		req.Deliverables = []string{}
+	if requestPayload.Deliverables == nil {
+		requestPayload.Deliverables = []string{}
 	}
 
-	sgBytes, _ := json.Marshal(req.ServiceGroups)
-	delBytes, _ := json.Marshal(req.Deliverables)
+	serviceGroupsBytes, _ := json.Marshal(requestPayload.ServiceGroups)
+	deliverablesBytes, _ := json.Marshal(requestPayload.Deliverables)
 
-	id := uuid.New().String()
-	_, err := db.ExecContext(r.Context(), `
+	var packageID string = uuid.New().String()
+	_, insertErr := database.ExecContext(request.Context(), `
 		INSERT INTO packages (id, tenant_id, name, description, total_cost, service_groups, deliverables)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, id, tid, name, req.Description, req.TotalCost, sgBytes, delBytes)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to create package",
-			},
-		})
+	`, packageID, tenantID, packageName, requestPayload.Description, requestPayload.TotalCost, serviceGroupsBytes, deliverablesBytes)
+	if insertErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create package", insertErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, PackageDTO{
-		ID:            id,
-		TenantID:      tid,
-		Name:          name,
-		Description:   req.Description,
-		TotalCost:     req.TotalCost,
-		ServiceGroups: req.ServiceGroups,
-		Deliverables:  req.Deliverables,
-	})
+	var createdPackage = PackageDTO{
+		ID:            packageID,
+		TenantID:      tenantID,
+		Name:          packageName,
+		Description:   requestPayload.Description,
+		TotalCost:     requestPayload.TotalCost,
+		ServiceGroups: requestPayload.ServiceGroups,
+		Deliverables:  requestPayload.Deliverables,
+	}
+	utils.WriteJSON(responseWriter, http.StatusCreated, createdPackage)
 }
 
-func UpdatePackageHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func UpdatePackageHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Package ID is required",
-			},
-		})
+	var packageID string = chi.URLParam(request, "id")
+	if packageID == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Package ID is required")
 		return
 	}
 
-	var req struct {
-		Name          string                   `json:"name"`
-		Description   string                   `json:"description"`
-		TotalCost     int64                    `json:"totalCost"`
-		ServiceGroups []PackageServiceGroupDTO `json:"serviceGroups"`
-		Deliverables  []string                 `json:"deliverables"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Invalid request body",
-			},
-		})
+	var requestPayload UpdatePackageRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Package name is required",
-			},
-		})
+	var packageName string = strings.TrimSpace(requestPayload.Name)
+	if packageName == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Package name is required")
 		return
 	}
 
-	if req.ServiceGroups == nil {
-		req.ServiceGroups = []PackageServiceGroupDTO{}
+	if requestPayload.ServiceGroups == nil {
+		requestPayload.ServiceGroups = []PackageServiceGroupDTO{}
 	}
-	if req.Deliverables == nil {
-		req.Deliverables = []string{}
+	if requestPayload.Deliverables == nil {
+		requestPayload.Deliverables = []string{}
 	}
 
-	sgBytes, _ := json.Marshal(req.ServiceGroups)
-	delBytes, _ := json.Marshal(req.Deliverables)
+	serviceGroupsBytes, _ := json.Marshal(requestPayload.ServiceGroups)
+	deliverablesBytes, _ := json.Marshal(requestPayload.Deliverables)
 
-	_, err := db.ExecContext(r.Context(), `
+	_, updateErr := database.ExecContext(request.Context(), `
 		UPDATE packages
 		SET name = ?, description = ?, total_cost = ?, service_groups = ?, deliverables = ?, updated_at = NOW(6)
 		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
-	`, name, req.Description, req.TotalCost, sgBytes, delBytes, id, tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to update package",
-			},
-		})
+	`, packageName, requestPayload.Description, requestPayload.TotalCost, serviceGroupsBytes, deliverablesBytes, packageID, tenantID)
+	if updateErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update package", updateErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var successResponse = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
 }
 
-func DeletePackageHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func DeletePackageHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Package ID is required",
-			},
-		})
+	var packageID string = chi.URLParam(request, "id")
+	if packageID == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Package ID is required")
 		return
 	}
 
-	_, err := db.ExecContext(r.Context(), `
+	_, deleteErr := database.ExecContext(request.Context(), `
 		UPDATE packages SET deleted_at = NOW(6) WHERE id = ? AND tenant_id = ?
-	`, id, tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to delete package",
-			},
-		})
+	`, packageID, tenantID)
+	if deleteErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete package", deleteErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var successResponse = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
 }

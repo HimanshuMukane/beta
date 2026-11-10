@@ -10,24 +10,24 @@ import (
 	"photography_crm/handlers"
 )
 
-func SetupRouter(pool *utils.DBPool, cfg utils.Config) http.Handler {
-	r := chi.NewRouter()
+func SetupRouter(databasePool *utils.DBPool, configuration utils.Config) http.Handler {
+	var router *chi.Mux = chi.NewRouter()
 
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RequestLogger)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.SecurityHeaders)
-	r.Use(middleware.CSRFProtection)
-	r.Use(middleware.DatabaseRoutingMiddleware(pool, cfg))
-	r.Use(middleware.TenantContextMiddleware)
+	router.Use(middleware.RequestID)
+	router.Use(middleware.RequestLogger)
+	router.Use(middleware.Recoverer)
+	router.Use(middleware.SecurityHeaders)
+	router.Use(middleware.CSRFProtection)
+	router.Use(middleware.DatabaseRoutingMiddleware(databasePool, configuration))
+	router.Use(middleware.TenantContextMiddleware)
 
-	r.MethodNotAllowed(func(w http.ResponseWriter, req *http.Request) {
-		handlers.NotFoundHandler(w, req)
+	router.MethodNotAllowed(func(responseWriter http.ResponseWriter, request *http.Request) {
+		handlers.NotFoundHandler(responseWriter, request)
 	})
-	r.NotFound(handlers.NotFoundHandler)
+	router.NotFound(handlers.NotFoundHandler)
 
-	RegisterBackendRoutes(r, pool, cfg)
-	RegisterFrontendRoutes(r, cfg)
+	RegisterBackendRoutes(router, databasePool, configuration)
+	RegisterFrontendRoutes(router, configuration)
 
-	return r
+	return router
 }

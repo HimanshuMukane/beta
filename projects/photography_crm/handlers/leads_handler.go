@@ -10,7 +10,13 @@ import (
 	"core/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
+
+type LeadAssigneeDTO struct {
+	Name     string `json:"name"`
+	Initials string `json:"initials"`
+}
 
 type LeadDTO struct {
 	ID                   string `json:"id"`
@@ -43,18 +49,53 @@ type LeadDTO struct {
 	TaxAmount            int64  `json:"taxAmount"`
 }
 
-func LeadsListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+type UpdateLeadStageRequest struct {
+	PipelineStage string `json:"pipelineStage"`
+	LeadStage     string `json:"leadStage"`
+}
+
+type LeadStageUpdateResponse struct {
+	Status        string `json:"status"`
+	ID            string `json:"id"`
+	PipelineStage string `json:"pipelineStage"`
+	LeadStage     string `json:"leadStage"`
+}
+
+type LeadDeleteResponse struct {
+	Status string `json:"status"`
+	ID     string `json:"id"`
+}
+
+type LeadConversionResponse struct {
+	Status      string `json:"status"`
+	ProjectID   string `json:"projectId"`
+	ProjectName string `json:"projectName"`
+}
+
+type ProjectFinanceSummary struct {
+	Profit             int64 `json:"profit"`
+	CurrentProfit      int64 `json:"currentProfit"`
+	NetPayableAmount   int64 `json:"netPayableAmount"`
+	PaidAmount         int64 `json:"paidAmount"`
+	BalanceAmount      int64 `json:"balanceAmount"`
+	PaymentDue         int64 `json:"paymentDue"`
+	Expense            int64 `json:"expense"`
+	EventDiscountAmount int64 `json:"eventDiscountAmount"`
+	PaymentHistory     []any `json:"paymentHistory"`
+}
+
+func LeadsListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), `
+	rows, queryErr := database.QueryContext(request.Context(), `
 		SELECT id, name, mobile_no, country_code, email, address, lead_source, generate,
 		       assignee_name, assignee_initials, lead_pipeline, pipeline_stage, lead_stage,
 		       quote_amount, followup_date, project_type, quote_type, project_start_date,
@@ -64,87 +105,118 @@ func LeadsListHandler(w http.ResponseWriter, r *http.Request) {
 		FROM leads
 		WHERE tenant_id = ? AND deleted_at IS NULL
 		ORDER BY created_at DESC
-	`, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list leads", err)
+	`, tenantID)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list leads", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	result := make([]LeadDTO, 0)
+	var leadsList = make([]LeadDTO, 0)
 	for rows.Next() {
 		var (
-			id, name, mobileNo, countryCode, email, address, leadSource, generate string
-			assigneeName, assigneeInit, leadPipeline, pipelineStage, leadStage    string
-			followupDate, projectType, quoteType, projStartDate, projEndDate      string
-			projName, projAddress, pkgName, quotTemplate                          string
-			quoteAmount, discountAmount, taxAmount                                int64
-			createdAt                                                             time.Time
-			segmentsRaw, servicesRaw, deliverablesRaw                             []byte
+			leadID               string
+			leadName             string
+			mobileNumber         string
+			countryCode          string
+			email                string
+			address              string
+			leadSource           string
+			generate             string
+			assigneeName         string
+			assigneeInitials     string
+			leadPipeline         string
+			pipelineStage        string
+			leadStage            string
+			followupDate         string
+			projectType          string
+			quoteType            string
+			projectStartDate     string
+			projectEndDate       string
+			projectName          string
+			projectAddress       string
+			packageName          string
+			quotationTemplate    string
+			quoteAmount          int64
+			discountAmount       int64
+			taxAmount            int64
+			createdAt            time.Time
+			rawSegmentsBytes     []byte
+			rawServicesBytes     []byte
+			rawDeliverablesBytes []byte
 		)
 		var (
-			sAddr, sFollowup, sStartDate, sEndDate, sProjName, sProjAddr, sPkgName, sTemplate sql.NullString
+			nullableAddress           sql.NullString
+			nullableFollowup          sql.NullString
+			nullableStartDate         sql.NullString
+			nullableEndDate           sql.NullString
+			nullableProjectName       sql.NullString
+			nullableProjectAddress    sql.NullString
+			nullablePackageName       sql.NullString
+			nullableQuotationTemplate sql.NullString
 		)
 
-		err := rows.Scan(
-			&id, &name, &mobileNo, &countryCode, &email, &sAddr, &leadSource, &generate,
-			&assigneeName, &assigneeInit, &leadPipeline, &pipelineStage, &leadStage,
-			&quoteAmount, &sFollowup, &projectType, &quoteType, &sStartDate,
-			&sEndDate, &sProjName, &sProjAddr, &sPkgName,
-			&segmentsRaw, &servicesRaw, &deliverablesRaw,
-			&sTemplate, &discountAmount, &taxAmount, &createdAt,
+		var scanErr error = rows.Scan(
+			&leadID, &leadName, &mobileNumber, &countryCode, &email, &nullableAddress, &leadSource, &generate,
+			&assigneeName, &assigneeInitials, &leadPipeline, &pipelineStage, &leadStage,
+			&quoteAmount, &nullableFollowup, &projectType, &quoteType, &nullableStartDate,
+			&nullableEndDate, &nullableProjectName, &nullableProjectAddress, &nullablePackageName,
+			&rawSegmentsBytes, &rawServicesBytes, &rawDeliverablesBytes,
+			&nullableQuotationTemplate, &discountAmount, &taxAmount, &createdAt,
 		)
-		if err != nil {
+		if scanErr != nil {
 			continue
 		}
 
-		if sAddr.Valid {
-			address = sAddr.String
+		if nullableAddress.Valid {
+			address = nullableAddress.String
 		}
-		if sFollowup.Valid {
-			followupDate = sFollowup.String
+		if nullableFollowup.Valid {
+			followupDate = nullableFollowup.String
 		}
-		if sStartDate.Valid {
-			projStartDate = sStartDate.String
+		if nullableStartDate.Valid {
+			projectStartDate = nullableStartDate.String
 		}
-		if sEndDate.Valid {
-			projEndDate = sEndDate.String
+		if nullableEndDate.Valid {
+			projectEndDate = nullableEndDate.String
 		}
-		if sProjName.Valid {
-			projName = sProjName.String
+		if nullableProjectName.Valid {
+			projectName = nullableProjectName.String
 		}
-		if sProjAddr.Valid {
-			projAddress = sProjAddr.String
+		if nullableProjectAddress.Valid {
+			projectAddress = nullableProjectAddress.String
 		}
-		if sPkgName.Valid {
-			pkgName = sPkgName.String
+		if nullablePackageName.Valid {
+			packageName = nullablePackageName.String
 		}
-		if sTemplate.Valid {
-			quotTemplate = sTemplate.String
-		}
-
-		var segments, services, deliverables any
-		if len(segmentsRaw) > 0 {
-			_ = json.Unmarshal(segmentsRaw, &segments)
-		}
-		if len(servicesRaw) > 0 {
-			_ = json.Unmarshal(servicesRaw, &services)
-		}
-		if len(deliverablesRaw) > 0 {
-			_ = json.Unmarshal(deliverablesRaw, &deliverables)
+		if nullableQuotationTemplate.Valid {
+			quotationTemplate = nullableQuotationTemplate.String
 		}
 
-		lead := LeadDTO{
-			ID:                   id,
-			Name:                 name,
-			MobileNo:             mobileNo,
+		var segmentsData any
+		var servicesData any
+		var deliverablesData any
+		if len(rawSegmentsBytes) > 0 {
+			_ = json.Unmarshal(rawSegmentsBytes, &segmentsData)
+		}
+		if len(rawServicesBytes) > 0 {
+			_ = json.Unmarshal(rawServicesBytes, &servicesData)
+		}
+		if len(rawDeliverablesBytes) > 0 {
+			_ = json.Unmarshal(rawDeliverablesBytes, &deliverablesData)
+		}
+
+		var leadDTO = LeadDTO{
+			ID:                   leadID,
+			Name:                 leadName,
+			MobileNo:             mobileNumber,
 			CountryCode:          countryCode,
 			Email:                email,
 			Address:              address,
 			CreatedDate:          createdAt.Format("02/01/2006"),
 			LeadSource:           leadSource,
 			Generate:             generate,
-			Assignee:             map[string]string{"name": assigneeName, "initials": assigneeInit},
+			Assignee:             LeadAssigneeDTO{Name: assigneeName, Initials: assigneeInitials},
 			LeadPipeline:         leadPipeline,
 			PipelineStage:        pipelineStage,
 			LeadStage:            leadStage,
@@ -152,61 +224,217 @@ func LeadsListHandler(w http.ResponseWriter, r *http.Request) {
 			FollowupDate:         followupDate,
 			ProjectType:          projectType,
 			QuoteType:            quoteType,
-			ProjectStartDate:     projStartDate,
-			ProjectEndDate:       projEndDate,
-			ProjectName:          projName,
-			ProjectAddress:       projAddress,
-			PackageName:          pkgName,
-			ProjectSegments:      segments,
-			SelectedServices:     services,
-			SelectedDeliverables: deliverables,
-			QuotationTemplate:    quotTemplate,
+			ProjectStartDate:     projectStartDate,
+			ProjectEndDate:       projectEndDate,
+			ProjectName:          projectName,
+			ProjectAddress:       projectAddress,
+			PackageName:          packageName,
+			ProjectSegments:      segmentsData,
+			SelectedServices:     servicesData,
+			SelectedDeliverables: deliverablesData,
+			QuotationTemplate:    quotationTemplate,
 			DiscountAmount:       discountAmount,
 			TaxAmount:            taxAmount,
 		}
-		result = append(result, lead)
+		leadsList = append(leadsList, leadDTO)
 	}
 
-	utils.WriteJSON(w, http.StatusOK, result)
+	utils.WriteJSON(responseWriter, http.StatusOK, leadsList)
 }
 
-func CreateLeadHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+func GetLeadHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
+		return
+	}
+	var leadID string = chi.URLParam(request, "id")
+
+	var (
+		leadName             string
+		mobileNumber         string
+		countryCode          string
+		email                string
+		address              string
+		leadSource           string
+		generate             string
+		assigneeName         string
+		assigneeInitials     string
+		leadPipeline         string
+		pipelineStage        string
+		leadStage            string
+		followupDate         string
+		projectType          string
+		quoteType            string
+		projectStartDate     string
+		projectEndDate       string
+		projectName          string
+		projectAddress       string
+		packageName          string
+		quotationTemplate    string
+		quoteAmount          int64
+		discountAmount       int64
+		taxAmount            int64
+		createdAt            time.Time
+		rawSegmentsBytes     []byte
+		rawServicesBytes     []byte
+		rawDeliverablesBytes []byte
+	)
+	var (
+		nullableAddress           sql.NullString
+		nullableFollowup          sql.NullString
+		nullableStartDate         sql.NullString
+		nullableEndDate           sql.NullString
+		nullableProjectName       sql.NullString
+		nullableProjectAddress    sql.NullString
+		nullablePackageName       sql.NullString
+		nullableQuotationTemplate sql.NullString
+	)
+
+	var queryErr error = database.QueryRowContext(request.Context(), `
+		SELECT id, name, mobile_no, country_code, email, address, lead_source, generate,
+		       assignee_name, assignee_initials, lead_pipeline, pipeline_stage, lead_stage,
+		       quote_amount, followup_date, project_type, quote_type, project_start_date,
+		       project_end_date, project_name, project_address, package_name,
+		       project_segments, selected_services, selected_deliverables,
+		       quotation_template, discount_amount, tax_amount, created_at
+		FROM leads
+		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+	`, leadID, tenantID).Scan(
+		&leadID, &leadName, &mobileNumber, &countryCode, &email, &nullableAddress, &leadSource, &generate,
+		&assigneeName, &assigneeInitials, &leadPipeline, &pipelineStage, &leadStage,
+		&quoteAmount, &nullableFollowup, &projectType, &quoteType, &nullableStartDate,
+		&nullableEndDate, &nullableProjectName, &nullableProjectAddress, &nullablePackageName,
+		&rawSegmentsBytes, &rawServicesBytes, &rawDeliverablesBytes,
+		&nullableQuotationTemplate, &discountAmount, &taxAmount, &createdAt,
+	)
+	if queryErr != nil {
+		utils.WriteError(responseWriter, http.StatusNotFound, "Lead not found")
 		return
 	}
 
-	var payload LeadDTO
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+	address = ""
+	if nullableAddress.Valid {
+		address = nullableAddress.String
+	}
+	followupDate = ""
+	if nullableFollowup.Valid {
+		followupDate = nullableFollowup.String
+	}
+	projectStartDate = ""
+	if nullableStartDate.Valid {
+		projectStartDate = nullableStartDate.String
+	}
+	projectEndDate = ""
+	if nullableEndDate.Valid {
+		projectEndDate = nullableEndDate.String
+	}
+	projectName = ""
+	if nullableProjectName.Valid {
+		projectName = nullableProjectName.String
+	}
+	projectAddress = ""
+	if nullableProjectAddress.Valid {
+		projectAddress = nullableProjectAddress.String
+	}
+	packageName = ""
+	if nullablePackageName.Valid {
+		packageName = nullablePackageName.String
+	}
+	quotationTemplate = ""
+	if nullableQuotationTemplate.Valid {
+		quotationTemplate = nullableQuotationTemplate.String
+	}
+
+	var segmentsData any
+	var servicesData any
+	var deliverablesData any
+	if len(rawSegmentsBytes) > 0 {
+		_ = json.Unmarshal(rawSegmentsBytes, &segmentsData)
+	}
+	if len(rawServicesBytes) > 0 {
+		_ = json.Unmarshal(rawServicesBytes, &servicesData)
+	}
+	if len(rawDeliverablesBytes) > 0 {
+		_ = json.Unmarshal(rawDeliverablesBytes, &deliverablesData)
+	}
+
+	var leadDTO = LeadDTO{
+		ID:                   leadID,
+		Name:                 leadName,
+		MobileNo:             mobileNumber,
+		CountryCode:          countryCode,
+		Email:                email,
+		Address:              address,
+		CreatedDate:          createdAt.Format("02/01/2006"),
+		LeadSource:           leadSource,
+		Generate:             generate,
+		Assignee:             LeadAssigneeDTO{Name: assigneeName, Initials: assigneeInitials},
+		LeadPipeline:         leadPipeline,
+		PipelineStage:        pipelineStage,
+		LeadStage:            leadStage,
+		QuoteAmount:          quoteAmount,
+		FollowupDate:         followupDate,
+		ProjectType:          projectType,
+		QuoteType:            quoteType,
+		ProjectStartDate:     projectStartDate,
+		ProjectEndDate:       projectEndDate,
+		ProjectName:          projectName,
+		ProjectAddress:       projectAddress,
+		PackageName:          packageName,
+		ProjectSegments:      segmentsData,
+		SelectedServices:     servicesData,
+		SelectedDeliverables: deliverablesData,
+		QuotationTemplate:    quotationTemplate,
+		DiscountAmount:       discountAmount,
+		TaxAmount:            taxAmount,
+	}
+
+	utils.WriteJSON(responseWriter, http.StatusOK, leadDTO)
+}
+
+func CreateLeadHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
+		return
+	}
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	if payload.ID == "" {
-		payload.ID = uuid.New().String()
+	var leadPayload LeadDTO
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&leadPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
+		return
 	}
 
-	assigneeName := "Rohan Mehta"
-	assigneeInit := "RM"
-	if m, ok := payload.Assignee.(map[string]any); ok {
-		if n, ok := m["name"].(string); ok && n != "" {
-			assigneeName = n
+	if leadPayload.ID == "" {
+		leadPayload.ID = uuid.New().String()
+	}
+
+	var assigneeName string = "Rohan Mehta"
+	var assigneeInitials string = "RM"
+	if assigneeMap, ok := leadPayload.Assignee.(map[string]any); ok {
+		if nameVal, ok := assigneeMap["name"].(string); ok && nameVal != "" {
+			assigneeName = nameVal
 		}
-		if in, ok := m["initials"].(string); ok && in != "" {
-			assigneeInit = in
+		if initVal, ok := assigneeMap["initials"].(string); ok && initVal != "" {
+			assigneeInitials = initVal
 		}
 	}
 
-	segmentsJSON, _ := json.Marshal(payload.ProjectSegments)
-	servicesJSON, _ := json.Marshal(payload.SelectedServices)
-	deliverablesJSON, _ := json.Marshal(payload.SelectedDeliverables)
+	segmentsBytes, _ := json.Marshal(leadPayload.ProjectSegments)
+	servicesBytes, _ := json.Marshal(leadPayload.SelectedServices)
+	deliverablesBytes, _ := json.Marshal(leadPayload.SelectedDeliverables)
 
-	_, err := db.ExecContext(r.Context(), `
+	_, insertErr := database.ExecContext(request.Context(), `
 		INSERT INTO leads (
 			id, tenant_id, name, mobile_no, country_code, email, address, lead_source,
 			generate, assignee_name, assignee_initials, lead_pipeline, pipeline_stage,
@@ -223,57 +451,58 @@ func CreateLeadHandler(w http.ResponseWriter, r *http.Request) {
 			?, ?, ?
 		)
 	`,
-		payload.ID, tid, payload.Name, payload.MobileNo, payload.CountryCode, payload.Email, payload.Address, payload.LeadSource,
-		payload.Generate, assigneeName, assigneeInit, payload.LeadPipeline, payload.PipelineStage,
-		payload.LeadStage, payload.QuoteAmount, payload.FollowupDate, payload.ProjectType, payload.QuoteType,
-		payload.ProjectStartDate, payload.ProjectEndDate, payload.ProjectName, payload.ProjectAddress,
-		payload.PackageName, segmentsJSON, servicesJSON, deliverablesJSON,
-		payload.QuotationTemplate, payload.DiscountAmount, payload.TaxAmount,
+		leadPayload.ID, tenantID, leadPayload.Name, leadPayload.MobileNo, leadPayload.CountryCode, leadPayload.Email, leadPayload.Address, leadPayload.LeadSource,
+		leadPayload.Generate, assigneeName, assigneeInitials, leadPayload.LeadPipeline, leadPayload.PipelineStage,
+		leadPayload.LeadStage, leadPayload.QuoteAmount, leadPayload.FollowupDate, leadPayload.ProjectType, leadPayload.QuoteType,
+		leadPayload.ProjectStartDate, leadPayload.ProjectEndDate, leadPayload.ProjectName, leadPayload.ProjectAddress,
+		leadPayload.PackageName, segmentsBytes, servicesBytes, deliverablesBytes,
+		leadPayload.QuotationTemplate, leadPayload.DiscountAmount, leadPayload.TaxAmount,
 	)
 
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create lead", err)
+	if insertErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create lead", insertErr)
 		return
 	}
 
-	payload.CreatedDate = time.Now().Format("02/01/2006")
-	utils.WriteJSON(w, http.StatusCreated, payload)
+	leadPayload.CreatedDate = time.Now().Format("02/01/2006")
+	utils.WriteJSON(responseWriter, http.StatusCreated, leadPayload)
 }
 
-func UpdateLeadHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+func UpdateLeadHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
+	var leadID string = chi.URLParam(request, "id")
 
-	var payload LeadDTO
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+	var leadPayload LeadDTO
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&leadPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	assigneeName := "Rohan Mehta"
-	assigneeInit := "RM"
-	if m, ok := payload.Assignee.(map[string]any); ok {
-		if n, ok := m["name"].(string); ok && n != "" {
-			assigneeName = n
+	var assigneeName string = "Rohan Mehta"
+	var assigneeInitials string = "RM"
+	if assigneeMap, ok := leadPayload.Assignee.(map[string]any); ok {
+		if nameVal, ok := assigneeMap["name"].(string); ok && nameVal != "" {
+			assigneeName = nameVal
 		}
-		if in, ok := m["initials"].(string); ok && in != "" {
-			assigneeInit = in
+		if initVal, ok := assigneeMap["initials"].(string); ok && initVal != "" {
+			assigneeInitials = initVal
 		}
 	}
 
-	segmentsJSON, _ := json.Marshal(payload.ProjectSegments)
-	servicesJSON, _ := json.Marshal(payload.SelectedServices)
-	deliverablesJSON, _ := json.Marshal(payload.SelectedDeliverables)
+	segmentsBytes, _ := json.Marshal(leadPayload.ProjectSegments)
+	servicesBytes, _ := json.Marshal(leadPayload.SelectedServices)
+	deliverablesBytes, _ := json.Marshal(leadPayload.SelectedDeliverables)
 
-	_, err := db.ExecContext(r.Context(), `
+	_, updateErr := database.ExecContext(request.Context(), `
 		UPDATE leads SET
 			name = ?, mobile_no = ?, country_code = ?, email = ?, address = ?, lead_source = ?,
 			generate = ?, assignee_name = ?, assignee_initials = ?, lead_pipeline = ?,
@@ -284,184 +513,205 @@ func UpdateLeadHandler(w http.ResponseWriter, r *http.Request) {
 			discount_amount = ?, tax_amount = ?
 		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
 	`,
-		payload.Name, payload.MobileNo, payload.CountryCode, payload.Email, payload.Address, payload.LeadSource,
-		payload.Generate, assigneeName, assigneeInit, payload.LeadPipeline,
-		payload.PipelineStage, payload.LeadStage, payload.QuoteAmount, payload.FollowupDate,
-		payload.ProjectType, payload.QuoteType, payload.ProjectStartDate, payload.ProjectEndDate,
-		payload.ProjectName, payload.ProjectAddress, payload.PackageName, segmentsJSON,
-		servicesJSON, deliverablesJSON, payload.QuotationTemplate,
-		payload.DiscountAmount, payload.TaxAmount,
-		id, tid,
+		leadPayload.Name, leadPayload.MobileNo, leadPayload.CountryCode, leadPayload.Email, leadPayload.Address, leadPayload.LeadSource,
+		leadPayload.Generate, assigneeName, assigneeInitials, leadPayload.LeadPipeline,
+		leadPayload.PipelineStage, leadPayload.LeadStage, leadPayload.QuoteAmount, leadPayload.FollowupDate,
+		leadPayload.ProjectType, leadPayload.QuoteType, leadPayload.ProjectStartDate, leadPayload.ProjectEndDate,
+		leadPayload.ProjectName, leadPayload.ProjectAddress, leadPayload.PackageName, segmentsBytes,
+		servicesBytes, deliverablesBytes, leadPayload.QuotationTemplate,
+		leadPayload.DiscountAmount, leadPayload.TaxAmount,
+		leadID, tenantID,
 	)
 
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update lead", err)
+	if updateErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update lead", updateErr)
 		return
 	}
 
-	payload.ID = id
-	utils.WriteJSON(w, http.StatusOK, payload)
+	leadPayload.ID = leadID
+	utils.WriteJSON(responseWriter, http.StatusOK, leadPayload)
 }
 
-func UpdateLeadStageHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+func UpdateLeadStageHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
+	var leadID string = chi.URLParam(request, "id")
 
-	var req struct {
-		PipelineStage string `json:"pipelineStage"`
-		LeadStage     string `json:"leadStage"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+	var requestPayload UpdateLeadStageRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	query := "UPDATE leads SET pipeline_stage = ?"
-	args := []any{req.PipelineStage}
-	if req.LeadStage != "" {
+	var query string = "UPDATE leads SET pipeline_stage = ?"
+	var queryArguments = []any{requestPayload.PipelineStage}
+	if requestPayload.LeadStage != "" {
 		query += ", lead_stage = ?"
-		args = append(args, req.LeadStage)
+		queryArguments = append(queryArguments, requestPayload.LeadStage)
 	}
 	query += " WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL"
-	args = append(args, id, tid)
+	queryArguments = append(queryArguments, leadID, tenantID)
 
-	_, err := db.ExecContext(r.Context(), query, args...)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update lead stage", err)
+	_, updateErr := database.ExecContext(request.Context(), query, queryArguments...)
+	if updateErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update lead stage", updateErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]any{
-		"status":        "ok",
-		"id":            id,
-		"pipelineStage": req.PipelineStage,
-		"leadStage":     req.LeadStage,
-	})
+	var responsePayload = LeadStageUpdateResponse{
+		Status:        "ok",
+		ID:            leadID,
+		PipelineStage: requestPayload.PipelineStage,
+		LeadStage:     requestPayload.LeadStage,
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, responsePayload)
 }
 
-func DeleteLeadHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+func DeleteLeadHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
+	var leadID string = chi.URLParam(request, "id")
 
-	_, err := db.ExecContext(r.Context(), `
+	_, deleteErr := database.ExecContext(request.Context(), `
 		UPDATE leads SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
-	`, id, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete lead", err)
+	`, leadID, tenantID)
+	if deleteErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete lead", deleteErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted", "id": id})
+	var responsePayload = LeadDeleteResponse{
+		Status: "deleted",
+		ID:     leadID,
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, responsePayload)
 }
 
-func ConvertLeadHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+func ConvertLeadHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
+	var leadID string = chi.URLParam(request, "id")
 
 	var (
-		name, mobileNo, countryCode, email, address, leadSource, projName, projType string
-		projAddress, startDate, endDate                                             sql.NullString
-		segmentsRaw                                                                 []byte
+		clientName        string
+		mobileNumber      string
+		countryCode       string
+		email             string
+		address           string
+		leadSource        string
+		projectName       string
+		projectType       string
+		nullableAddress   sql.NullString
+		nullableStartDate sql.NullString
+		nullableEndDate   sql.NullString
+		rawSegmentsBytes  []byte
 	)
 
-	err := db.QueryRowContext(r.Context(), `
+	var queryErr error = database.QueryRowContext(request.Context(), `
 		SELECT name, mobile_no, country_code, email, address, lead_source, project_name,
 		       project_type, project_address, project_start_date, project_end_date, project_segments
 		FROM leads
 		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
-	`, id, tid).Scan(
-		&name, &mobileNo, &countryCode, &email, &address, &leadSource, &projName,
-		&projType, &projAddress, &startDate, &endDate, &segmentsRaw,
+	`, leadID, tenantID).Scan(
+		&clientName, &mobileNumber, &countryCode, &email, &address, &leadSource, &projectName,
+		&projectType, &nullableAddress, &nullableStartDate, &nullableEndDate, &rawSegmentsBytes,
 	)
-	if err != nil {
-		utils.WriteError(w, http.StatusNotFound, "Lead not found")
+	if queryErr != nil {
+		utils.WriteError(responseWriter, http.StatusNotFound, "Lead not found")
 		return
 	}
 
-	projID := "PRJ-" + uuid.New().String()[:8]
-	if strings.TrimSpace(projName) == "" {
-		projName = name + " Shoot"
+	var projectID string = "PRJ-" + uuid.New().String()[:8]
+	if strings.TrimSpace(projectName) == "" {
+		projectName = clientName + " Shoot"
 	}
 
-	initials := "PR"
-	parts := strings.Fields(name)
-	if len(parts) > 1 {
-		initials = strings.ToUpper(string([]rune(parts[0])[:1]) + string([]rune(parts[1])[:1]))
-	} else if len(parts) == 1 && len(parts[0]) > 0 {
-		initials = strings.ToUpper(string([]rune(parts[0])[:1]))
+	var clientInitials string = "PR"
+	var nameParts = strings.Fields(clientName)
+	if len(nameParts) > 1 {
+		clientInitials = strings.ToUpper(string([]rune(nameParts[0])[:1]) + string([]rune(nameParts[1])[:1]))
+	} else if len(nameParts) == 1 && len(nameParts[0]) > 0 {
+		clientInitials = strings.ToUpper(string([]rune(nameParts[0])[:1]))
 	}
 
-	tx, err := db.BeginTx(r.Context(), nil)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to begin transaction", err)
+	transaction, txErr := database.BeginTx(request.Context(), nil)
+	if txErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to begin transaction", txErr)
 		return
 	}
-	defer tx.Rollback()
+	defer transaction.Rollback()
 
 	var clientID string
-	err = tx.QueryRowContext(r.Context(), `
+	var clientQueryErr error = transaction.QueryRowContext(request.Context(), `
 		SELECT id FROM clients WHERE tenant_id = ? AND email = ? LIMIT 1
-	`, tid, email).Scan(&clientID)
-	if err != nil || clientID == "" {
+	`, tenantID, email).Scan(&clientID)
+	if clientQueryErr != nil || clientID == "" {
 		clientID = "CLI-" + uuid.New().String()[:8]
-		fn := name
-		ln := ""
-		if len(parts) > 1 {
-			fn = parts[0]
-			ln = strings.Join(parts[1:], " ")
+		var firstName string = clientName
+		var lastName string = ""
+		if len(nameParts) > 1 {
+			firstName = nameParts[0]
+			lastName = strings.Join(nameParts[1:], " ")
 		}
-		_, err = tx.ExecContext(r.Context(), `
+		_, insertClientErr := transaction.ExecContext(request.Context(), `
 			INSERT INTO clients (id, tenant_id, first_name, last_name, email, phone, source)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
-		`, clientID, tid, fn, ln, email, mobileNo, leadSource)
-		if err != nil {
-			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create client record", err)
+		`, clientID, tenantID, firstName, lastName, email, mobileNumber, leadSource)
+		if insertClientErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create client record", insertClientErr)
 			return
 		}
 	}
 
-	financeJSON, _ := json.Marshal(map[string]any{
-		"profit": 0, "currentProfit": 0, "netPayableAmount": 0,
-		"paidAmount": 0, "balanceAmount": 0, "paymentDue": 0,
-		"expense": 0, "eventDiscountAmount": 0, "paymentHistory": []any{},
-	})
+	var financeModel = ProjectFinanceSummary{
+		Profit:              0,
+		CurrentProfit:       0,
+		NetPayableAmount:    0,
+		PaidAmount:          0,
+		BalanceAmount:       0,
+		PaymentDue:          0,
+		Expense:             0,
+		EventDiscountAmount: 0,
+		PaymentHistory:      []any{},
+	}
+	financeBytes, _ := json.Marshal(financeModel)
 
-	var sAddress, sStartDate, sEndDate string
-	if projAddress.Valid {
-		sAddress = projAddress.String
+	var projectAddress string = ""
+	if nullableAddress.Valid {
+		projectAddress = nullableAddress.String
 	}
-	if startDate.Valid {
-		sStartDate = startDate.String
+	var projectStartDate string = ""
+	if nullableStartDate.Valid {
+		projectStartDate = nullableStartDate.String
 	}
-	if endDate.Valid {
-		sEndDate = endDate.String
+	var projectEndDate string = ""
+	if nullableEndDate.Valid {
+		projectEndDate = nullableEndDate.String
 	}
 
-	_, err = tx.ExecContext(r.Context(), `
+	_, insertProjectErr := transaction.ExecContext(request.Context(), `
 		INSERT INTO projects (
 			id, tenant_id, client_id, project_name, client_name, client_initials, client_mobile,
 			client_country_code, client_email, client_address, lead_source, project_manager,
@@ -476,35 +726,36 @@ func ConvertLeadHandler(w http.ResponseWriter, r *http.Request) {
 			?, '[]', '[]', '[]', '[]', '[]', '[]', ?
 		)
 	`,
-		projID, tid, clientID, projName, name, initials, mobileNo,
+		projectID, tenantID, clientID, projectName, clientName, clientInitials, mobileNumber,
 		countryCode, email, address, leadSource,
-		projType, sAddress, sStartDate, sEndDate,
-		segmentsRaw, financeJSON,
+		projectType, projectAddress, projectStartDate, projectEndDate,
+		rawSegmentsBytes, financeBytes,
 	)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create project", err)
+	if insertProjectErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create project", insertProjectErr)
 		return
 	}
 
-	_, err = tx.ExecContext(r.Context(), `
+	_, updateLeadErr := transaction.ExecContext(request.Context(), `
 		UPDATE leads SET pipeline_stage = 'converted', lead_stage = 'Booked', status = 'converted',
 		converted_client_id = ?, converted_project_id = ?
 		WHERE id = ? AND tenant_id = ?
-	`, clientID, projID, id, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update lead", err)
+	`, clientID, projectID, leadID, tenantID)
+	if updateLeadErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update lead", updateLeadErr)
 		return
 	}
 
-	if err := tx.Commit(); err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to commit conversion", err)
+	var commitErr error = transaction.Commit()
+	if commitErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to commit conversion", commitErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]any{
-		"status":      "ok",
-		"projectId":   projID,
-		"projectName": projName,
-	})
+	var responsePayload = LeadConversionResponse{
+		Status:      "ok",
+		ProjectID:   projectID,
+		ProjectName: projectName,
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, responsePayload)
 }
-

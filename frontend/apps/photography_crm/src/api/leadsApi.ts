@@ -9,8 +9,11 @@ export interface LeadListParams {
 }
 
 export const leadsApi = {
-  list: async (_params?: LeadListParams): Promise<Lead[]> => {
-    return apiClient<Lead[]>('/api/leads')
+  list: async (params?: LeadListParams, signal?: AbortSignal): Promise<Lead[]> => {
+    return apiClient<Lead[]>('/api/leads', { params: params as any, signal })
+  },
+  get: async (id: string, signal?: AbortSignal): Promise<Lead> => {
+    return apiClient<Lead>(`/api/leads/${id}`, { signal })
   },
   create: async (lead: Partial<Lead>): Promise<Lead> => {
     return apiClient<Lead>('/api/leads', {

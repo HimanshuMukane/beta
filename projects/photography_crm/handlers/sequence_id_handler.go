@@ -31,137 +31,150 @@ type SequenceIdDTO struct {
 	Client       SequenceConfig `json:"client"`
 }
 
-func parseSequenceValue(raw string, fallbackPrefix, fallbackNum string) SequenceConfig {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return SequenceConfig{Prefix: fallbackPrefix, NextNumber: fallbackNum}
+type SaveSequenceIdRequest struct {
+	Leads        SequenceConfig `json:"leads"`
+	Projects     SequenceConfig `json:"projects"`
+	Invoice      SequenceConfig `json:"invoice"`
+	Orders       SequenceConfig `json:"orders"`
+	Expense      SequenceConfig `json:"expense"`
+	Cancellation SequenceConfig `json:"cancellation"`
+	Client       SequenceConfig `json:"client"`
+}
+
+type SequenceIdSaveResponse struct {
+	Status string `json:"status"`
+	ID     string `json:"id"`
+}
+
+func parseSequenceValue(rawValue string, fallbackPrefix string, fallbackNumber string) SequenceConfig {
+	var trimmedRaw string = strings.TrimSpace(rawValue)
+	if trimmedRaw == "" {
+		return SequenceConfig{Prefix: fallbackPrefix, NextNumber: fallbackNumber}
 	}
-	var sc SequenceConfig
-	if err := json.Unmarshal([]byte(raw), &sc); err == nil && (sc.Prefix != "" || sc.NextNumber != "") {
-		return sc
+	var sequenceConfig SequenceConfig
+	var unmarshalErr error = json.Unmarshal([]byte(trimmedRaw), &sequenceConfig)
+	if unmarshalErr == nil && (sequenceConfig.Prefix != "" || sequenceConfig.NextNumber != "") {
+		return sequenceConfig
 	}
-	parts := strings.Split(raw, "|")
+	var parts = strings.Split(trimmedRaw, "|")
 	if len(parts) == 2 {
 		return SequenceConfig{Prefix: parts[0], NextNumber: parts[1]}
 	}
-	return SequenceConfig{Prefix: raw, NextNumber: fallbackNum}
+	return SequenceConfig{Prefix: trimmedRaw, NextNumber: fallbackNumber}
 }
 
-func formatSequenceValue(sc SequenceConfig) string {
-	b, err := json.Marshal(sc)
-	if err != nil {
-		return sc.Prefix + "|" + sc.NextNumber
+func formatSequenceValue(sequenceConfig SequenceConfig) string {
+	bytesData, marshalErr := json.Marshal(sequenceConfig)
+	if marshalErr != nil {
+		return sequenceConfig.Prefix + "|" + sequenceConfig.NextNumber
 	}
-	return string(b)
+	return string(bytesData)
 }
 
-func AllocateNextSequenceNumber(ctx context.Context, db *sqlx.DB, tenantID string, docType string) (string, error) {
-	tx, err := db.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
-	if err != nil {
-		return "", err
+func AllocateNextSequenceNumber(ctx context.Context, database *sqlx.DB, tenantID string, documentType string) (string, error) {
+	transaction, beginErr := database.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+	if beginErr != nil {
+		return "", beginErr
 	}
-	defer tx.Rollback()
+	defer transaction.Rollback()
 
-	var existingID, colVal string
-	query := fmt.Sprintf("SELECT id, `%s` FROM sequence_id WHERE tenant_id = ? AND deleted_at IS NULL FOR UPDATE", docType)
-	err = tx.QueryRowContext(ctx, query, tenantID).Scan(&existingID, &colVal)
+	var existingID string
+	var columnValue string
+	var query string = fmt.Sprintf("SELECT id, `%s` FROM sequence_id WHERE tenant_id = ? AND deleted_at IS NULL FOR UPDATE", documentType)
+	var queryErr error = transaction.QueryRowContext(ctx, query, tenantID).Scan(&existingID, &columnValue)
 
-	defaultPrefix := "ESPE/" + strings.ToUpper(docType) + "/"
-	defaultNum := "101"
-	if docType == "orders" || docType == "expense" || docType == "cancellation" {
-		defaultNum = "100"
-	}
-
-	sc := parseSequenceValue(colVal, defaultPrefix, defaultNum)
-	currentNumInt, _ := strconv.Atoi(sc.NextNumber)
-	if currentNumInt <= 0 {
-		currentNumInt = 100
+	var defaultPrefix string = "ESPE/" + strings.ToUpper(documentType) + "/"
+	var defaultNumber string = "101"
+	if documentType == "orders" || documentType == "expense" || documentType == "cancellation" {
+		defaultNumber = "100"
 	}
 
-	allocatedDocNum := fmt.Sprintf("%s%d", sc.Prefix, currentNumInt)
-	nextNumStr := strconv.Itoa(currentNumInt + 1)
-	sc.NextNumber = nextNumStr
-	updatedVal := formatSequenceValue(sc)
+	var sequenceConfig SequenceConfig = parseSequenceValue(columnValue, defaultPrefix, defaultNumber)
+	currentNumberInt, _ := strconv.Atoi(sequenceConfig.NextNumber)
+	if currentNumberInt <= 0 {
+		currentNumberInt = 100
+	}
 
-	if err != nil || existingID == "" {
-		newID := uuid.New().String()
-		initLeads := formatSequenceValue(SequenceConfig{Prefix: "ESPE/LQuote/", NextNumber: "101"})
-		initProjects := formatSequenceValue(SequenceConfig{Prefix: "ESPE/EVENT/", NextNumber: "101"})
-		initInvoice := formatSequenceValue(SequenceConfig{Prefix: "ESPE/INVOICE/", NextNumber: "101"})
-		initOrders := formatSequenceValue(SequenceConfig{Prefix: "ESPE/WALKIN/", NextNumber: "100"})
-		initExpense := formatSequenceValue(SequenceConfig{Prefix: "ESPE/EX/", NextNumber: "100"})
-		initCancel := formatSequenceValue(SequenceConfig{Prefix: "ESPE/CANCEL/", NextNumber: "100"})
-		initClient := formatSequenceValue(SequenceConfig{Prefix: "ESPE/CLIENT/", NextNumber: "101"})
+	var allocatedDocNum string = fmt.Sprintf("%s%d", sequenceConfig.Prefix, currentNumberInt)
+	var nextNumberString string = strconv.Itoa(currentNumberInt + 1)
+	sequenceConfig.NextNumber = nextNumberString
+	var updatedValue string = formatSequenceValue(sequenceConfig)
 
-		switch docType {
+	if queryErr != nil || existingID == "" {
+		var newID string = uuid.New().String()
+		var initLeads string = formatSequenceValue(SequenceConfig{Prefix: "ESPE/LQuote/", NextNumber: "101"})
+		var initProjects string = formatSequenceValue(SequenceConfig{Prefix: "ESPE/EVENT/", NextNumber: "101"})
+		var initInvoice string = formatSequenceValue(SequenceConfig{Prefix: "ESPE/INVOICE/", NextNumber: "101"})
+		var initOrders string = formatSequenceValue(SequenceConfig{Prefix: "ESPE/WALKIN/", NextNumber: "100"})
+		var initExpense string = formatSequenceValue(SequenceConfig{Prefix: "ESPE/EX/", NextNumber: "100"})
+		var initCancel string = formatSequenceValue(SequenceConfig{Prefix: "ESPE/CANCEL/", NextNumber: "100"})
+		var initClient string = formatSequenceValue(SequenceConfig{Prefix: "ESPE/CLIENT/", NextNumber: "101"})
+
+		switch documentType {
 		case "leads":
-			initLeads = updatedVal
+			initLeads = updatedValue
 		case "projects":
-			initProjects = updatedVal
+			initProjects = updatedValue
 		case "invoice":
-			initInvoice = updatedVal
+			initInvoice = updatedValue
 		case "orders":
-			initOrders = updatedVal
+			initOrders = updatedValue
 		case "expense":
-			initExpense = updatedVal
+			initExpense = updatedValue
 		case "cancellation":
-			initCancel = updatedVal
+			initCancel = updatedValue
 		case "client":
-			initClient = updatedVal
+			initClient = updatedValue
 		}
 
-		_, err = tx.ExecContext(ctx, `
+		_, insertErr := transaction.ExecContext(ctx, `
 			INSERT INTO sequence_id (
 				id, tenant_id, leads, projects, invoice, orders, expense, cancellation, client
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`, newID, tenantID, initLeads, initProjects, initInvoice, initOrders, initExpense, initCancel, initClient)
-		if err != nil {
-			return "", err
+		if insertErr != nil {
+			return "", insertErr
 		}
 	} else {
-		updateQuery := fmt.Sprintf("UPDATE sequence_id SET `%s` = ?, updated_at = NOW(6) WHERE id = ? AND tenant_id = ?", docType)
-		_, err = tx.ExecContext(ctx, updateQuery, updatedVal, existingID, tenantID)
-		if err != nil {
-			return "", err
+		var updateQuery string = fmt.Sprintf("UPDATE sequence_id SET `%s` = ?, updated_at = NOW(6) WHERE id = ? AND tenant_id = ?", documentType)
+		_, updateErr := transaction.ExecContext(ctx, updateQuery, updatedValue, existingID, tenantID)
+		if updateErr != nil {
+			return "", updateErr
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return "", err
+	var commitErr error = transaction.Commit()
+	if commitErr != nil {
+		return "", commitErr
 	}
 
 	return allocatedDocNum, nil
 }
 
-func SequenceIdGetHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func SequenceIdGetHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var id string
+	var sequenceID string
 	var leadsRaw, projectsRaw, invoiceRaw, ordersRaw, expenseRaw, cancellationRaw, clientRaw string
-	err := db.QueryRowContext(r.Context(), `
+	var scanErr error = database.QueryRowContext(request.Context(), `
 		SELECT id, leads, projects, invoice, orders, expense, cancellation, client
 		FROM sequence_id
 		WHERE tenant_id = ? AND deleted_at IS NULL
 		LIMIT 1
-	`, tid).Scan(&id, &leadsRaw, &projectsRaw, &invoiceRaw, &ordersRaw, &expenseRaw, &cancellationRaw, &clientRaw)
+	`, tenantID).Scan(&sequenceID, &leadsRaw, &projectsRaw, &invoiceRaw, &ordersRaw, &expenseRaw, &cancellationRaw, &clientRaw)
 
-	if err != nil {
-		resp := SequenceIdDTO{
+	if scanErr != nil {
+		var defaultSequenceResponse = SequenceIdDTO{
 			ID:           "",
-			TenantID:     tid,
+			TenantID:     tenantID,
 			Leads:        SequenceConfig{Prefix: "ESPE/LQuote/", NextNumber: "101"},
 			Projects:     SequenceConfig{Prefix: "ESPE/EVENT/", NextNumber: "101"},
 			Invoice:      SequenceConfig{Prefix: "ESPE/INVOICE/", NextNumber: "101"},
@@ -170,13 +183,13 @@ func SequenceIdGetHandler(w http.ResponseWriter, r *http.Request) {
 			Cancellation: SequenceConfig{Prefix: "ESPE/CANCEL/", NextNumber: "100"},
 			Client:       SequenceConfig{Prefix: "ESPE/CLIENT/", NextNumber: "101"},
 		}
-		utils.WriteJSON(w, http.StatusOK, resp)
+		utils.WriteJSON(responseWriter, http.StatusOK, defaultSequenceResponse)
 		return
 	}
 
-	resp := SequenceIdDTO{
-		ID:           id,
-		TenantID:     tid,
+	var sequenceResponse = SequenceIdDTO{
+		ID:           sequenceID,
+		TenantID:     tenantID,
 		Leads:        parseSequenceValue(leadsRaw, "ESPE/LQuote/", "101"),
 		Projects:     parseSequenceValue(projectsRaw, "ESPE/EVENT/", "101"),
 		Invoice:      parseSequenceValue(invoiceRaw, "ESPE/INVOICE/", "101"),
@@ -186,93 +199,67 @@ func SequenceIdGetHandler(w http.ResponseWriter, r *http.Request) {
 		Client:       parseSequenceValue(clientRaw, "ESPE/CLIENT/", "101"),
 	}
 
-	utils.WriteJSON(w, http.StatusOK, resp)
+	utils.WriteJSON(responseWriter, http.StatusOK, sequenceResponse)
 }
 
-func SequenceIdSaveHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func SequenceIdSaveHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var req struct {
-		Leads        SequenceConfig `json:"leads"`
-		Projects     SequenceConfig `json:"projects"`
-		Invoice      SequenceConfig `json:"invoice"`
-		Orders       SequenceConfig `json:"orders"`
-		Expense      SequenceConfig `json:"expense"`
-		Cancellation SequenceConfig `json:"cancellation"`
-		Client       SequenceConfig `json:"client"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Invalid request body",
-			},
-		})
+	var requestPayload SaveSequenceIdRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	leadsVal := formatSequenceValue(req.Leads)
-	projectsVal := formatSequenceValue(req.Projects)
-	invoiceVal := formatSequenceValue(req.Invoice)
-	ordersVal := formatSequenceValue(req.Orders)
-	expenseVal := formatSequenceValue(req.Expense)
-	cancellationVal := formatSequenceValue(req.Cancellation)
-	clientVal := formatSequenceValue(req.Client)
+	var leadsVal string = formatSequenceValue(requestPayload.Leads)
+	var projectsVal string = formatSequenceValue(requestPayload.Projects)
+	var invoiceVal string = formatSequenceValue(requestPayload.Invoice)
+	var ordersVal string = formatSequenceValue(requestPayload.Orders)
+	var expenseVal string = formatSequenceValue(requestPayload.Expense)
+	var cancellationVal string = formatSequenceValue(requestPayload.Cancellation)
+	var clientVal string = formatSequenceValue(requestPayload.Client)
 
 	var existingID string
-	err := db.QueryRowContext(r.Context(), `
+	var queryErr error = database.QueryRowContext(request.Context(), `
 		SELECT id FROM sequence_id WHERE tenant_id = ? AND deleted_at IS NULL LIMIT 1
-	`, tid).Scan(&existingID)
+	`, tenantID).Scan(&existingID)
 
-	if err != nil || existingID == "" {
-		newID := uuid.New().String()
-		_, err = db.ExecContext(r.Context(), `
+	if queryErr != nil || existingID == "" {
+		var newID string = uuid.New().String()
+		_, insertErr := database.ExecContext(request.Context(), `
 			INSERT INTO sequence_id (
 				id, tenant_id, leads, projects, invoice, orders, expense, cancellation, client
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		`, newID, tid, leadsVal, projectsVal, invoiceVal, ordersVal, expenseVal, cancellationVal, clientVal)
-		if err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"error": map[string]any{
-					"code":    "DATABASE_ERROR",
-					"message": "Failed to create sequence settings",
-				},
-			})
+		`, newID, tenantID, leadsVal, projectsVal, invoiceVal, ordersVal, expenseVal, cancellationVal, clientVal)
+		if insertErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create sequence settings", insertErr)
 			return
 		}
 		existingID = newID
 	} else {
-		_, err = db.ExecContext(r.Context(), `
+		_, updateErr := database.ExecContext(request.Context(), `
 			UPDATE sequence_id
 			SET leads = ?, projects = ?, invoice = ?, orders = ?, expense = ?, cancellation = ?, client = ?, updated_at = NOW(6)
 			WHERE id = ? AND tenant_id = ?
-		`, leadsVal, projectsVal, invoiceVal, ordersVal, expenseVal, cancellationVal, clientVal, existingID, tid)
-		if err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"error": map[string]any{
-					"code":    "DATABASE_ERROR",
-					"message": "Failed to update sequence settings",
-				},
-			})
+		`, leadsVal, projectsVal, invoiceVal, ordersVal, expenseVal, cancellationVal, clientVal, existingID, tenantID)
+		if updateErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update sequence settings", updateErr)
 			return
 		}
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]any{
-		"status": "ok",
-		"id":     existingID,
-	})
+	var responsePayload = SequenceIdSaveResponse{
+		Status: "ok",
+		ID:     existingID,
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, responsePayload)
 }

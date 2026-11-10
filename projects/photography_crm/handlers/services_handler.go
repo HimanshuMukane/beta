@@ -8,6 +8,7 @@ import (
 	"core/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type ServiceItemDTO struct {
@@ -25,397 +26,318 @@ type ServiceGroupDTO struct {
 	Services  []ServiceItemDTO `json:"services"`
 }
 
-func parseServicesList(raw []byte) []ServiceItemDTO {
-	if len(raw) == 0 {
-		return []ServiceItemDTO{}
-	}
-	var out []ServiceItemDTO
-	if err := json.Unmarshal(raw, &out); err == nil && out != nil {
-		return out
-	}
-	var rawItems []map[string]any
-	if err := json.Unmarshal(raw, &rawItems); err != nil {
-		return []ServiceItemDTO{}
-	}
-	out = make([]ServiceItemDTO, 0, len(rawItems))
-	for _, it := range rawItems {
-		id, _ := it["id"].(string)
-		name, _ := it["serviceName"].(string)
-		if name == "" {
-			name, _ = it["name"].(string)
-		}
-		var qty int
-		if q, ok := it["quantity"].(float64); ok {
-			qty = int(q)
-		} else if q, ok := it["qty"].(float64); ok {
-			qty = int(q)
-		}
-		if qty <= 0 {
-			qty = 1
-		}
-		var amount int64
-		if a, ok := it["amount"].(float64); ok {
-			amount = int64(a)
-		} else if a, ok := it["cost"].(float64); ok {
-			amount = int64(a)
-		}
-		var isCust bool
-		if c, ok := it["isCustom"].(bool); ok {
-			isCust = c
-		}
-		out = append(out, ServiceItemDTO{
-			ID:          id,
-			ServiceName: name,
-			Quantity:    qty,
-			Amount:      amount,
-			IsCustom:    isCust,
-		})
-	}
-	return out
+type CreateServiceGroupRequest struct {
+	GroupName string           `json:"groupName"`
+	Services  []ServiceItemDTO `json:"services"`
 }
 
-func ServicesListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
+type UpdateServiceGroupRequest struct {
+	GroupName string           `json:"groupName"`
+	Services  []ServiceItemDTO `json:"services"`
+}
+
+type BatchSaveServiceGroupItem struct {
+	ID        string           `json:"id"`
+	GroupName string           `json:"groupName"`
+	Services  []ServiceItemDTO `json:"services"`
+}
+
+type BatchSaveServicesRequest struct {
+	Groups []BatchSaveServiceGroupItem `json:"groups"`
+}
+
+func parseServicesList(rawBytes []byte) []ServiceItemDTO {
+	if len(rawBytes) == 0 {
+		return []ServiceItemDTO{}
+	}
+	var directServices []ServiceItemDTO
+	var unmarshalErr error = json.Unmarshal(rawBytes, &directServices)
+	if unmarshalErr == nil && directServices != nil {
+		return directServices
+	}
+	var rawItems []map[string]any
+	var fallbackErr error = json.Unmarshal(rawBytes, &rawItems)
+	if fallbackErr != nil {
+		return []ServiceItemDTO{}
+	}
+	var servicesList = make([]ServiceItemDTO, 0, len(rawItems))
+	for _, rawItem := range rawItems {
+		var serviceID string
+		if idVal, ok := rawItem["id"].(string); ok {
+			serviceID = idVal
+		}
+		var serviceName string
+		if nameVal, ok := rawItem["serviceName"].(string); ok {
+			serviceName = nameVal
+		} else if nameVal, ok := rawItem["name"].(string); ok {
+			serviceName = nameVal
+		}
+		var quantity int = 1
+		if qtyVal, ok := rawItem["quantity"].(float64); ok {
+			quantity = int(qtyVal)
+		} else if qtyVal, ok := rawItem["qty"].(float64); ok {
+			quantity = int(qtyVal)
+		}
+		if quantity <= 0 {
+			quantity = 1
+		}
+		var amount int64 = 0
+		if amtVal, ok := rawItem["amount"].(float64); ok {
+			amount = int64(amtVal)
+		} else if amtVal, ok := rawItem["cost"].(float64); ok {
+			amount = int64(amtVal)
+		}
+		var isCustom bool = false
+		if customVal, ok := rawItem["isCustom"].(bool); ok {
+			isCustom = customVal
+		}
+		servicesList = append(servicesList, ServiceItemDTO{
+			ID:          serviceID,
+			ServiceName: serviceName,
+			Quantity:    quantity,
+			Amount:      amount,
+			IsCustom:    isCustom,
 		})
+	}
+	return servicesList
+}
+
+func ServicesListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), `
+	rows, queryErr := database.QueryContext(request.Context(), `
 		SELECT id, tenant_id, group_name, services
 		FROM services
 		WHERE tenant_id = ? AND deleted_at IS NULL
 		ORDER BY created_at ASC
-	`, tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to list services",
-			},
-		})
+	`, tenantID)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list services", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	groups := make([]ServiceGroupDTO, 0)
+	var serviceGroups = make([]ServiceGroupDTO, 0)
 	for rows.Next() {
-		var item ServiceGroupDTO
-		var rawServices []byte
-		if err := rows.Scan(&item.ID, &item.TenantID, &item.GroupName, &rawServices); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"error": map[string]any{
-					"code":    "SCAN_ERROR",
-					"message": "Failed to read service group",
-				},
-			})
+		var serviceGroup ServiceGroupDTO
+		var rawServicesBytes []byte
+		var scanErr error = rows.Scan(&serviceGroup.ID, &serviceGroup.TenantID, &serviceGroup.GroupName, &rawServicesBytes)
+		if scanErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read service group", scanErr)
 			return
 		}
-		item.Services = parseServicesList(rawServices)
-		groups = append(groups, item)
+		serviceGroup.Services = parseServicesList(rawServicesBytes)
+		serviceGroups = append(serviceGroups, serviceGroup)
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "ITERATION_ERROR",
-				"message": "Error iterating service groups",
-			},
-		})
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Error iterating service groups", iterationErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, groups)
+	utils.WriteJSON(responseWriter, http.StatusOK, serviceGroups)
 }
 
-func CreateServiceGroupHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func CreateServiceGroupHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var req struct {
-		GroupName string           `json:"groupName"`
-		Services  []ServiceItemDTO `json:"services"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Invalid request body",
-			},
-		})
+	var requestPayload CreateServiceGroupRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	groupName := strings.TrimSpace(req.GroupName)
+	var groupName string = strings.TrimSpace(requestPayload.GroupName)
 	if groupName == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Group name is required",
-			},
-		})
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Group name is required")
 		return
 	}
 
-	if req.Services == nil {
-		req.Services = []ServiceItemDTO{}
+	if requestPayload.Services == nil {
+		requestPayload.Services = []ServiceItemDTO{}
 	}
-	servicesBytes, _ := json.Marshal(req.Services)
+	servicesBytes, _ := json.Marshal(requestPayload.Services)
 
-	id := uuid.New().String()
-	_, err := db.ExecContext(r.Context(), `
+	var serviceGroupID string = uuid.New().String()
+	_, insertErr := database.ExecContext(request.Context(), `
 		INSERT INTO services (id, tenant_id, group_name, services)
 		VALUES (?, ?, ?, ?)
-	`, id, tid, groupName, servicesBytes)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to create service group",
-			},
-		})
+	`, serviceGroupID, tenantID, groupName, servicesBytes)
+	if insertErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create service group", insertErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, ServiceGroupDTO{
-		ID:        id,
-		TenantID:  tid,
+	var createdGroup = ServiceGroupDTO{
+		ID:        serviceGroupID,
+		TenantID:  tenantID,
 		GroupName: groupName,
-		Services:  req.Services,
-	})
+		Services:  requestPayload.Services,
+	}
+	utils.WriteJSON(responseWriter, http.StatusCreated, createdGroup)
 }
 
-func UpdateServiceGroupHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func UpdateServiceGroupHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Service group ID is required",
-			},
-		})
+	var serviceGroupID string = chi.URLParam(request, "id")
+	if serviceGroupID == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Service group ID is required")
 		return
 	}
 
-	var req struct {
-		GroupName string           `json:"groupName"`
-		Services  []ServiceItemDTO `json:"services"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Invalid request body",
-			},
-		})
+	var requestPayload UpdateServiceGroupRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	groupName := strings.TrimSpace(req.GroupName)
+	var groupName string = strings.TrimSpace(requestPayload.GroupName)
 	if groupName == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Group name is required",
-			},
-		})
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Group name is required")
 		return
 	}
 
-	if req.Services == nil {
-		req.Services = []ServiceItemDTO{}
+	if requestPayload.Services == nil {
+		requestPayload.Services = []ServiceItemDTO{}
 	}
-	servicesBytes, _ := json.Marshal(req.Services)
+	servicesBytes, _ := json.Marshal(requestPayload.Services)
 
-	_, err := db.ExecContext(r.Context(), `
+	_, updateErr := database.ExecContext(request.Context(), `
 		UPDATE services
 		SET group_name = ?, services = ?, updated_at = NOW(6)
 		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
-	`, groupName, servicesBytes, id, tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to update service group",
-			},
-		})
+	`, groupName, servicesBytes, serviceGroupID, tenantID)
+	if updateErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update service group", updateErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var successResponse = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
 }
 
-func DeleteServiceGroupHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func DeleteServiceGroupHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Service group ID is required",
-			},
-		})
+	var serviceGroupID string = chi.URLParam(request, "id")
+	if serviceGroupID == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Service group ID is required")
 		return
 	}
 
-	_, err := db.ExecContext(r.Context(), `
+	_, deleteErr := database.ExecContext(request.Context(), `
 		UPDATE services SET deleted_at = NOW(6) WHERE id = ? AND tenant_id = ?
-	`, id, tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to delete service group",
-			},
-		})
+	`, serviceGroupID, tenantID)
+	if deleteErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete service group", deleteErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var successResponse = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
 }
 
-func BatchSaveServicesHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func BatchSaveServicesHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var req struct {
-		Groups []struct {
-			ID        string           `json:"id"`
-			GroupName string           `json:"groupName"`
-			Services  []ServiceItemDTO `json:"services"`
-		} `json:"groups"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Invalid request body",
-			},
-		})
+	var requestPayload BatchSaveServicesRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	tx, err := db.BeginTxx(r.Context(), nil)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to start database transaction",
-			},
-		})
+	transaction, beginTxErr := database.BeginTxx(request.Context(), nil)
+	if beginTxErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to start database transaction", beginTxErr)
 		return
 	}
-	defer tx.Rollback()
+	defer transaction.Rollback()
 
-	_, err = tx.ExecContext(r.Context(), "UPDATE services SET deleted_at = NOW(6) WHERE tenant_id = ? AND deleted_at IS NULL", tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to update existing services",
-			},
-		})
+	_, resetErr := transaction.ExecContext(request.Context(), "UPDATE services SET deleted_at = NOW(6) WHERE tenant_id = ? AND deleted_at IS NULL", tenantID)
+	if resetErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update existing services", resetErr)
 		return
 	}
 
-	for _, g := range req.Groups {
-		name := strings.TrimSpace(g.GroupName)
-		if name == "" {
+	for _, groupItem := range requestPayload.Groups {
+		var groupName string = strings.TrimSpace(groupItem.GroupName)
+		if groupName == "" {
 			continue
 		}
-		id := g.ID
-		if id == "" || strings.HasPrefix(id, "temp-") || strings.HasPrefix(id, "srv-") {
-			id = uuid.New().String()
+		var groupID string = groupItem.ID
+		if groupID == "" || strings.HasPrefix(groupID, "temp-") || strings.HasPrefix(groupID, "srv-") {
+			groupID = uuid.New().String()
 		}
-		svcs := g.Services
-		if svcs == nil {
-			svcs = []ServiceItemDTO{}
+		var services = groupItem.Services
+		if services == nil {
+			services = []ServiceItemDTO{}
 		}
-		b, _ := json.Marshal(svcs)
+		servicesBytes, _ := json.Marshal(services)
 
-		_, err = tx.ExecContext(r.Context(), `
+		_, insertErr := transaction.ExecContext(request.Context(), `
 			INSERT INTO services (id, tenant_id, group_name, services)
 			VALUES (?, ?, ?, ?)
-		`, id, tid, name, b)
-		if err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"error": map[string]any{
-					"code":    "DATABASE_ERROR",
-					"message": "Failed to save service group",
-				},
-			})
+		`, groupID, tenantID, groupName, servicesBytes)
+		if insertErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to save service group", insertErr)
 			return
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to commit services",
-			},
-		})
+	var commitErr error = transaction.Commit()
+	if commitErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to commit services", commitErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var successResponse = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
 }

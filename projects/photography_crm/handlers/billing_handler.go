@@ -9,6 +9,7 @@ import (
 	"core/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type PaymentDTO struct {
@@ -84,7 +85,7 @@ type RefundedDTO struct {
 }
 
 func clientInitials(name string) string {
-	parts := strings.Split(strings.TrimSpace(name), " ")
+	var parts = strings.Split(strings.TrimSpace(name), " ")
 	if len(parts) >= 2 {
 		return strings.ToUpper(parts[0][:1] + parts[1][:1])
 	}
@@ -94,529 +95,570 @@ func clientInitials(name string) string {
 	return "CL"
 }
 
-func BillingPaymentsListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+func BillingPaymentsListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), `
+	rows, queryErr := database.QueryContext(request.Context(), `
 		SELECT id, payment_date, client_name, client_avatar, client_initials,
 		       payment_type, payment_amount, payment_status, project_name, download_url, created_at
 		FROM billing_payments
 		WHERE tenant_id = ?
 		ORDER BY created_at DESC
-	`, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list payments", err)
+	`, tenantID)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list payments", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	var result []PaymentDTO
+	var paymentsList = make([]PaymentDTO, 0)
 	for rows.Next() {
-		var p PaymentDTO
+		var paymentItem PaymentDTO
 		var createdAt any
-		var sAvatar, sInit, sProj, sUrl sql.NullString
-		if err := rows.Scan(
-			&p.ID, &p.PaymentDate, &p.ClientName, &sAvatar, &sInit,
-			&p.Type, &p.PaymentAmount, &p.PaymentStatus, &sProj, &sUrl, &createdAt,
-		); err != nil {
-			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read payment", err)
+		var (
+			nullableAvatar   sql.NullString
+			nullableInitials sql.NullString
+			nullableProject  sql.NullString
+			nullableURL      sql.NullString
+		)
+		var scanErr error = rows.Scan(
+			&paymentItem.ID, &paymentItem.PaymentDate, &paymentItem.ClientName, &nullableAvatar, &nullableInitials,
+			&paymentItem.Type, &paymentItem.PaymentAmount, &paymentItem.PaymentStatus, &nullableProject, &nullableURL, &createdAt,
+		)
+		if scanErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read payment", scanErr)
 			return
 		}
-		if sAvatar.Valid {
-			p.ClientAvatar = sAvatar.String
+		if nullableAvatar.Valid {
+			paymentItem.ClientAvatar = nullableAvatar.String
 		}
-		if sInit.Valid {
-			p.ClientInitials = sInit.String
+		if nullableInitials.Valid {
+			paymentItem.ClientInitials = nullableInitials.String
 		} else {
-			p.ClientInitials = clientInitials(p.ClientName)
+			paymentItem.ClientInitials = clientInitials(paymentItem.ClientName)
 		}
-		if sProj.Valid {
-			p.ProjectName = sProj.String
+		if nullableProject.Valid {
+			paymentItem.ProjectName = nullableProject.String
 		}
-		if sUrl.Valid {
-			p.DownloadUrl = sUrl.String
+		if nullableURL.Valid {
+			paymentItem.DownloadUrl = nullableURL.String
 		}
-		p.CreatedOn = p.PaymentDate
-		result = append(result, p)
+		paymentItem.CreatedOn = paymentItem.PaymentDate
+		paymentsList = append(paymentsList, paymentItem)
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating payments", err)
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Error iterating payments", iterationErr)
 		return
 	}
-	if result == nil {
-		result = []PaymentDTO{}
-	}
-	utils.WriteJSON(w, http.StatusOK, result)
+
+	utils.WriteJSON(responseWriter, http.StatusOK, paymentsList)
 }
 
-func CreateBillingPaymentHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+func CreateBillingPaymentHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var p PaymentDTO
-	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+	var paymentPayload PaymentDTO
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&paymentPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-	if p.ID == "" {
-		p.ID = "ESPE/PAY/" + uuid.New().String()[:8]
+	if paymentPayload.ID == "" {
+		paymentPayload.ID = "ESPE/PAY/" + uuid.New().String()[:8]
 	}
-	if p.ClientInitials == "" {
-		p.ClientInitials = clientInitials(p.ClientName)
+	if paymentPayload.ClientInitials == "" {
+		paymentPayload.ClientInitials = clientInitials(paymentPayload.ClientName)
 	}
 
-	_, err := db.ExecContext(r.Context(), `
+	_, insertErr := database.ExecContext(request.Context(), `
 		INSERT INTO billing_payments (
 			id, tenant_id, payment_date, client_name, client_avatar, client_initials,
 			payment_type, payment_amount, payment_status, project_name, download_url
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, p.ID, tid, p.PaymentDate, p.ClientName, p.ClientAvatar, p.ClientInitials,
-		p.Type, p.PaymentAmount, p.PaymentStatus, p.ProjectName, p.DownloadUrl)
+	`, paymentPayload.ID, tenantID, paymentPayload.PaymentDate, paymentPayload.ClientName, paymentPayload.ClientAvatar, paymentPayload.ClientInitials,
+		paymentPayload.Type, paymentPayload.PaymentAmount, paymentPayload.PaymentStatus, paymentPayload.ProjectName, paymentPayload.DownloadUrl)
 
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create payment", err)
+	if insertErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create payment", insertErr)
 		return
 	}
-	utils.WriteJSON(w, http.StatusCreated, p)
+	utils.WriteJSON(responseWriter, http.StatusCreated, paymentPayload)
 }
 
-func DeleteBillingPaymentHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+func DeleteBillingPaymentHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
-	_, err := db.ExecContext(r.Context(), "DELETE FROM billing_payments WHERE id = ? AND tenant_id = ?", id, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete payment", err)
+	var paymentID string = chi.URLParam(request, "id")
+	_, deleteErr := database.ExecContext(request.Context(), "DELETE FROM billing_payments WHERE id = ? AND tenant_id = ?", paymentID, tenantID)
+	if deleteErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete payment", deleteErr)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted", "id": id})
+	var deleteResponse = GenericItemDeleteResponse{
+		Status: "deleted",
+		ID:     paymentID,
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, deleteResponse)
 }
 
-func BillingInvoicesListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteError(w, http.StatusServiceUnavailable, "Database unavailable")
+func BillingInvoicesListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), `
+	rows, queryErr := database.QueryContext(request.Context(), `
 		SELECT id, invoice_name, client_name, client_avatar, client_initials,
 		       projects_name, total_amount, paid_amount, pending_amount,
 		       payment_status, invoice_date, download_url
 		FROM billing_invoices
 		WHERE tenant_id = ?
 		ORDER BY created_at DESC
-	`, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list invoices", err)
+	`, tenantID)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list invoices", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	var result []InvoiceDTO
+	var invoicesList = make([]InvoiceDTO, 0)
 	for rows.Next() {
-		var inv InvoiceDTO
-		var sAvatar, sInit, sProj, sUrl sql.NullString
-		if err := rows.Scan(
-			&inv.ID, &inv.InvoiceName, &inv.ClientName, &sAvatar, &sInit,
-			&sProj, &inv.TotalAmount, &inv.PaidAmount, &inv.PendingAmount,
-			&inv.PaymentStatus, &inv.InvoiceDate, &sUrl,
-		); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read invoice"})
+		var invoiceItem InvoiceDTO
+		var (
+			nullableAvatar   sql.NullString
+			nullableInitials sql.NullString
+			nullableProject  sql.NullString
+			nullableURL      sql.NullString
+		)
+		var scanErr error = rows.Scan(
+			&invoiceItem.ID, &invoiceItem.InvoiceName, &invoiceItem.ClientName, &nullableAvatar, &nullableInitials,
+			&nullableProject, &invoiceItem.TotalAmount, &invoiceItem.PaidAmount, &invoiceItem.PendingAmount,
+			&invoiceItem.PaymentStatus, &invoiceItem.InvoiceDate, &nullableURL,
+		)
+		if scanErr != nil {
+			utils.WriteError(responseWriter, http.StatusInternalServerError, "Failed to read invoice")
 			return
 		}
-		if sAvatar.Valid {
-			inv.ClientAvatar = sAvatar.String
+		if nullableAvatar.Valid {
+			invoiceItem.ClientAvatar = nullableAvatar.String
 		}
-		if sInit.Valid {
-			inv.ClientInitials = sInit.String
+		if nullableInitials.Valid {
+			invoiceItem.ClientInitials = nullableInitials.String
 		} else {
-			inv.ClientInitials = clientInitials(inv.ClientName)
+			invoiceItem.ClientInitials = clientInitials(invoiceItem.ClientName)
 		}
-		if sProj.Valid {
-			inv.ProjectsName = sProj.String
+		if nullableProject.Valid {
+			invoiceItem.ProjectsName = nullableProject.String
 		}
-		if sUrl.Valid {
-			inv.DownloadUrl = sUrl.String
+		if nullableURL.Valid {
+			invoiceItem.DownloadUrl = nullableURL.String
 		}
-		inv.CreatedDate = inv.InvoiceDate
-		result = append(result, inv)
+		invoiceItem.CreatedDate = invoiceItem.InvoiceDate
+		invoicesList = append(invoicesList, invoiceItem)
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error iterating invoices"})
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteError(responseWriter, http.StatusInternalServerError, "Error iterating invoices")
 		return
 	}
-	if result == nil {
-		result = []InvoiceDTO{}
-	}
-	utils.WriteJSON(w, http.StatusOK, result)
+
+	utils.WriteJSON(responseWriter, http.StatusOK, invoicesList)
 }
 
-func CreateBillingInvoiceHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func CreateBillingInvoiceHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var inv InvoiceDTO
-	if err := json.NewDecoder(r.Body).Decode(&inv); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	var invoicePayload InvoiceDTO
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&invoicePayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-	if inv.ID == "" {
-		inv.ID = "INV-" + uuid.New().String()[:8]
+	if invoicePayload.ID == "" {
+		invoicePayload.ID = "INV-" + uuid.New().String()[:8]
 	}
-	if inv.InvoiceName == "" {
-		if seqNum, err := AllocateNextSequenceNumber(r.Context(), db, tid, "invoice"); err == nil && seqNum != "" {
-			inv.InvoiceName = seqNum
+	if invoicePayload.InvoiceName == "" {
+		sequenceNumber, seqErr := AllocateNextSequenceNumber(request.Context(), database, tenantID, "invoice")
+		if seqErr == nil && sequenceNumber != "" {
+			invoicePayload.InvoiceName = sequenceNumber
 		} else {
-			inv.InvoiceName = "INV-" + uuid.New().String()[:6]
+			invoicePayload.InvoiceName = "INV-" + uuid.New().String()[:6]
 		}
 	}
-	if inv.ClientInitials == "" {
-		inv.ClientInitials = clientInitials(inv.ClientName)
+	if invoicePayload.ClientInitials == "" {
+		invoicePayload.ClientInitials = clientInitials(invoicePayload.ClientName)
 	}
 
-	_, err := db.ExecContext(r.Context(), `
+	_, insertErr := database.ExecContext(request.Context(), `
 		INSERT INTO billing_invoices (
 			id, tenant_id, invoice_name, client_name, client_avatar, client_initials,
 			projects_name, total_amount, paid_amount, pending_amount, payment_status,
 			invoice_date, download_url
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, inv.ID, tid, inv.InvoiceName, inv.ClientName, inv.ClientAvatar, inv.ClientInitials,
-		inv.ProjectsName, inv.TotalAmount, inv.PaidAmount, inv.PendingAmount, inv.PaymentStatus,
-		inv.InvoiceDate, inv.DownloadUrl)
+	`, invoicePayload.ID, tenantID, invoicePayload.InvoiceName, invoicePayload.ClientName, invoicePayload.ClientAvatar, invoicePayload.ClientInitials,
+		invoicePayload.ProjectsName, invoicePayload.TotalAmount, invoicePayload.PaidAmount, invoicePayload.PendingAmount, invoicePayload.PaymentStatus,
+		invoicePayload.InvoiceDate, invoicePayload.DownloadUrl)
 
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create invoice", err)
+	if insertErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create invoice", insertErr)
 		return
 	}
-	utils.WriteJSON(w, http.StatusCreated, inv)
+	utils.WriteJSON(responseWriter, http.StatusCreated, invoicePayload)
 }
 
-func DeleteBillingInvoiceHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func DeleteBillingInvoiceHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
-	_, err := db.ExecContext(r.Context(), "DELETE FROM billing_invoices WHERE id = ? AND tenant_id = ?", id, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete invoice", err)
+	var invoiceID string = chi.URLParam(request, "id")
+	_, deleteErr := database.ExecContext(request.Context(), "DELETE FROM billing_invoices WHERE id = ? AND tenant_id = ?", invoiceID, tenantID)
+	if deleteErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete invoice", deleteErr)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted", "id": id})
+	var deleteResponse = GenericItemDeleteResponse{
+		Status: "deleted",
+		ID:     invoiceID,
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, deleteResponse)
 }
 
-func BillingExpensesListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func BillingExpensesListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), `
+	rows, queryErr := database.QueryContext(request.Context(), `
 		SELECT id, expense_name, expense_date, amount, expense_type, vendor_or_client, payment_method
 		FROM billing_expenses
 		WHERE tenant_id = ?
 		ORDER BY created_at DESC
-	`, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list expenses", err)
+	`, tenantID)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list expenses", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	var result []ExpenseDTO
+	var expensesList = make([]ExpenseDTO, 0)
 	for rows.Next() {
-		var exp ExpenseDTO
-		var sVendor, sMethod sql.NullString
-		if err := rows.Scan(
-			&exp.ID, &exp.ExpenseName, &exp.Date, &exp.Amount, &exp.Type, &sVendor, &sMethod,
-		); err != nil {
-			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read expense", err)
+		var expenseItem ExpenseDTO
+		var (
+			nullableVendor sql.NullString
+			nullableMethod sql.NullString
+		)
+		var scanErr error = rows.Scan(
+			&expenseItem.ID, &expenseItem.ExpenseName, &expenseItem.Date, &expenseItem.Amount, &expenseItem.Type, &nullableVendor, &nullableMethod,
+		)
+		if scanErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read expense", scanErr)
 			return
 		}
-		if sVendor.Valid {
-			exp.VendorOrClient = sVendor.String
+		if nullableVendor.Valid {
+			expenseItem.VendorOrClient = nullableVendor.String
 		}
-		if sMethod.Valid {
-			exp.PaymentMethod = sMethod.String
+		if nullableMethod.Valid {
+			expenseItem.PaymentMethod = nullableMethod.String
 		}
-		exp.CreatedDate = exp.Date
-		result = append(result, exp)
+		expenseItem.CreatedDate = expenseItem.Date
+		expensesList = append(expensesList, expenseItem)
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating expenses", err)
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Error iterating expenses", iterationErr)
 		return
 	}
-	if result == nil {
-		result = []ExpenseDTO{}
-	}
-	utils.WriteJSON(w, http.StatusOK, result)
+
+	utils.WriteJSON(responseWriter, http.StatusOK, expensesList)
 }
 
-func CreateBillingExpenseHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func CreateBillingExpenseHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var exp ExpenseDTO
-	if err := json.NewDecoder(r.Body).Decode(&exp); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	var expensePayload ExpenseDTO
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&expensePayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-	if exp.ID == "" {
-		exp.ID = "EXP-" + uuid.New().String()[:8]
+	if expensePayload.ID == "" {
+		expensePayload.ID = "EXP-" + uuid.New().String()[:8]
 	}
 
-	_, err := db.ExecContext(r.Context(), `
+	_, insertErr := database.ExecContext(request.Context(), `
 		INSERT INTO billing_expenses (
 			id, tenant_id, expense_name, expense_date, amount, expense_type,
 			vendor_or_client, payment_method
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, exp.ID, tid, exp.ExpenseName, exp.Date, exp.Amount, exp.Type, exp.VendorOrClient, exp.PaymentMethod)
+	`, expensePayload.ID, tenantID, expensePayload.ExpenseName, expensePayload.Date, expensePayload.Amount, expensePayload.Type, expensePayload.VendorOrClient, expensePayload.PaymentMethod)
 
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create expense", err)
+	if insertErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create expense", insertErr)
 		return
 	}
-	utils.WriteJSON(w, http.StatusCreated, exp)
+	utils.WriteJSON(responseWriter, http.StatusCreated, expensePayload)
 }
 
-func DeleteBillingExpenseHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func DeleteBillingExpenseHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
-	_, err := db.ExecContext(r.Context(), "DELETE FROM billing_expenses WHERE id = ? AND tenant_id = ?", id, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete expense", err)
+	var expenseID string = chi.URLParam(request, "id")
+	_, deleteErr := database.ExecContext(request.Context(), "DELETE FROM billing_expenses WHERE id = ? AND tenant_id = ?", expenseID, tenantID)
+	if deleteErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete expense", deleteErr)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted", "id": id})
+	var deleteResponse = GenericItemDeleteResponse{
+		Status: "deleted",
+		ID:     expenseID,
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, deleteResponse)
 }
 
-func BillingCancelledListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func BillingCancelledListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), `
+	rows, queryErr := database.QueryContext(request.Context(), `
 		SELECT id, action, cancellation_date, payment_date, payment_type, client_name,
 		       client_avatar, client_initials, projects_name, payment_amount, reason
 		FROM billing_cancellations
 		WHERE tenant_id = ?
 		ORDER BY created_at DESC
-	`, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list cancellations", err)
+	`, tenantID)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list cancellations", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	var result []CancelledDTO
+	var cancellationsList = make([]CancelledDTO, 0)
 	for rows.Next() {
-		var c CancelledDTO
-		var sPayDate, sPayType, sAvatar, sInit, sProj, sReason sql.NullString
-		if err := rows.Scan(
-			&c.ID, &c.Action, &c.CancellationDate, &sPayDate, &sPayType, &c.ClientName,
-			&sAvatar, &sInit, &sProj, &c.PaymentAmount, &sReason,
-		); err != nil {
-			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read cancellation", err)
+		var cancelledItem CancelledDTO
+		var (
+			nullablePayDate sql.NullString
+			nullablePayType sql.NullString
+			nullableAvatar  sql.NullString
+			nullableInit    sql.NullString
+			nullableProject sql.NullString
+			nullableReason  sql.NullString
+		)
+		var scanErr error = rows.Scan(
+			&cancelledItem.ID, &cancelledItem.Action, &cancelledItem.CancellationDate, &nullablePayDate, &nullablePayType, &cancelledItem.ClientName,
+			&nullableAvatar, &nullableInit, &nullableProject, &cancelledItem.PaymentAmount, &nullableReason,
+		)
+		if scanErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read cancellation", scanErr)
 			return
 		}
-		if sPayDate.Valid {
-			c.PaymentDate = sPayDate.String
+		if nullablePayDate.Valid {
+			cancelledItem.PaymentDate = nullablePayDate.String
 		}
-		if sPayType.Valid {
-			c.Type = sPayType.String
+		if nullablePayType.Valid {
+			cancelledItem.Type = nullablePayType.String
 		}
-		if sAvatar.Valid {
-			c.ClientAvatar = sAvatar.String
+		if nullableAvatar.Valid {
+			cancelledItem.ClientAvatar = nullableAvatar.String
 		}
-		if sInit.Valid {
-			c.ClientInitials = sInit.String
+		if nullableInit.Valid {
+			cancelledItem.ClientInitials = nullableInit.String
 		} else {
-			c.ClientInitials = clientInitials(c.ClientName)
+			cancelledItem.ClientInitials = clientInitials(cancelledItem.ClientName)
 		}
-		if sProj.Valid {
-			c.ProjectsName = sProj.String
+		if nullableProject.Valid {
+			cancelledItem.ProjectsName = nullableProject.String
 		}
-		if sReason.Valid {
-			c.Reason = sReason.String
+		if nullableReason.Valid {
+			cancelledItem.Reason = nullableReason.String
 		}
-		c.CreatedOn = c.CancellationDate
-		result = append(result, c)
+		cancelledItem.CreatedOn = cancelledItem.CancellationDate
+		cancellationsList = append(cancellationsList, cancelledItem)
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating cancellations", err)
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Error iterating cancellations", iterationErr)
 		return
 	}
-	if result == nil {
-		result = []CancelledDTO{}
-	}
-	utils.WriteJSON(w, http.StatusOK, result)
+
+	utils.WriteJSON(responseWriter, http.StatusOK, cancellationsList)
 }
 
-func BillingRefundsListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func BillingRefundsListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), `
+	rows, queryErr := database.QueryContext(request.Context(), `
 		SELECT id, invoice_name, refund_date, client_name, client_avatar, client_initials,
 		       projects_name, payment_amount, cancellation_charges, refund_amount, note, status
 		FROM billing_refunds
 		WHERE tenant_id = ?
 		ORDER BY created_at DESC
-	`, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list refunds", err)
+	`, tenantID)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list refunds", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	var result []RefundedDTO
+	var refundsList = make([]RefundedDTO, 0)
 	for rows.Next() {
-		var ref RefundedDTO
-		var sAvatar, sInit, sProj, sNote sql.NullString
-		if err := rows.Scan(
-			&ref.ID, &ref.InvoiceName, &ref.RefundDate, &ref.ClientName, &sAvatar, &sInit,
-			&sProj, &ref.PaymentAmount, &ref.CancellationCharges, &ref.RefundAmount, &sNote, &ref.Status,
-		); err != nil {
-			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read refund", err)
+		var refundItem RefundedDTO
+		var (
+			nullableAvatar  sql.NullString
+			nullableInit    sql.NullString
+			nullableProject sql.NullString
+			nullableNote    sql.NullString
+		)
+		var scanErr error = rows.Scan(
+			&refundItem.ID, &refundItem.InvoiceName, &refundItem.RefundDate, &refundItem.ClientName, &nullableAvatar, &nullableInit,
+			&nullableProject, &refundItem.PaymentAmount, &refundItem.CancellationCharges, &refundItem.RefundAmount, &nullableNote, &refundItem.Status,
+		)
+		if scanErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read refund", scanErr)
 			return
 		}
-		if sAvatar.Valid {
-			ref.ClientAvatar = sAvatar.String
+		if nullableAvatar.Valid {
+			refundItem.ClientAvatar = nullableAvatar.String
 		}
-		if sInit.Valid {
-			ref.ClientInitials = sInit.String
+		if nullableInit.Valid {
+			refundItem.ClientInitials = nullableInit.String
 		} else {
-			ref.ClientInitials = clientInitials(ref.ClientName)
+			refundItem.ClientInitials = clientInitials(refundItem.ClientName)
 		}
-		if sProj.Valid {
-			ref.ProjectsName = sProj.String
+		if nullableProject.Valid {
+			refundItem.ProjectsName = nullableProject.String
 		}
-		if sNote.Valid {
-			ref.Note = sNote.String
+		if nullableNote.Valid {
+			refundItem.Note = nullableNote.String
 		}
-		ref.CreatedOn = ref.RefundDate
-		result = append(result, ref)
+		refundItem.CreatedOn = refundItem.RefundDate
+		refundsList = append(refundsList, refundItem)
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating refunds", err)
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Error iterating refunds", iterationErr)
 		return
 	}
-	if result == nil {
-		result = []RefundedDTO{}
-	}
-	utils.WriteJSON(w, http.StatusOK, result)
+
+	utils.WriteJSON(responseWriter, http.StatusOK, refundsList)
 }
 
-func CreateBillingRefundHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func CreateBillingRefundHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var ref RefundedDTO
-	if err := json.NewDecoder(r.Body).Decode(&ref); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	var refundPayload RefundedDTO
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&refundPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-	if ref.ID == "" {
-		ref.ID = "REF-" + uuid.New().String()[:8]
+	if refundPayload.ID == "" {
+		refundPayload.ID = "REF-" + uuid.New().String()[:8]
 	}
-	if ref.ClientInitials == "" {
-		ref.ClientInitials = clientInitials(ref.ClientName)
+	if refundPayload.ClientInitials == "" {
+		refundPayload.ClientInitials = clientInitials(refundPayload.ClientName)
 	}
-	if ref.Status == "" {
-		ref.Status = "Completed"
+	if refundPayload.Status == "" {
+		refundPayload.Status = "Completed"
 	}
 
-	_, err := db.ExecContext(r.Context(), `
+	_, insertErr := database.ExecContext(request.Context(), `
 		INSERT INTO billing_refunds (
 			id, tenant_id, invoice_name, refund_date, client_name, client_avatar, client_initials,
 			projects_name, payment_amount, cancellation_charges, refund_amount, note, status
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, ref.ID, tid, ref.InvoiceName, ref.RefundDate, ref.ClientName, ref.ClientAvatar, ref.ClientInitials,
-		ref.ProjectsName, ref.PaymentAmount, ref.CancellationCharges, ref.RefundAmount, ref.Note, ref.Status)
+	`, refundPayload.ID, tenantID, refundPayload.InvoiceName, refundPayload.RefundDate, refundPayload.ClientName, refundPayload.ClientAvatar, refundPayload.ClientInitials,
+		refundPayload.ProjectsName, refundPayload.PaymentAmount, refundPayload.CancellationCharges, refundPayload.RefundAmount, refundPayload.Note, refundPayload.Status)
 
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create refund", err)
+	if insertErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create refund", insertErr)
 		return
 	}
-	utils.WriteJSON(w, http.StatusCreated, ref)
+	utils.WriteJSON(responseWriter, http.StatusCreated, refundPayload)
 }
-

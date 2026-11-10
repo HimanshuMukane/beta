@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@repo/ui/components/ui/button'
 import { Badge } from '@repo/ui/components/ui/badge'
 import {
@@ -26,10 +27,19 @@ import type {
 import { billingApi } from '../../api/crmApi'
 import { BillingHero } from '../../components/BillingHero'
 import { BillingDateRangePicker, type DateRange } from '../../components/BillingDateRangePicker'
-import { AddPaymentModal } from '../../components/AddPaymentModal'
-import { AddInvoiceModal } from '../../components/AddInvoiceModal'
-import { AddExpenseModal } from '../../components/AddExpenseModal'
-import { AddRefundModal } from '../../components/AddRefundModal'
+
+const AddPaymentModal = React.lazy(() =>
+  import('../../components/AddPaymentModal').then((m) => ({ default: m.AddPaymentModal }))
+)
+const AddInvoiceModal = React.lazy(() =>
+  import('../../components/AddInvoiceModal').then((m) => ({ default: m.AddInvoiceModal }))
+)
+const AddExpenseModal = React.lazy(() =>
+  import('../../components/AddExpenseModal').then((m) => ({ default: m.AddExpenseModal }))
+)
+const AddRefundModal = React.lazy(() =>
+  import('../../components/AddRefundModal').then((m) => ({ default: m.AddRefundModal }))
+)
 
 // Column Helpers for each table
 const paymentColHelper = createColumnHelper<DataTableFeatures, BillingPayment>()
@@ -53,6 +63,7 @@ function parseSafeDate(dateStr: string): Date | null {
 }
 
 export function BillingsPage() {
+  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = React.useState<BillingTab>('payments')
 
   // Date Range filter state
@@ -61,24 +72,40 @@ export function BillingsPage() {
     endDate: new Date(2026, 11, 31),
   })
 
-  // Data states
-  const [payments, setPayments] = React.useState<BillingPayment[]>([])
-  const [invoices, setInvoices] = React.useState<BillingInvoice[]>([])
-  const [expenses, setExpenses] = React.useState<BillingExpense[]>([])
-  const [cancelled, setCancelled] = React.useState<BillingCancelled[]>([])
-  const [refunded, setRefunded] = React.useState<BillingRefunded[]>([])
+  // Lazy-load queries with TanStack Query
+  const { data: payments = [] } = useQuery({
+    queryKey: ['billing', 'payments'],
+    queryFn: billingApi.getPayments,
+    staleTime: 60_000,
+  })
 
-  const loadBillingData = React.useCallback(() => {
-    billingApi.getPayments().then(setPayments).catch((err) => console.error(err))
-    billingApi.getInvoices().then(setInvoices).catch((err) => console.error(err))
-    billingApi.getExpenses().then(setExpenses).catch((err) => console.error(err))
-    billingApi.getCancelled().then(setCancelled).catch((err) => console.error(err))
-    billingApi.getRefunds().then(setRefunded).catch((err) => console.error(err))
-  }, [])
+  const { data: invoices = [] } = useQuery({
+    queryKey: ['billing', 'invoices'],
+    queryFn: billingApi.getInvoices,
+    enabled: activeTab === 'invoices',
+    staleTime: 60_000,
+  })
 
-  React.useEffect(() => {
-    loadBillingData()
-  }, [loadBillingData])
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['billing', 'expenses'],
+    queryFn: billingApi.getExpenses,
+    enabled: activeTab === 'expenses',
+    staleTime: 60_000,
+  })
+
+  const { data: cancelled = [] } = useQuery({
+    queryKey: ['billing', 'cancelled'],
+    queryFn: billingApi.getCancelled,
+    enabled: activeTab === 'cancelled',
+    staleTime: 60_000,
+  })
+
+  const { data: refunded = [] } = useQuery({
+    queryKey: ['billing', 'refunds'],
+    queryFn: billingApi.getRefunds,
+    enabled: activeTab === 'refunded',
+    staleTime: 60_000,
+  })
 
   // Modal dialog states
   const [isPaymentModalOpen, setIsPaymentModalOpen] = React.useState(false)
@@ -1010,46 +1037,56 @@ export function BillingsPage() {
       </div>
 
       {/* Action Modals */}
-      <AddPaymentModal
-        open={isPaymentModalOpen}
-        onOpenChange={setIsPaymentModalOpen}
-        onAddPayment={(newPay) => {
-          billingApi.createPayment(newPay).then((created) => {
-            setPayments((prev) => [created, ...prev])
-            toast.success('Payment recorded successfully')
-          }).catch((err) => toast.error(err.message || 'Failed to record payment'))
-        }}
-      />
-      <AddInvoiceModal
-        open={isInvoiceModalOpen}
-        onOpenChange={setIsInvoiceModalOpen}
-        onAddInvoice={(newInv) => {
-          billingApi.createInvoice(newInv).then((created) => {
-            setInvoices((prev) => [created, ...prev])
-            toast.success('Invoice created successfully')
-          }).catch((err) => toast.error(err.message || 'Failed to create invoice'))
-        }}
-      />
-      <AddExpenseModal
-        open={isExpenseModalOpen}
-        onOpenChange={setIsExpenseModalOpen}
-        onAddExpense={(newExp) => {
-          billingApi.createExpense(newExp).then((created) => {
-            setExpenses((prev) => [created, ...prev])
-            toast.success('Expense added successfully')
-          }).catch((err) => toast.error(err.message || 'Failed to add expense'))
-        }}
-      />
-      <AddRefundModal
-        open={isRefundModalOpen}
-        onOpenChange={setIsRefundModalOpen}
-        onAddRefund={(newRef) => {
-          billingApi.createRefund(newRef).then((created) => {
-            setRefunded((prev) => [created, ...prev])
-            toast.success('Refund issued successfully')
-          }).catch((err) => toast.error(err.message || 'Failed to issue refund'))
-        }}
-      />
+      <React.Suspense fallback={null}>
+        {isPaymentModalOpen && (
+          <AddPaymentModal
+            open={isPaymentModalOpen}
+            onOpenChange={setIsPaymentModalOpen}
+            onAddPayment={(newPay) => {
+              billingApi.createPayment(newPay).then(() => {
+                queryClient.invalidateQueries({ queryKey: ['billing', 'payments'] })
+                toast.success('Payment recorded successfully')
+              }).catch((err) => toast.error(err.message || 'Failed to record payment'))
+            }}
+          />
+        )}
+        {isInvoiceModalOpen && (
+          <AddInvoiceModal
+            open={isInvoiceModalOpen}
+            onOpenChange={setIsInvoiceModalOpen}
+            onAddInvoice={(newInv) => {
+              billingApi.createInvoice(newInv).then(() => {
+                queryClient.invalidateQueries({ queryKey: ['billing', 'invoices'] })
+                toast.success('Invoice created successfully')
+              }).catch((err) => toast.error(err.message || 'Failed to create invoice'))
+            }}
+          />
+        )}
+        {isExpenseModalOpen && (
+          <AddExpenseModal
+            open={isExpenseModalOpen}
+            onOpenChange={setIsExpenseModalOpen}
+            onAddExpense={(newExp) => {
+              billingApi.createExpense(newExp).then(() => {
+                queryClient.invalidateQueries({ queryKey: ['billing', 'expenses'] })
+                toast.success('Expense added successfully')
+              }).catch((err) => toast.error(err.message || 'Failed to add expense'))
+            }}
+          />
+        )}
+        {isRefundModalOpen && (
+          <AddRefundModal
+            open={isRefundModalOpen}
+            onOpenChange={setIsRefundModalOpen}
+            onAddRefund={(newRef) => {
+              billingApi.createRefund(newRef).then(() => {
+                queryClient.invalidateQueries({ queryKey: ['billing', 'refunds'] })
+                toast.success('Refund issued successfully')
+              }).catch((err) => toast.error(err.message || 'Failed to issue refund'))
+            }}
+          />
+        )}
+      </React.Suspense>
     </div>
   )
 }

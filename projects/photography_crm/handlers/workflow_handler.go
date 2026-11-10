@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type WorkflowStageItem struct {
@@ -21,270 +22,302 @@ type WorkflowStageItem struct {
 	OrderIndex   int    `json:"order_index"`
 }
 
-func requireTenantID(w http.ResponseWriter, r *http.Request) (string, bool) {
-	if tc := utils.TenantFromContext(r.Context()); tc != nil && tc.TenantID != uuid.Nil {
-		return tc.TenantID.String(), true
+type CreateWorkflowStageRequest struct {
+	WorkflowType string `json:"workflow_type"`
+	Pipeline     string `json:"pipeline"`
+	Stage        string `json:"stage"`
+	ColorCode    string `json:"color_code"`
+	OrderIndex   int    `json:"order_index"`
+}
+
+type UpdateWorkflowStageRequest struct {
+	Pipeline   string `json:"pipeline"`
+	Stage      string `json:"stage"`
+	ColorCode  string `json:"color_code"`
+	OrderIndex int    `json:"order_index"`
+}
+
+type WorkflowBatchStageInput struct {
+	ID         string `json:"id"`
+	Pipeline   string `json:"pipeline"`
+	Stage      string `json:"stage"`
+	ColorCode  string `json:"color_code"`
+	OrderIndex int    `json:"order_index"`
+}
+
+type SaveWorkflowStagesBatchRequest struct {
+	WorkflowType string                    `json:"workflow_type"`
+	Stages       []WorkflowBatchStageInput `json:"stages"`
+}
+
+func requireTenantID(responseWriter http.ResponseWriter, request *http.Request) (string, bool) {
+	var tenantContext *utils.TenantContext = utils.TenantFromContext(request.Context())
+	if tenantContext != nil && tenantContext.TenantID != uuid.Nil {
+		return tenantContext.TenantID.String(), true
 	}
-	utils.WriteError(w, http.StatusForbidden, "Valid workspace membership required")
+	utils.WriteError(responseWriter, http.StatusForbidden, "Valid workspace membership required")
 	return "", false
 }
 
-func WorkflowsListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func WorkflowsListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	workflowType := strings.TrimSpace(r.URL.Query().Get("type"))
+	var workflowType string = strings.TrimSpace(request.URL.Query().Get("type"))
 	if workflowType == "" {
 		workflowType = "lead"
 	}
 
-	rows, err := db.QueryContext(r.Context(), `
+	rows, queryErr := database.QueryContext(request.Context(), `
 		SELECT id, tenant_id, workflow_type, pipeline, stage, color_code, order_index
 		FROM workflows
 		WHERE tenant_id = ? AND workflow_type = ? AND deleted_at IS NULL
 		ORDER BY order_index ASC, created_at ASC
-	`, tid, workflowType)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to list workflow stages", err)
+	`, tenantID, workflowType)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list workflow stages", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	items := make([]WorkflowStageItem, 0)
+	var workflowItems = make([]WorkflowStageItem, 0)
 	for rows.Next() {
-		var item WorkflowStageItem
-		if err := rows.Scan(&item.ID, &item.TenantID, &item.WorkflowType, &item.Pipeline, &item.Stage, &item.ColorCode, &item.OrderIndex); err != nil {
-			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to read workflow stage", err)
+		var workflowItem WorkflowStageItem
+		var scanErr error = rows.Scan(
+			&workflowItem.ID,
+			&workflowItem.TenantID,
+			&workflowItem.WorkflowType,
+			&workflowItem.Pipeline,
+			&workflowItem.Stage,
+			&workflowItem.ColorCode,
+			&workflowItem.OrderIndex,
+		)
+		if scanErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read workflow stage", scanErr)
 			return
 		}
-		items = append(items, item)
+		workflowItems = append(workflowItems, workflowItem)
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Error iterating workflow stages", err)
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Error iterating workflow stages", iterationErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, items)
+	utils.WriteJSON(responseWriter, http.StatusOK, workflowItems)
 }
 
-func CreateWorkflowStageHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func CreateWorkflowStageHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
-		return
-	}
-
-	var req struct {
-		WorkflowType string `json:"workflow_type"`
-		Pipeline     string `json:"pipeline"`
-		Stage        string `json:"stage"`
-		ColorCode    string `json:"color_code"`
-		OrderIndex   int    `json:"order_index"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	pipeline := strings.TrimSpace(req.Pipeline)
-	stage := strings.TrimSpace(req.Stage)
+	var requestPayload CreateWorkflowStageRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	var pipeline string = strings.TrimSpace(requestPayload.Pipeline)
+	var stage string = strings.TrimSpace(requestPayload.Stage)
 	if pipeline == "" || stage == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Pipeline and stage are required"})
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Pipeline and stage are required")
 		return
 	}
 
-	workflowType := strings.TrimSpace(req.WorkflowType)
+	var workflowType string = strings.TrimSpace(requestPayload.WorkflowType)
 	if workflowType == "" {
 		workflowType = "lead"
 	}
 
-	colorCode := strings.TrimSpace(req.ColorCode)
+	var colorCode string = strings.TrimSpace(requestPayload.ColorCode)
 	if colorCode == "" {
 		colorCode = "#10b981"
 	}
 
-	id := uuid.New().String()
-	_, err := db.ExecContext(r.Context(), `
+	var stageID string = uuid.New().String()
+	_, execErr := database.ExecContext(request.Context(), `
 		INSERT INTO workflows (id, tenant_id, workflow_type, pipeline, stage, color_code, order_index)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, id, tid, workflowType, pipeline, stage, colorCode, req.OrderIndex)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to create workflow stage", err)
+	`, stageID, tenantID, workflowType, pipeline, stage, colorCode, requestPayload.OrderIndex)
+	if execErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create workflow stage", execErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, WorkflowStageItem{
-		ID:           id,
-		TenantID:     tid,
+	var createdStage = WorkflowStageItem{
+		ID:           stageID,
+		TenantID:     tenantID,
 		WorkflowType: workflowType,
 		Pipeline:     pipeline,
 		Stage:        stage,
 		ColorCode:    colorCode,
-		OrderIndex:   req.OrderIndex,
-	})
+		OrderIndex:   requestPayload.OrderIndex,
+	}
+	utils.WriteJSON(responseWriter, http.StatusCreated, createdStage)
 }
 
-func UpdateWorkflowStageHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func UpdateWorkflowStageHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Stage ID is required"})
+	var stageID string = chi.URLParam(request, "id")
+	if stageID == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Stage ID is required")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
-		return
-	}
-
-	var req struct {
-		Pipeline   string `json:"pipeline"`
-		Stage      string `json:"stage"`
-		ColorCode  string `json:"color_code"`
-		OrderIndex int    `json:"order_index"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	pipeline := strings.TrimSpace(req.Pipeline)
-	stage := strings.TrimSpace(req.Stage)
+	var requestPayload UpdateWorkflowStageRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	var pipeline string = strings.TrimSpace(requestPayload.Pipeline)
+	var stage string = strings.TrimSpace(requestPayload.Stage)
 	if pipeline == "" || stage == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Pipeline and stage cannot be empty"})
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Pipeline and stage cannot be empty")
 		return
 	}
 
-	colorCode := strings.TrimSpace(req.ColorCode)
+	var colorCode string = strings.TrimSpace(requestPayload.ColorCode)
 	if colorCode == "" {
 		colorCode = "#10b981"
 	}
 
-	_, err := db.ExecContext(r.Context(), `
+	_, execErr := database.ExecContext(request.Context(), `
 		UPDATE workflows
 		SET pipeline = ?, stage = ?, color_code = ?, order_index = ?, updated_at = NOW(6)
 		WHERE id = ? AND tenant_id = ?
-	`, pipeline, stage, colorCode, req.OrderIndex, id, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to update workflow stage", err)
+	`, pipeline, stage, colorCode, requestPayload.OrderIndex, stageID, tenantID)
+	if execErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update workflow stage", execErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var responsePayload = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, responsePayload)
 }
 
-func DeleteWorkflowStageHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func DeleteWorkflowStageHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Stage ID is required"})
+	var stageID string = chi.URLParam(request, "id")
+	if stageID == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Stage ID is required")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
-		return
-	}
-
-	_, err := db.ExecContext(r.Context(), "UPDATE workflows SET deleted_at = NOW(6) WHERE id = ? AND tenant_id = ?", id, tid)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to delete workflow stage", err)
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	_, execErr := database.ExecContext(request.Context(), "UPDATE workflows SET deleted_at = NOW(6) WHERE id = ? AND tenant_id = ?", stageID, tenantID)
+	if execErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete workflow stage", execErr)
+		return
+	}
+
+	var responsePayload = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, responsePayload)
 }
 
-func SaveWorkflowStagesBatchHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
+func SaveWorkflowStagesBatchHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
-		return
-	}
-
-	var req struct {
-		WorkflowType string `json:"workflow_type"`
-		Stages       []struct {
-			ID         string `json:"id"`
-			Pipeline   string `json:"pipeline"`
-			Stage      string `json:"stage"`
-			ColorCode  string `json:"color_code"`
-			OrderIndex int    `json:"order_index"`
-		} `json:"stages"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	workflowType := strings.TrimSpace(req.WorkflowType)
+	var requestPayload SaveWorkflowStagesBatchRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	var workflowType string = strings.TrimSpace(requestPayload.WorkflowType)
 	if workflowType == "" {
 		workflowType = "lead"
 	}
 
-	tx, err := db.BeginTxx(r.Context(), nil)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to begin transaction", err)
+	transaction, txErr := database.BeginTxx(request.Context(), nil)
+	if txErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to begin transaction", txErr)
 		return
 	}
-	defer tx.Rollback()
+	defer transaction.Rollback()
 
-	// Replace existing stages for this tenant & workflow_type
-	_, err = tx.ExecContext(r.Context(), "UPDATE workflows SET deleted_at = NOW(6) WHERE tenant_id = ? AND workflow_type = ? AND deleted_at IS NULL", tid, workflowType)
-	if err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to reset workflow stages", err)
+	_, resetErr := transaction.ExecContext(request.Context(), "UPDATE workflows SET deleted_at = NOW(6) WHERE tenant_id = ? AND workflow_type = ? AND deleted_at IS NULL", tenantID, workflowType)
+	if resetErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to reset workflow stages", resetErr)
 		return
 	}
 
-	for idx, stg := range req.Stages {
-		pipeline := strings.TrimSpace(stg.Pipeline)
-		stage := strings.TrimSpace(stg.Stage)
+	for stageIndex, stageInput := range requestPayload.Stages {
+		var pipeline string = strings.TrimSpace(stageInput.Pipeline)
+		var stage string = strings.TrimSpace(stageInput.Stage)
 		if pipeline == "" || stage == "" {
 			continue
 		}
-		colorCode := strings.TrimSpace(stg.ColorCode)
+		var colorCode string = strings.TrimSpace(stageInput.ColorCode)
 		if colorCode == "" {
 			colorCode = "#10b981"
 		}
-		id := stg.ID
-		if id == "" || strings.HasPrefix(id, "temp-") || strings.HasPrefix(id, "stg-") {
-			id = uuid.New().String()
+		var stageID string = stageInput.ID
+		if stageID == "" || strings.HasPrefix(stageID, "temp-") || strings.HasPrefix(stageID, "stg-") {
+			stageID = uuid.New().String()
 		}
 
-		_, err = tx.ExecContext(r.Context(), `
+		_, insertErr := transaction.ExecContext(request.Context(), `
 			INSERT INTO workflows (id, tenant_id, workflow_type, pipeline, stage, color_code, order_index)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
-		`, id, tid, workflowType, pipeline, stage, colorCode, idx+1)
-		if err != nil {
-			utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to save workflow stages", err)
+		`, stageID, tenantID, workflowType, pipeline, stage, colorCode, stageIndex+1)
+		if insertErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to save workflow stages", insertErr)
 			return
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		utils.WriteAppError(w, r, http.StatusInternalServerError, "Failed to commit workflow stages", err)
+	var commitErr error = transaction.Commit()
+	if commitErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to commit workflow stages", commitErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var responsePayload = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, responsePayload)
 }

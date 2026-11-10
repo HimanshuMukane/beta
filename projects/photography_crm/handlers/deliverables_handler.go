@@ -8,6 +8,7 @@ import (
 	"core/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type DeliverableItemDTO struct {
@@ -23,385 +24,310 @@ type DeliverableGroupDTO struct {
 	Deliverables []DeliverableItemDTO `json:"deliverables"`
 }
 
-func parseDeliverablesList(raw []byte, groupName string) []DeliverableItemDTO {
-	if len(raw) == 0 {
+type CreateDeliverableGroupRequest struct {
+	GroupName    string               `json:"groupName"`
+	Deliverables []DeliverableItemDTO `json:"deliverables"`
+}
+
+type UpdateDeliverableGroupRequest struct {
+	GroupName    string               `json:"groupName"`
+	Deliverables []DeliverableItemDTO `json:"deliverables"`
+}
+
+type BatchSaveDeliverableGroupItem struct {
+	ID           string               `json:"id"`
+	GroupName    string               `json:"groupName"`
+	Deliverables []DeliverableItemDTO `json:"deliverables"`
+}
+
+type BatchSaveDeliverablesRequest struct {
+	Groups []BatchSaveDeliverableGroupItem `json:"groups"`
+}
+
+func parseDeliverablesList(rawBytes []byte, defaultGroupName string) []DeliverableItemDTO {
+	if len(rawBytes) == 0 {
 		return []DeliverableItemDTO{}
 	}
-	var direct []DeliverableItemDTO
-	if err := json.Unmarshal(raw, &direct); err == nil && len(direct) > 0 && direct[0].Name != "" {
-		return direct
+	var directDeliverables []DeliverableItemDTO
+	var unmarshalErr error = json.Unmarshal(rawBytes, &directDeliverables)
+	if unmarshalErr == nil && len(directDeliverables) > 0 && directDeliverables[0].Name != "" {
+		return directDeliverables
 	}
 	var rawItems []any
-	if err := json.Unmarshal(raw, &rawItems); err != nil {
+	var fallbackErr error = json.Unmarshal(rawBytes, &rawItems)
+	if fallbackErr != nil {
 		return []DeliverableItemDTO{}
 	}
-	out := make([]DeliverableItemDTO, 0, len(rawItems))
-	for _, it := range rawItems {
-		if str, ok := it.(string); ok {
-			out = append(out, DeliverableItemDTO{
+	var deliverables = make([]DeliverableItemDTO, 0, len(rawItems))
+	for _, rawItem := range rawItems {
+		if nameString, ok := rawItem.(string); ok {
+			deliverables = append(deliverables, DeliverableItemDTO{
 				ID:        uuid.New().String(),
-				GroupName: groupName,
-				Name:      str,
+				GroupName: defaultGroupName,
+				Name:      nameString,
 			})
-		} else if m, ok := it.(map[string]any); ok {
-			id, _ := m["id"].(string)
-			name, _ := m["name"].(string)
-			grp, _ := m["groupName"].(string)
-			if grp == "" {
-				grp = groupName
+		} else if itemMap, ok := rawItem.(map[string]any); ok {
+			var itemID string
+			if idVal, ok := itemMap["id"].(string); ok {
+				itemID = idVal
 			}
-			out = append(out, DeliverableItemDTO{
-				ID:        id,
-				GroupName: grp,
-				Name:      name,
+			var itemName string
+			if nameVal, ok := itemMap["name"].(string); ok {
+				itemName = nameVal
+			}
+			var itemGroupName string
+			if grpVal, ok := itemMap["groupName"].(string); ok {
+				itemGroupName = grpVal
+			}
+			if itemGroupName == "" {
+				itemGroupName = defaultGroupName
+			}
+			deliverables = append(deliverables, DeliverableItemDTO{
+				ID:        itemID,
+				GroupName: itemGroupName,
+				Name:      itemName,
 			})
 		}
 	}
-	return out
+	return deliverables
 }
 
-func DeliverablesListHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func DeliverablesListHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	rows, err := db.QueryContext(r.Context(), `
+	rows, queryErr := database.QueryContext(request.Context(), `
 		SELECT id, tenant_id, group_name, deliverables
 		FROM deliverables
 		WHERE tenant_id = ? AND deleted_at IS NULL
 		ORDER BY created_at ASC
-	`, tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to list deliverables",
-			},
-		})
+	`, tenantID)
+	if queryErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list deliverables", queryErr)
 		return
 	}
 	defer rows.Close()
 
-	groups := make([]DeliverableGroupDTO, 0)
+	var deliverableGroups = make([]DeliverableGroupDTO, 0)
 	for rows.Next() {
-		var item DeliverableGroupDTO
-		var raw []byte
-		if err := rows.Scan(&item.ID, &item.TenantID, &item.GroupName, &raw); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"error": map[string]any{
-					"code":    "SCAN_ERROR",
-					"message": "Failed to read deliverable group",
-				},
-			})
+		var deliverableGroup DeliverableGroupDTO
+		var rawBytes []byte
+		var scanErr error = rows.Scan(&deliverableGroup.ID, &deliverableGroup.TenantID, &deliverableGroup.GroupName, &rawBytes)
+		if scanErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read deliverable group", scanErr)
 			return
 		}
-		item.Deliverables = parseDeliverablesList(raw, item.GroupName)
-		groups = append(groups, item)
+		deliverableGroup.Deliverables = parseDeliverablesList(rawBytes, deliverableGroup.GroupName)
+		deliverableGroups = append(deliverableGroups, deliverableGroup)
 	}
-	if err := rows.Err(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "ITERATION_ERROR",
-				"message": "Error iterating deliverable groups",
-			},
-		})
+	var iterationErr error = rows.Err()
+	if iterationErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Error iterating deliverable groups", iterationErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, groups)
+	utils.WriteJSON(responseWriter, http.StatusOK, deliverableGroups)
 }
 
-func CreateDeliverableGroupHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func CreateDeliverableGroupHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var req struct {
-		GroupName    string               `json:"groupName"`
-		Deliverables []DeliverableItemDTO `json:"deliverables"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Invalid request body",
-			},
-		})
+	var requestPayload CreateDeliverableGroupRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	groupName := strings.TrimSpace(req.GroupName)
+	var groupName string = strings.TrimSpace(requestPayload.GroupName)
 	if groupName == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Group name is required",
-			},
-		})
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Group name is required")
 		return
 	}
 
-	if req.Deliverables == nil {
-		req.Deliverables = []DeliverableItemDTO{}
+	if requestPayload.Deliverables == nil {
+		requestPayload.Deliverables = []DeliverableItemDTO{}
 	}
-	rawBytes, _ := json.Marshal(req.Deliverables)
+	rawBytes, _ := json.Marshal(requestPayload.Deliverables)
 
-	id := uuid.New().String()
-	_, err := db.ExecContext(r.Context(), `
+	var deliverableGroupID string = uuid.New().String()
+	_, insertErr := database.ExecContext(request.Context(), `
 		INSERT INTO deliverables (id, tenant_id, group_name, deliverables)
 		VALUES (?, ?, ?, ?)
-	`, id, tid, groupName, rawBytes)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to create deliverable group",
-			},
-		})
+	`, deliverableGroupID, tenantID, groupName, rawBytes)
+	if insertErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create deliverable group", insertErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, DeliverableGroupDTO{
-		ID:           id,
-		TenantID:     tid,
+	var createdGroup = DeliverableGroupDTO{
+		ID:           deliverableGroupID,
+		TenantID:     tenantID,
 		GroupName:    groupName,
-		Deliverables: req.Deliverables,
-	})
+		Deliverables: requestPayload.Deliverables,
+	}
+	utils.WriteJSON(responseWriter, http.StatusCreated, createdGroup)
 }
 
-func UpdateDeliverableGroupHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func UpdateDeliverableGroupHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Deliverable group ID is required",
-			},
-		})
+	var deliverableGroupID string = chi.URLParam(request, "id")
+	if deliverableGroupID == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Deliverable group ID is required")
 		return
 	}
 
-	var req struct {
-		GroupName    string               `json:"groupName"`
-		Deliverables []DeliverableItemDTO `json:"deliverables"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Invalid request body",
-			},
-		})
+	var requestPayload UpdateDeliverableGroupRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	groupName := strings.TrimSpace(req.GroupName)
+	var groupName string = strings.TrimSpace(requestPayload.GroupName)
 	if groupName == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Group name is required",
-			},
-		})
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Group name is required")
 		return
 	}
 
-	if req.Deliverables == nil {
-		req.Deliverables = []DeliverableItemDTO{}
+	if requestPayload.Deliverables == nil {
+		requestPayload.Deliverables = []DeliverableItemDTO{}
 	}
-	rawBytes, _ := json.Marshal(req.Deliverables)
+	rawBytes, _ := json.Marshal(requestPayload.Deliverables)
 
-	_, err := db.ExecContext(r.Context(), `
+	_, updateErr := database.ExecContext(request.Context(), `
 		UPDATE deliverables
 		SET group_name = ?, deliverables = ?, updated_at = NOW(6)
 		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
-	`, groupName, rawBytes, id, tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to update deliverable group",
-			},
-		})
+	`, groupName, rawBytes, deliverableGroupID, tenantID)
+	if updateErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update deliverable group", updateErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var successResponse = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
 }
 
-func DeleteDeliverableGroupHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func DeleteDeliverableGroupHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Deliverable group ID is required",
-			},
-		})
+	var deliverableGroupID string = chi.URLParam(request, "id")
+	if deliverableGroupID == "" {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Deliverable group ID is required")
 		return
 	}
 
-	_, err := db.ExecContext(r.Context(), `
+	_, deleteErr := database.ExecContext(request.Context(), `
 		UPDATE deliverables SET deleted_at = NOW(6) WHERE id = ? AND tenant_id = ?
-	`, id, tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to delete deliverable group",
-			},
-		})
+	`, deliverableGroupID, tenantID)
+	if deleteErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete deliverable group", deleteErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var successResponse = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
 }
 
-func BatchSaveDeliverablesHandler(w http.ResponseWriter, r *http.Request) {
-	db := utils.DBFromContext(r.Context(), nil)
-	if db == nil {
-		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Database unavailable",
-			},
-		})
+func BatchSaveDeliverablesHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var database *sqlx.DB = utils.DBFromContext(request.Context(), nil)
+	if database == nil {
+		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tid, ok := requireTenantID(w, r)
-	if !ok {
+	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	if !hasTenantID {
 		return
 	}
 
-	var req struct {
-		Groups []struct {
-			ID           string               `json:"id"`
-			GroupName    string               `json:"groupName"`
-			Deliverables []DeliverableItemDTO `json:"deliverables"`
-		} `json:"groups"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-			"error": map[string]any{
-				"code":    "VALIDATION_ERROR",
-				"message": "Invalid request body",
-			},
-		})
+	var requestPayload BatchSaveDeliverablesRequest
+	var decodeErr error = json.NewDecoder(request.Body).Decode(&requestPayload)
+	if decodeErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	tx, err := db.BeginTxx(r.Context(), nil)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to start database transaction",
-			},
-		})
+	transaction, beginTxErr := database.BeginTxx(request.Context(), nil)
+	if beginTxErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to start database transaction", beginTxErr)
 		return
 	}
-	defer tx.Rollback()
+	defer transaction.Rollback()
 
-	_, err = tx.ExecContext(r.Context(), "UPDATE deliverables SET deleted_at = NOW(6) WHERE tenant_id = ? AND deleted_at IS NULL", tid)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to update existing deliverables",
-			},
-		})
+	_, resetErr := transaction.ExecContext(request.Context(), "UPDATE deliverables SET deleted_at = NOW(6) WHERE tenant_id = ? AND deleted_at IS NULL", tenantID)
+	if resetErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update existing deliverables", resetErr)
 		return
 	}
 
-	for _, g := range req.Groups {
-		name := strings.TrimSpace(g.GroupName)
-		if name == "" {
+	for _, groupItem := range requestPayload.Groups {
+		var groupName string = strings.TrimSpace(groupItem.GroupName)
+		if groupName == "" {
 			continue
 		}
-		id := g.ID
-		if id == "" || strings.HasPrefix(id, "temp-") || strings.HasPrefix(id, "del-") {
-			id = uuid.New().String()
+		var groupID string = groupItem.ID
+		if groupID == "" || strings.HasPrefix(groupID, "temp-") || strings.HasPrefix(groupID, "del-") {
+			groupID = uuid.New().String()
 		}
-		delivs := g.Deliverables
-		if delivs == nil {
-			delivs = []DeliverableItemDTO{}
+		var deliverables = groupItem.Deliverables
+		if deliverables == nil {
+			deliverables = []DeliverableItemDTO{}
 		}
-		b, _ := json.Marshal(delivs)
+		rawBytes, _ := json.Marshal(deliverables)
 
-		_, err = tx.ExecContext(r.Context(), `
+		_, insertErr := transaction.ExecContext(request.Context(), `
 			INSERT INTO deliverables (id, tenant_id, group_name, deliverables)
 			VALUES (?, ?, ?, ?)
-		`, id, tid, name, b)
-		if err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"error": map[string]any{
-					"code":    "DATABASE_ERROR",
-					"message": "Failed to save deliverable group",
-				},
-			})
+		`, groupID, tenantID, groupName, rawBytes)
+		if insertErr != nil {
+			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to save deliverable group", insertErr)
 			return
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{
-				"code":    "DATABASE_ERROR",
-				"message": "Failed to commit deliverables",
-			},
-		})
+	var commitErr error = transaction.Commit()
+	if commitErr != nil {
+		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to commit deliverables", commitErr)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	var successResponse = ActionStatusSuccessResponse{
+		Status: "ok",
+	}
+	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
 }

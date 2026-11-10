@@ -6,6 +6,6 @@ import (
 	"core/utils"
 )
 
-func NotFoundHandler(w http.ResponseWriter, _ *http.Request) {
-	utils.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+func NotFoundHandler(responseWriter http.ResponseWriter, _ *http.Request) {
+	utils.WriteError(responseWriter, http.StatusNotFound, "Resource not found")
 }

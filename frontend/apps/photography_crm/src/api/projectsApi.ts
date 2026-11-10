@@ -9,11 +9,11 @@ export interface ProjectListParams {
 }
 
 export const projectsApi = {
-  list: async (_params?: ProjectListParams): Promise<Project[]> => {
-    return apiClient<Project[]>('/api/projects')
+  list: async (params?: ProjectListParams, signal?: AbortSignal): Promise<Project[]> => {
+    return apiClient<Project[]>('/api/projects', { params: params as any, signal })
   },
-  get: async (id: string): Promise<Project> => {
-    return apiClient<Project>(`/api/projects/${id}`)
+  get: async (id: string, signal?: AbortSignal): Promise<Project> => {
+    return apiClient<Project>(`/api/projects/${id}`, { signal })
   },
   create: async (project: Partial<Project>): Promise<Project> => {
     return apiClient<Project>('/api/projects', {
