@@ -18,4 +18,11 @@ type GenericItemDeleteResponse struct {
 	ID     string `json:"id"`
 }
 
+type DetailedError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
 
+type ErrorResponseEnvelope struct {
+	Error DetailedError `json:"error"`
+}

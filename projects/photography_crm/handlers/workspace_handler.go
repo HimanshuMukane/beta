@@ -5,47 +5,75 @@ import (
 	"net/http"
 	"time"
 
+	"core/models"
 	"core/repositories"
 	"core/utils"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type SwitchWorkspaceRequest struct {
 	TenantID string `json:"tenantId"`
 }
 
-func SwitchTenantHandler(w http.ResponseWriter, r *http.Request) {
-	tenantIDStr := r.URL.Query().Get("tenant_id")
-	if tenantIDStr == "" {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+type SwitchWorkspaceSuccessResponse struct {
+	Message        string             `json:"message"`
+	ActiveTenantID string             `json:"activeTenantId"`
+	Workspace      *models.Membership `json:"workspace"`
+}
+
+type WorkspaceItemDTO struct {
+	ID                 string `json:"id"`
+	TenantID           string `json:"tenantId"`
+	TenantName         string `json:"tenantName"`
+	TenantSlug         string `json:"tenantSlug"`
+	TenantBusinessType string `json:"tenantBusinessType"`
+	Role               string `json:"role"`
+	Status             string `json:"status"`
+	SubscriptionStatus string `json:"subscriptionStatus"`
+}
+
+type WorkspacesListResponse struct {
+	ActiveTenantID string             `json:"activeTenantId"`
+	Workspaces     []WorkspaceItemDTO `json:"workspaces"`
+}
+
+func SwitchTenantHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	var tenantIDString string = request.URL.Query().Get("tenant_id")
+	if tenantIDString == "" {
+		http.Redirect(responseWriter, request, "/", http.StatusSeeOther)
 		return
 	}
 
-	tenantID, err := uuid.Parse(tenantIDStr)
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+	var parsedTenantID uuid.UUID
+	var parseErr error
+	parsedTenantID, parseErr = uuid.Parse(tenantIDString)
+	if parseErr != nil {
+		http.Redirect(responseWriter, request, "/", http.StatusSeeOther)
 		return
 	}
 
-	user := utils.UserFromContext(r.Context())
-	if user == nil {
-		http.Redirect(w, r, "/signin", http.StatusSeeOther)
+	var authenticatedUser *models.User = utils.UserFromContext(request.Context())
+	if authenticatedUser == nil {
+		http.Redirect(responseWriter, request, "/signin", http.StatusSeeOther)
 		return
 	}
 
-	db := utils.IdentityDBFromContext(r.Context(), nil)
-	if db != nil {
-		tenantRepo := repositories.NewTenantRepository(db)
-		m, err := tenantRepo.GetMembership(r.Context(), tenantID, user.ID)
-		if err != nil || m == nil || m.Status != "active" {
-			http.Error(w, "Unauthorized workspace access", http.StatusForbidden)
+	var identityDatabase *sqlx.DB = utils.IdentityDBFromContext(request.Context(), nil)
+	if identityDatabase != nil {
+		var tenantRepo *repositories.TenantRepository = repositories.NewTenantRepository(identityDatabase)
+		var userMembership *models.Membership
+		var membershipErr error
+		userMembership, membershipErr = tenantRepo.GetMembership(request.Context(), parsedTenantID, authenticatedUser.ID)
+		if membershipErr != nil || userMembership == nil || userMembership.Status != "active" {
+			http.Error(responseWriter, "Unauthorized workspace access", http.StatusForbidden)
 			return
 		}
 	}
 
-	http.SetCookie(w, &http.Cookie{
+	http.SetCookie(responseWriter, &http.Cookie{
 		Name:     "active_tenant_id",
-		Value:    tenantID.String(),
+		Value:    parsedTenantID.String(),
 		Path:     "/",
 		Expires:  time.Now().Add(30 * 24 * time.Hour),
 		HttpOnly: true,
@@ -53,150 +81,148 @@ func SwitchTenantHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   utils.AppConfig.SessionSecure,
 	})
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(responseWriter, request, "/", http.StatusSeeOther)
 }
 
-func SwitchWorkspaceAPIHandler(cfg utils.Config) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		user := utils.UserFromContext(r.Context())
-		if user == nil {
-			utils.WriteJSON(w, http.StatusUnauthorized, map[string]any{
-				"error": map[string]any{
-					"code":    "AUTHENTICATION_ERROR",
-					"message": "Authentication required",
+func SwitchWorkspaceAPIHandler(configuration utils.Config) http.HandlerFunc {
+	return func(responseWriter http.ResponseWriter, request *http.Request) {
+		var authenticatedUser *models.User = utils.UserFromContext(request.Context())
+		if authenticatedUser == nil {
+			utils.WriteJSON(responseWriter, http.StatusUnauthorized, ErrorResponseEnvelope{
+				Error: DetailedError{
+					Code:    "AUTHENTICATION_ERROR",
+					Message: "Authentication required",
 				},
 			})
 			return
 		}
 
-		var req SwitchWorkspaceRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.TenantID == "" {
-			utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"error": map[string]any{
-					"code":    "VALIDATION_ERROR",
-					"message": "Valid tenantId is required",
+		var switchPayload SwitchWorkspaceRequest
+		var decodeErr error = json.NewDecoder(request.Body).Decode(&switchPayload)
+		if decodeErr != nil || switchPayload.TenantID == "" {
+			utils.WriteJSON(responseWriter, http.StatusBadRequest, ErrorResponseEnvelope{
+				Error: DetailedError{
+					Code:    "VALIDATION_ERROR",
+					Message: "Valid tenantId is required",
 				},
 			})
 			return
 		}
 
-		tenantID, err := uuid.Parse(req.TenantID)
-		if err != nil || tenantID == uuid.Nil {
-			utils.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"error": map[string]any{
-					"code":    "VALIDATION_ERROR",
-					"message": "Invalid tenantId format",
+		var parsedTenantID uuid.UUID
+		var parseErr error
+		parsedTenantID, parseErr = uuid.Parse(switchPayload.TenantID)
+		if parseErr != nil || parsedTenantID == uuid.Nil {
+			utils.WriteJSON(responseWriter, http.StatusBadRequest, ErrorResponseEnvelope{
+				Error: DetailedError{
+					Code:    "VALIDATION_ERROR",
+					Message: "Invalid tenantId format",
 				},
 			})
 			return
 		}
 
-		db := utils.IdentityDBFromContext(r.Context(), nil)
-		if db == nil {
-			utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-				"error": map[string]any{
-					"code":    "DATABASE_ERROR",
-					"message": "Database unavailable",
+		var identityDatabase *sqlx.DB = utils.IdentityDBFromContext(request.Context(), nil)
+		if identityDatabase == nil {
+			utils.WriteJSON(responseWriter, http.StatusServiceUnavailable, ErrorResponseEnvelope{
+				Error: DetailedError{
+					Code:    "DATABASE_ERROR",
+					Message: "Database unavailable",
 				},
 			})
 			return
 		}
 
-		tenantRepo := repositories.NewTenantRepository(db)
-		membership, err := tenantRepo.GetMembership(r.Context(), tenantID, user.ID)
-		if err != nil || membership == nil || membership.Status != "active" {
-			utils.WriteJSON(w, http.StatusForbidden, map[string]any{
-				"error": map[string]any{
-					"code":    "FORBIDDEN",
-					"message": "You do not have active access to this workspace",
+		var tenantRepo *repositories.TenantRepository = repositories.NewTenantRepository(identityDatabase)
+		var userMembership *models.Membership
+		var membershipErr error
+		userMembership, membershipErr = tenantRepo.GetMembership(request.Context(), parsedTenantID, authenticatedUser.ID)
+		if membershipErr != nil || userMembership == nil || userMembership.Status != "active" {
+			utils.WriteJSON(responseWriter, http.StatusForbidden, ErrorResponseEnvelope{
+				Error: DetailedError{
+					Code:    "FORBIDDEN",
+					Message: "You do not have active access to this workspace",
 				},
 			})
 			return
 		}
 
-		http.SetCookie(w, &http.Cookie{
+		http.SetCookie(responseWriter, &http.Cookie{
 			Name:     "active_tenant_id",
-			Value:    tenantID.String(),
+			Value:    parsedTenantID.String(),
 			Path:     "/",
 			Expires:  time.Now().Add(30 * 24 * time.Hour),
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
-			Secure:   cfg.SessionSecure,
+			Secure:   configuration.SessionSecure,
 		})
 
-		utils.WriteJSON(w, http.StatusOK, map[string]any{
-			"message":        "Workspace switched successfully",
-			"activeTenantId": tenantID.String(),
-			"workspace":      membership,
+		utils.WriteJSON(responseWriter, http.StatusOK, SwitchWorkspaceSuccessResponse{
+			Message:        "Workspace switched successfully",
+			ActiveTenantID: parsedTenantID.String(),
+			Workspace:      userMembership,
 		})
 	}
 }
 
 func WorkspacesAPIHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		user := utils.UserFromContext(r.Context())
-		if user == nil {
-			utils.WriteJSON(w, http.StatusUnauthorized, map[string]any{
-				"error": map[string]any{
-					"code":    "AUTHENTICATION_ERROR",
-					"message": "Authentication required",
+	return func(responseWriter http.ResponseWriter, request *http.Request) {
+		var authenticatedUser *models.User = utils.UserFromContext(request.Context())
+		if authenticatedUser == nil {
+			utils.WriteJSON(responseWriter, http.StatusUnauthorized, ErrorResponseEnvelope{
+				Error: DetailedError{
+					Code:    "AUTHENTICATION_ERROR",
+					Message: "Authentication required",
 				},
 			})
 			return
 		}
 
-		db := utils.IdentityDBFromContext(r.Context(), nil)
-		if db == nil {
-			utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-				"error": map[string]any{
-					"code":    "DATABASE_ERROR",
-					"message": "Database unavailable",
+		var identityDatabase *sqlx.DB = utils.IdentityDBFromContext(request.Context(), nil)
+		if identityDatabase == nil {
+			utils.WriteJSON(responseWriter, http.StatusServiceUnavailable, ErrorResponseEnvelope{
+				Error: DetailedError{
+					Code:    "DATABASE_ERROR",
+					Message: "Database unavailable",
 				},
 			})
 			return
 		}
 
-		tenantRepo := repositories.NewTenantRepository(db)
-		memberships, err := tenantRepo.ListUserMemberships(r.Context(), user.ID)
-		if err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"error": map[string]any{
-					"code":    "INTERNAL_ERROR",
-					"message": "Failed to list workspaces",
+		var tenantRepo *repositories.TenantRepository = repositories.NewTenantRepository(identityDatabase)
+		var userMemberships []models.Membership
+		var membershipsErr error
+		userMemberships, membershipsErr = tenantRepo.ListUserMemberships(request.Context(), authenticatedUser.ID)
+		if membershipsErr != nil {
+			utils.WriteJSON(responseWriter, http.StatusInternalServerError, ErrorResponseEnvelope{
+				Error: DetailedError{
+					Code:    "INTERNAL_ERROR",
+					Message: "Failed to list workspaces",
 				},
 			})
 			return
 		}
 
-		activeCtx := utils.TenantFromContext(r.Context())
-		var activeTenantID string
-		if activeCtx != nil && activeCtx.TenantID != uuid.Nil {
-			activeTenantID = activeCtx.TenantID.String()
+		var activeContextTenant *utils.TenantContext = utils.TenantFromContext(request.Context())
+		var activeTenantID string = ""
+		if activeContextTenant != nil && activeContextTenant.TenantID != uuid.Nil {
+			activeTenantID = activeContextTenant.TenantID.String()
 		}
 
-		type WorkspaceItem struct {
-			ID                 string `json:"id"`
-			TenantID           string `json:"tenantId"`
-			TenantName         string `json:"tenantName"`
-			TenantSlug         string `json:"tenantSlug"`
-			TenantBusinessType string `json:"tenantBusinessType"`
-			Role               string `json:"role"`
-			Status             string `json:"status"`
-			SubscriptionStatus string `json:"subscriptionStatus"`
-		}
-
-		activeList := make([]WorkspaceItem, 0, len(memberships))
-		for _, m := range memberships {
-			if m.Status == "active" {
-				activeList = append(activeList, WorkspaceItem{
-					ID:                 m.ID.String(),
-					TenantID:           m.TenantID.String(),
-					TenantName:         m.TenantName,
-					TenantSlug:         m.TenantSlug,
-					TenantBusinessType: m.TenantBusinessType,
-					Role:               m.Role,
-					Status:             m.Status,
-					SubscriptionStatus: m.TenantSubscriptionStatus,
+		var activeList []WorkspaceItemDTO = make([]WorkspaceItemDTO, 0, len(userMemberships))
+		var memberIndex int
+		for memberIndex = 0; memberIndex < len(userMemberships); memberIndex++ {
+			var memberItem models.Membership = userMemberships[memberIndex]
+			if memberItem.Status == "active" {
+				activeList = append(activeList, WorkspaceItemDTO{
+					ID:                 memberItem.ID.String(),
+					TenantID:           memberItem.TenantID.String(),
+					TenantName:         memberItem.TenantName,
+					TenantSlug:         memberItem.TenantSlug,
+					TenantBusinessType: memberItem.TenantBusinessType,
+					Role:               memberItem.Role,
+					Status:             memberItem.Status,
+					SubscriptionStatus: memberItem.TenantSubscriptionStatus,
 				})
 			}
 		}
@@ -205,9 +231,9 @@ func WorkspacesAPIHandler() http.HandlerFunc {
 			activeTenantID = activeList[0].TenantID
 		}
 
-		utils.WriteJSON(w, http.StatusOK, map[string]any{
-			"activeTenantId": activeTenantID,
-			"workspaces":     activeList,
+		utils.WriteJSON(responseWriter, http.StatusOK, WorkspacesListResponse{
+			ActiveTenantID: activeTenantID,
+			Workspaces:     activeList,
 		})
 	}
 }

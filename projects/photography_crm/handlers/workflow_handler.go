@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -65,7 +66,9 @@ func WorkflowsListHandler(responseWriter http.ResponseWriter, request *http.Requ
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -74,7 +77,9 @@ func WorkflowsListHandler(responseWriter http.ResponseWriter, request *http.Requ
 		workflowType = "lead"
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT id, tenant_id, workflow_type, pipeline, stage, color_code, order_index
 		FROM workflows
 		WHERE tenant_id = ? AND workflow_type = ? AND deleted_at IS NULL
@@ -119,7 +124,9 @@ func CreateWorkflowStageHandler(responseWriter http.ResponseWriter, request *htt
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -149,7 +156,8 @@ func CreateWorkflowStageHandler(responseWriter http.ResponseWriter, request *htt
 	}
 
 	var stageID string = uuid.New().String()
-	_, execErr := database.ExecContext(request.Context(), `
+	var execErr error
+	_, execErr = database.ExecContext(request.Context(), `
 		INSERT INTO workflows (id, tenant_id, workflow_type, pipeline, stage, color_code, order_index)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`, stageID, tenantID, workflowType, pipeline, stage, colorCode, requestPayload.OrderIndex)
@@ -181,7 +189,9 @@ func UpdateWorkflowStageHandler(responseWriter http.ResponseWriter, request *htt
 		utils.WriteError(responseWriter, http.StatusBadRequest, "Stage ID is required")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -205,7 +215,8 @@ func UpdateWorkflowStageHandler(responseWriter http.ResponseWriter, request *htt
 		colorCode = "#10b981"
 	}
 
-	_, execErr := database.ExecContext(request.Context(), `
+	var execErr error
+	_, execErr = database.ExecContext(request.Context(), `
 		UPDATE workflows
 		SET pipeline = ?, stage = ?, color_code = ?, order_index = ?, updated_at = NOW(6)
 		WHERE id = ? AND tenant_id = ?
@@ -232,12 +243,15 @@ func DeleteWorkflowStageHandler(responseWriter http.ResponseWriter, request *htt
 		utils.WriteError(responseWriter, http.StatusBadRequest, "Stage ID is required")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	_, execErr := database.ExecContext(request.Context(), "UPDATE workflows SET deleted_at = NOW(6) WHERE id = ? AND tenant_id = ?", stageID, tenantID)
+	var execErr error
+	_, execErr = database.ExecContext(request.Context(), "UPDATE workflows SET deleted_at = NOW(6) WHERE id = ? AND tenant_id = ?", stageID, tenantID)
 	if execErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete workflow stage", execErr)
 		return
@@ -255,7 +269,9 @@ func SaveWorkflowStagesBatchHandler(responseWriter http.ResponseWriter, request 
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -272,20 +288,25 @@ func SaveWorkflowStagesBatchHandler(responseWriter http.ResponseWriter, request 
 		workflowType = "lead"
 	}
 
-	transaction, txErr := database.BeginTxx(request.Context(), nil)
+	var transaction *sqlx.Tx
+	var txErr error
+	transaction, txErr = database.BeginTxx(request.Context(), nil)
 	if txErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to begin transaction", txErr)
 		return
 	}
 	defer transaction.Rollback()
 
-	_, resetErr := transaction.ExecContext(request.Context(), "UPDATE workflows SET deleted_at = NOW(6) WHERE tenant_id = ? AND workflow_type = ? AND deleted_at IS NULL", tenantID, workflowType)
+	var resetErr error
+	_, resetErr = transaction.ExecContext(request.Context(), "UPDATE workflows SET deleted_at = NOW(6) WHERE tenant_id = ? AND workflow_type = ? AND deleted_at IS NULL", tenantID, workflowType)
 	if resetErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to reset workflow stages", resetErr)
 		return
 	}
 
-	for stageIndex, stageInput := range requestPayload.Stages {
+	var stageIndex int
+	for stageIndex = 0; stageIndex < len(requestPayload.Stages); stageIndex++ {
+		var stageInput WorkflowBatchStageInput = requestPayload.Stages[stageIndex]
 		var pipeline string = strings.TrimSpace(stageInput.Pipeline)
 		var stage string = strings.TrimSpace(stageInput.Stage)
 		if pipeline == "" || stage == "" {
@@ -300,7 +321,8 @@ func SaveWorkflowStagesBatchHandler(responseWriter http.ResponseWriter, request 
 			stageID = uuid.New().String()
 		}
 
-		_, insertErr := transaction.ExecContext(request.Context(), `
+		var insertErr error
+		_, insertErr = transaction.ExecContext(request.Context(), `
 			INSERT INTO workflows (id, tenant_id, workflow_type, pipeline, stage, color_code, order_index)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
 		`, stageID, tenantID, workflowType, pipeline, stage, colorCode, stageIndex+1)

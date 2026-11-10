@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -43,12 +44,16 @@ func CrewMembersListHandler(responseWriter http.ResponseWriter, request *http.Re
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT u.id, u.first_name, u.last_name, u.email, COALESCE(u.phone, ''),
 		       COALESCE(u.role_id, ''), COALESCE(r.name, '')
 		FROM users u
@@ -65,7 +70,13 @@ func CrewMembersListHandler(responseWriter http.ResponseWriter, request *http.Re
 
 	var crewMembers = make([]CrewMemberDTO, 0)
 	for rows.Next() {
-		var memberID, firstName, lastName, email, phone, roleID, roleName string
+		var memberID string
+		var firstName string
+		var lastName string
+		var email string
+		var phone string
+		var roleID string
+		var roleName string
 		var scanErr error = rows.Scan(&memberID, &firstName, &lastName, &email, &phone, &roleID, &roleName)
 		if scanErr != nil {
 			utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to read crew member", scanErr)
@@ -103,7 +114,9 @@ func CreateCrewMemberHandler(responseWriter http.ResponseWriter, request *http.R
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -166,7 +179,9 @@ func CreateCrewMemberHandler(responseWriter http.ResponseWriter, request *http.R
 	}
 	var phone string = strings.TrimSpace(requestPayload.MobileNo)
 
-	transaction, beginTxErr := database.BeginTxx(request.Context(), nil)
+	var transaction *sqlx.Tx
+	var beginTxErr error
+	transaction, beginTxErr = database.BeginTxx(request.Context(), nil)
 	if beginTxErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to start transaction", beginTxErr)
 		return
@@ -178,7 +193,8 @@ func CreateCrewMemberHandler(responseWriter http.ResponseWriter, request *http.R
 		roleIDPointer = &roleID
 	}
 
-	_, insertUserErr := transaction.ExecContext(request.Context(), `
+	var insertUserErr error
+	_, insertUserErr = transaction.ExecContext(request.Context(), `
 		INSERT INTO users (id, first_name, last_name, email, phone, role_id)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`, userID, firstName, lastName, email, phone, roleIDPointer)
@@ -193,7 +209,8 @@ func CreateCrewMemberHandler(responseWriter http.ResponseWriter, request *http.R
 		membershipRole = "photographer"
 	}
 
-	_, insertMembershipErr := transaction.ExecContext(request.Context(), `
+	var insertMembershipErr error
+	_, insertMembershipErr = transaction.ExecContext(request.Context(), `
 		INSERT INTO memberships (id, tenant_id, user_id, role, status)
 		VALUES (?, ?, ?, ?, 'active')
 	`, membershipID, tenantID, userID, membershipRole)
@@ -230,7 +247,9 @@ func DeleteCrewMemberHandler(responseWriter http.ResponseWriter, request *http.R
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -240,7 +259,9 @@ func DeleteCrewMemberHandler(responseWriter http.ResponseWriter, request *http.R
 		return
 	}
 
-	transaction, beginTxErr := database.BeginTxx(request.Context(), nil)
+	var transaction *sqlx.Tx
+	var beginTxErr error
+	transaction, beginTxErr = database.BeginTxx(request.Context(), nil)
 	if beginTxErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to start transaction", beginTxErr)
 		return
@@ -251,7 +272,8 @@ func DeleteCrewMemberHandler(responseWriter http.ResponseWriter, request *http.R
 		UPDATE memberships SET deleted_at = NOW(6) WHERE user_id = ? AND tenant_id = ?
 	`, memberID, tenantID)
 
-	_, updateErr := transaction.ExecContext(request.Context(), `
+	var updateErr error
+	_, updateErr = transaction.ExecContext(request.Context(), `
 		UPDATE users SET deleted_at = NOW(6) WHERE id = ?
 	`, memberID)
 	if updateErr != nil {

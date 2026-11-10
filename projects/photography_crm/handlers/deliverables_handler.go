@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -58,35 +59,60 @@ func parseDeliverablesList(rawBytes []byte, defaultGroupName string) []Deliverab
 	if fallbackErr != nil {
 		return []DeliverableItemDTO{}
 	}
-	var deliverables = make([]DeliverableItemDTO, 0, len(rawItems))
-	for _, rawItem := range rawItems {
-		if nameString, ok := rawItem.(string); ok {
+	var deliverables []DeliverableItemDTO = make([]DeliverableItemDTO, 0, len(rawItems))
+	var rawItemIndex int
+	for rawItemIndex = 0; rawItemIndex < len(rawItems); rawItemIndex++ {
+		var rawItem any = rawItems[rawItemIndex]
+		var nameString string
+		var isNameString bool
+		nameString, isNameString = rawItem.(string)
+		if isNameString {
 			deliverables = append(deliverables, DeliverableItemDTO{
 				ID:        uuid.New().String(),
 				GroupName: defaultGroupName,
 				Name:      nameString,
 			})
-		} else if itemMap, ok := rawItem.(map[string]any); ok {
-			var itemID string
-			if idVal, ok := itemMap["id"].(string); ok {
-				itemID = idVal
+		} else {
+			var itemMap map[string]any
+			var isItemMap bool
+			itemMap, isItemMap = rawItem.(map[string]any)
+			if isItemMap {
+				var itemID string
+				var rawIDAny any = itemMap["id"]
+				var idVal string
+				var isIDString bool
+				idVal, isIDString = rawIDAny.(string)
+				if isIDString {
+					itemID = idVal
+				}
+
+				var itemName string
+				var rawNameAny any = itemMap["name"]
+				var nameVal string
+				var isNameValString bool
+				nameVal, isNameValString = rawNameAny.(string)
+				if isNameValString {
+					itemName = nameVal
+				}
+
+				var itemGroupName string
+				var rawGrpAny any = itemMap["groupName"]
+				var grpVal string
+				var isGrpValString bool
+				grpVal, isGrpValString = rawGrpAny.(string)
+				if isGrpValString {
+					itemGroupName = grpVal
+				}
+				if itemGroupName == "" {
+					itemGroupName = defaultGroupName
+				}
+
+				deliverables = append(deliverables, DeliverableItemDTO{
+					ID:        itemID,
+					GroupName: itemGroupName,
+					Name:      itemName,
+				})
 			}
-			var itemName string
-			if nameVal, ok := itemMap["name"].(string); ok {
-				itemName = nameVal
-			}
-			var itemGroupName string
-			if grpVal, ok := itemMap["groupName"].(string); ok {
-				itemGroupName = grpVal
-			}
-			if itemGroupName == "" {
-				itemGroupName = defaultGroupName
-			}
-			deliverables = append(deliverables, DeliverableItemDTO{
-				ID:        itemID,
-				GroupName: itemGroupName,
-				Name:      itemName,
-			})
 		}
 	}
 	return deliverables
@@ -98,12 +124,16 @@ func DeliverablesListHandler(responseWriter http.ResponseWriter, request *http.R
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT id, tenant_id, group_name, deliverables
 		FROM deliverables
 		WHERE tenant_id = ? AND deleted_at IS NULL
@@ -115,7 +145,7 @@ func DeliverablesListHandler(responseWriter http.ResponseWriter, request *http.R
 	}
 	defer rows.Close()
 
-	var deliverableGroups = make([]DeliverableGroupDTO, 0)
+	var deliverableGroups []DeliverableGroupDTO = make([]DeliverableGroupDTO, 0)
 	for rows.Next() {
 		var deliverableGroup DeliverableGroupDTO
 		var rawBytes []byte
@@ -142,7 +172,9 @@ func CreateDeliverableGroupHandler(responseWriter http.ResponseWriter, request *
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -163,10 +195,17 @@ func CreateDeliverableGroupHandler(responseWriter http.ResponseWriter, request *
 	if requestPayload.Deliverables == nil {
 		requestPayload.Deliverables = []DeliverableItemDTO{}
 	}
-	rawBytes, _ := json.Marshal(requestPayload.Deliverables)
+	var rawBytes []byte
+	var marshalErr error
+	rawBytes, marshalErr = json.Marshal(requestPayload.Deliverables)
+	if marshalErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid deliverables data")
+		return
+	}
 
 	var deliverableGroupID string = uuid.New().String()
-	_, insertErr := database.ExecContext(request.Context(), `
+	var insertErr error
+	_, insertErr = database.ExecContext(request.Context(), `
 		INSERT INTO deliverables (id, tenant_id, group_name, deliverables)
 		VALUES (?, ?, ?, ?)
 	`, deliverableGroupID, tenantID, groupName, rawBytes)
@@ -175,7 +214,7 @@ func CreateDeliverableGroupHandler(responseWriter http.ResponseWriter, request *
 		return
 	}
 
-	var createdGroup = DeliverableGroupDTO{
+	var createdGroup DeliverableGroupDTO = DeliverableGroupDTO{
 		ID:           deliverableGroupID,
 		TenantID:     tenantID,
 		GroupName:    groupName,
@@ -190,7 +229,9 @@ func UpdateDeliverableGroupHandler(responseWriter http.ResponseWriter, request *
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -216,9 +257,16 @@ func UpdateDeliverableGroupHandler(responseWriter http.ResponseWriter, request *
 	if requestPayload.Deliverables == nil {
 		requestPayload.Deliverables = []DeliverableItemDTO{}
 	}
-	rawBytes, _ := json.Marshal(requestPayload.Deliverables)
+	var rawBytes []byte
+	var marshalErr error
+	rawBytes, marshalErr = json.Marshal(requestPayload.Deliverables)
+	if marshalErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid deliverables data")
+		return
+	}
 
-	_, updateErr := database.ExecContext(request.Context(), `
+	var updateErr error
+	_, updateErr = database.ExecContext(request.Context(), `
 		UPDATE deliverables
 		SET group_name = ?, deliverables = ?, updated_at = NOW(6)
 		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
@@ -228,7 +276,7 @@ func UpdateDeliverableGroupHandler(responseWriter http.ResponseWriter, request *
 		return
 	}
 
-	var successResponse = ActionStatusSuccessResponse{
+	var successResponse ActionStatusSuccessResponse = ActionStatusSuccessResponse{
 		Status: "ok",
 	}
 	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
@@ -240,7 +288,9 @@ func DeleteDeliverableGroupHandler(responseWriter http.ResponseWriter, request *
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -250,7 +300,8 @@ func DeleteDeliverableGroupHandler(responseWriter http.ResponseWriter, request *
 		return
 	}
 
-	_, deleteErr := database.ExecContext(request.Context(), `
+	var deleteErr error
+	_, deleteErr = database.ExecContext(request.Context(), `
 		UPDATE deliverables SET deleted_at = NOW(6) WHERE id = ? AND tenant_id = ?
 	`, deliverableGroupID, tenantID)
 	if deleteErr != nil {
@@ -258,7 +309,7 @@ func DeleteDeliverableGroupHandler(responseWriter http.ResponseWriter, request *
 		return
 	}
 
-	var successResponse = ActionStatusSuccessResponse{
+	var successResponse ActionStatusSuccessResponse = ActionStatusSuccessResponse{
 		Status: "ok",
 	}
 	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
@@ -270,7 +321,9 @@ func BatchSaveDeliverablesHandler(responseWriter http.ResponseWriter, request *h
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -282,20 +335,25 @@ func BatchSaveDeliverablesHandler(responseWriter http.ResponseWriter, request *h
 		return
 	}
 
-	transaction, beginTxErr := database.BeginTxx(request.Context(), nil)
+	var transaction *sqlx.Tx
+	var beginTxErr error
+	transaction, beginTxErr = database.BeginTxx(request.Context(), nil)
 	if beginTxErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to start database transaction", beginTxErr)
 		return
 	}
 	defer transaction.Rollback()
 
-	_, resetErr := transaction.ExecContext(request.Context(), "UPDATE deliverables SET deleted_at = NOW(6) WHERE tenant_id = ? AND deleted_at IS NULL", tenantID)
+	var resetErr error
+	_, resetErr = transaction.ExecContext(request.Context(), "UPDATE deliverables SET deleted_at = NOW(6) WHERE tenant_id = ? AND deleted_at IS NULL", tenantID)
 	if resetErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update existing deliverables", resetErr)
 		return
 	}
 
-	for _, groupItem := range requestPayload.Groups {
+	var groupIndex int
+	for groupIndex = 0; groupIndex < len(requestPayload.Groups); groupIndex++ {
+		var groupItem BatchSaveDeliverableGroupItem = requestPayload.Groups[groupIndex]
 		var groupName string = strings.TrimSpace(groupItem.GroupName)
 		if groupName == "" {
 			continue
@@ -304,13 +362,19 @@ func BatchSaveDeliverablesHandler(responseWriter http.ResponseWriter, request *h
 		if groupID == "" || strings.HasPrefix(groupID, "temp-") || strings.HasPrefix(groupID, "del-") {
 			groupID = uuid.New().String()
 		}
-		var deliverables = groupItem.Deliverables
+		var deliverables []DeliverableItemDTO = groupItem.Deliverables
 		if deliverables == nil {
 			deliverables = []DeliverableItemDTO{}
 		}
-		rawBytes, _ := json.Marshal(deliverables)
+		var rawBytes []byte
+		var marshalErr error
+		rawBytes, marshalErr = json.Marshal(deliverables)
+		if marshalErr != nil {
+			continue
+		}
 
-		_, insertErr := transaction.ExecContext(request.Context(), `
+		var insertErr error
+		_, insertErr = transaction.ExecContext(request.Context(), `
 			INSERT INTO deliverables (id, tenant_id, group_name, deliverables)
 			VALUES (?, ?, ?, ?)
 		`, groupID, tenantID, groupName, rawBytes)
@@ -326,7 +390,7 @@ func BatchSaveDeliverablesHandler(responseWriter http.ResponseWriter, request *h
 		return
 	}
 
-	var successResponse = ActionStatusSuccessResponse{
+	var successResponse ActionStatusSuccessResponse = ActionStatusSuccessResponse{
 		Status: "ok",
 	}
 	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)

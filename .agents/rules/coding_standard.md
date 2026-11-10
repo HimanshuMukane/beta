@@ -54,9 +54,10 @@ Prefer familiar, direct, readable code:
 -   Use straightforward data structures.
 -   Keep control flow visible and easy to trace.
 -   Handle errors explicitly and immediately.
--   Use comments to explain non-obvious decisions, not to narrate every
-    line.
--   Prefer clear variable names over clever or abbreviated names.
+-   Use proper semantic variable and parameter names over clever, single-letter, or abbreviated names (e.g., `responseWriter` instead of `w`, `request` instead of `r`, `database` instead of `db`, `tenantID` instead of `tid`, `queryErr`/`scanErr` instead of `err`).
+-   Always use explicit variable declarations (`var <name> <Type> = ...` or `var <name> <Type>; <name> = ...`) rather than concise/short variable declarations (`:=`).
+-   Always use explicit loops: for collections/slices, use explicit index-based loops with pre-declared iteration variables (e.g., `var index int; for index = 0; index < len(items); index++ { var item Type = items[index]; ... }`). For map iterations, pre-declare the key and value variables explicitly.
+-   Avoid concise type conversion iterations such as `[]rune(str)` for iteration or string indexing; use boundary checks with direct string slicing.
 
 Avoid introducing these unless a specific requirement genuinely calls
 for them:

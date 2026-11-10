@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -28,7 +29,9 @@ func RolesListHandler(responseWriter http.ResponseWriter, request *http.Request)
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), "SELECT id, name FROM roles WHERE LOWER(name) != 'admin' AND deleted_at IS NULL ORDER BY name ASC")
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), "SELECT id, name FROM roles WHERE LOWER(name) != 'admin' AND deleted_at IS NULL ORDER BY name ASC")
 	if queryErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list roles", queryErr)
 		return
@@ -93,7 +96,8 @@ func CreateRoleHandler(responseWriter http.ResponseWriter, request *http.Request
 	}
 
 	var roleID string = uuid.New().String()
-	_, insertErr := database.ExecContext(request.Context(), "INSERT INTO roles (id, name) VALUES (?, ?)", roleID, roleName)
+	var insertErr error
+	_, insertErr = database.ExecContext(request.Context(), "INSERT INTO roles (id, name) VALUES (?, ?)", roleID, roleName)
 	if insertErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to create role", insertErr)
 		return
@@ -143,7 +147,8 @@ func DeleteRoleHandler(responseWriter http.ResponseWriter, request *http.Request
 		return
 	}
 
-	_, deleteErr := database.ExecContext(request.Context(), "UPDATE roles SET deleted_at = NOW(6) WHERE id = ?", roleID)
+	var deleteErr error
+	_, deleteErr = database.ExecContext(request.Context(), "UPDATE roles SET deleted_at = NOW(6) WHERE id = ?", roleID)
 	if deleteErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete role", deleteErr)
 		return

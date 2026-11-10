@@ -85,7 +85,7 @@ type RefundedDTO struct {
 }
 
 func clientInitials(name string) string {
-	var parts = strings.Split(strings.TrimSpace(name), " ")
+	var parts []string = strings.Split(strings.TrimSpace(name), " ")
 	if len(parts) >= 2 {
 		return strings.ToUpper(parts[0][:1] + parts[1][:1])
 	}
@@ -101,12 +101,16 @@ func BillingPaymentsListHandler(responseWriter http.ResponseWriter, request *htt
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT id, payment_date, client_name, client_avatar, client_initials,
 		       payment_type, payment_amount, payment_status, project_name, download_url, created_at
 		FROM billing_payments
@@ -119,7 +123,7 @@ func BillingPaymentsListHandler(responseWriter http.ResponseWriter, request *htt
 	}
 	defer rows.Close()
 
-	var paymentsList = make([]PaymentDTO, 0)
+	var paymentsList []PaymentDTO = make([]PaymentDTO, 0)
 	for rows.Next() {
 		var paymentItem PaymentDTO
 		var createdAt any
@@ -169,7 +173,9 @@ func CreateBillingPaymentHandler(responseWriter http.ResponseWriter, request *ht
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -187,7 +193,8 @@ func CreateBillingPaymentHandler(responseWriter http.ResponseWriter, request *ht
 		paymentPayload.ClientInitials = clientInitials(paymentPayload.ClientName)
 	}
 
-	_, insertErr := database.ExecContext(request.Context(), `
+	var insertErr error
+	_, insertErr = database.ExecContext(request.Context(), `
 		INSERT INTO billing_payments (
 			id, tenant_id, payment_date, client_name, client_avatar, client_initials,
 			payment_type, payment_amount, payment_status, project_name, download_url
@@ -208,17 +215,20 @@ func DeleteBillingPaymentHandler(responseWriter http.ResponseWriter, request *ht
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 	var paymentID string = chi.URLParam(request, "id")
-	_, deleteErr := database.ExecContext(request.Context(), "DELETE FROM billing_payments WHERE id = ? AND tenant_id = ?", paymentID, tenantID)
+	var deleteErr error
+	_, deleteErr = database.ExecContext(request.Context(), "DELETE FROM billing_payments WHERE id = ? AND tenant_id = ?", paymentID, tenantID)
 	if deleteErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete payment", deleteErr)
 		return
 	}
-	var deleteResponse = GenericItemDeleteResponse{
+	var deleteResponse GenericItemDeleteResponse = GenericItemDeleteResponse{
 		Status: "deleted",
 		ID:     paymentID,
 	}
@@ -231,12 +241,16 @@ func BillingInvoicesListHandler(responseWriter http.ResponseWriter, request *htt
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT id, invoice_name, client_name, client_avatar, client_initials,
 		       projects_name, total_amount, paid_amount, pending_amount,
 		       payment_status, invoice_date, download_url
@@ -250,7 +264,7 @@ func BillingInvoicesListHandler(responseWriter http.ResponseWriter, request *htt
 	}
 	defer rows.Close()
 
-	var invoicesList = make([]InvoiceDTO, 0)
+	var invoicesList []InvoiceDTO = make([]InvoiceDTO, 0)
 	for rows.Next() {
 		var invoiceItem InvoiceDTO
 		var (
@@ -300,7 +314,9 @@ func CreateBillingInvoiceHandler(responseWriter http.ResponseWriter, request *ht
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -315,7 +331,9 @@ func CreateBillingInvoiceHandler(responseWriter http.ResponseWriter, request *ht
 		invoicePayload.ID = "INV-" + uuid.New().String()[:8]
 	}
 	if invoicePayload.InvoiceName == "" {
-		sequenceNumber, seqErr := AllocateNextSequenceNumber(request.Context(), database, tenantID, "invoice")
+		var sequenceNumber string
+		var seqErr error
+		sequenceNumber, seqErr = AllocateNextSequenceNumber(request.Context(), database, tenantID, "invoice")
 		if seqErr == nil && sequenceNumber != "" {
 			invoicePayload.InvoiceName = sequenceNumber
 		} else {
@@ -326,7 +344,8 @@ func CreateBillingInvoiceHandler(responseWriter http.ResponseWriter, request *ht
 		invoicePayload.ClientInitials = clientInitials(invoicePayload.ClientName)
 	}
 
-	_, insertErr := database.ExecContext(request.Context(), `
+	var insertErr error
+	_, insertErr = database.ExecContext(request.Context(), `
 		INSERT INTO billing_invoices (
 			id, tenant_id, invoice_name, client_name, client_avatar, client_initials,
 			projects_name, total_amount, paid_amount, pending_amount, payment_status,
@@ -349,17 +368,20 @@ func DeleteBillingInvoiceHandler(responseWriter http.ResponseWriter, request *ht
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 	var invoiceID string = chi.URLParam(request, "id")
-	_, deleteErr := database.ExecContext(request.Context(), "DELETE FROM billing_invoices WHERE id = ? AND tenant_id = ?", invoiceID, tenantID)
+	var deleteErr error
+	_, deleteErr = database.ExecContext(request.Context(), "DELETE FROM billing_invoices WHERE id = ? AND tenant_id = ?", invoiceID, tenantID)
 	if deleteErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete invoice", deleteErr)
 		return
 	}
-	var deleteResponse = GenericItemDeleteResponse{
+	var deleteResponse GenericItemDeleteResponse = GenericItemDeleteResponse{
 		Status: "deleted",
 		ID:     invoiceID,
 	}
@@ -372,12 +394,16 @@ func BillingExpensesListHandler(responseWriter http.ResponseWriter, request *htt
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT id, expense_name, expense_date, amount, expense_type, vendor_or_client, payment_method
 		FROM billing_expenses
 		WHERE tenant_id = ?
@@ -389,7 +415,7 @@ func BillingExpensesListHandler(responseWriter http.ResponseWriter, request *htt
 	}
 	defer rows.Close()
 
-	var expensesList = make([]ExpenseDTO, 0)
+	var expensesList []ExpenseDTO = make([]ExpenseDTO, 0)
 	for rows.Next() {
 		var expenseItem ExpenseDTO
 		var (
@@ -427,7 +453,9 @@ func CreateBillingExpenseHandler(responseWriter http.ResponseWriter, request *ht
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -442,7 +470,8 @@ func CreateBillingExpenseHandler(responseWriter http.ResponseWriter, request *ht
 		expensePayload.ID = "EXP-" + uuid.New().String()[:8]
 	}
 
-	_, insertErr := database.ExecContext(request.Context(), `
+	var insertErr error
+	_, insertErr = database.ExecContext(request.Context(), `
 		INSERT INTO billing_expenses (
 			id, tenant_id, expense_name, expense_date, amount, expense_type,
 			vendor_or_client, payment_method
@@ -462,17 +491,20 @@ func DeleteBillingExpenseHandler(responseWriter http.ResponseWriter, request *ht
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 	var expenseID string = chi.URLParam(request, "id")
-	_, deleteErr := database.ExecContext(request.Context(), "DELETE FROM billing_expenses WHERE id = ? AND tenant_id = ?", expenseID, tenantID)
+	var deleteErr error
+	_, deleteErr = database.ExecContext(request.Context(), "DELETE FROM billing_expenses WHERE id = ? AND tenant_id = ?", expenseID, tenantID)
 	if deleteErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to delete expense", deleteErr)
 		return
 	}
-	var deleteResponse = GenericItemDeleteResponse{
+	var deleteResponse GenericItemDeleteResponse = GenericItemDeleteResponse{
 		Status: "deleted",
 		ID:     expenseID,
 	}
@@ -485,12 +517,16 @@ func BillingCancelledListHandler(responseWriter http.ResponseWriter, request *ht
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT id, action, cancellation_date, payment_date, payment_type, client_name,
 		       client_avatar, client_initials, projects_name, payment_amount, reason
 		FROM billing_cancellations
@@ -503,7 +539,7 @@ func BillingCancelledListHandler(responseWriter http.ResponseWriter, request *ht
 	}
 	defer rows.Close()
 
-	var cancellationsList = make([]CancelledDTO, 0)
+	var cancellationsList []CancelledDTO = make([]CancelledDTO, 0)
 	for rows.Next() {
 		var cancelledItem CancelledDTO
 		var (
@@ -560,12 +596,16 @@ func BillingRefundsListHandler(responseWriter http.ResponseWriter, request *http
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT id, invoice_name, refund_date, client_name, client_avatar, client_initials,
 		       projects_name, payment_amount, cancellation_charges, refund_amount, note, status
 		FROM billing_refunds
@@ -578,7 +618,7 @@ func BillingRefundsListHandler(responseWriter http.ResponseWriter, request *http
 	}
 	defer rows.Close()
 
-	var refundsList = make([]RefundedDTO, 0)
+	var refundsList []RefundedDTO = make([]RefundedDTO, 0)
 	for rows.Next() {
 		var refundItem RefundedDTO
 		var (
@@ -627,7 +667,9 @@ func CreateBillingRefundHandler(responseWriter http.ResponseWriter, request *htt
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -648,7 +690,8 @@ func CreateBillingRefundHandler(responseWriter http.ResponseWriter, request *htt
 		refundPayload.Status = "Completed"
 	}
 
-	_, insertErr := database.ExecContext(request.Context(), `
+	var insertErr error
+	_, insertErr = database.ExecContext(request.Context(), `
 		INSERT INTO billing_refunds (
 			id, tenant_id, invoice_name, refund_date, client_name, client_avatar, client_initials,
 			projects_name, payment_amount, cancellation_charges, refund_amount, note, status

@@ -64,7 +64,9 @@ func parseSequenceValue(rawValue string, fallbackPrefix string, fallbackNumber s
 }
 
 func formatSequenceValue(sequenceConfig SequenceConfig) string {
-	bytesData, marshalErr := json.Marshal(sequenceConfig)
+	var bytesData []byte
+	var marshalErr error
+	bytesData, marshalErr = json.Marshal(sequenceConfig)
 	if marshalErr != nil {
 		return sequenceConfig.Prefix + "|" + sequenceConfig.NextNumber
 	}
@@ -72,7 +74,9 @@ func formatSequenceValue(sequenceConfig SequenceConfig) string {
 }
 
 func AllocateNextSequenceNumber(ctx context.Context, database *sqlx.DB, tenantID string, documentType string) (string, error) {
-	transaction, beginErr := database.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+	var transaction *sqlx.Tx
+	var beginErr error
+	transaction, beginErr = database.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 	if beginErr != nil {
 		return "", beginErr
 	}
@@ -90,7 +94,8 @@ func AllocateNextSequenceNumber(ctx context.Context, database *sqlx.DB, tenantID
 	}
 
 	var sequenceConfig SequenceConfig = parseSequenceValue(columnValue, defaultPrefix, defaultNumber)
-	currentNumberInt, _ := strconv.Atoi(sequenceConfig.NextNumber)
+	var currentNumberInt int
+	currentNumberInt, _ = strconv.Atoi(sequenceConfig.NextNumber)
 	if currentNumberInt <= 0 {
 		currentNumberInt = 100
 	}
@@ -127,7 +132,8 @@ func AllocateNextSequenceNumber(ctx context.Context, database *sqlx.DB, tenantID
 			initClient = updatedValue
 		}
 
-		_, insertErr := transaction.ExecContext(ctx, `
+		var insertErr error
+		_, insertErr = transaction.ExecContext(ctx, `
 			INSERT INTO sequence_id (
 				id, tenant_id, leads, projects, invoice, orders, expense, cancellation, client
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -137,7 +143,8 @@ func AllocateNextSequenceNumber(ctx context.Context, database *sqlx.DB, tenantID
 		}
 	} else {
 		var updateQuery string = fmt.Sprintf("UPDATE sequence_id SET `%s` = ?, updated_at = NOW(6) WHERE id = ? AND tenant_id = ?", documentType)
-		_, updateErr := transaction.ExecContext(ctx, updateQuery, updatedValue, existingID, tenantID)
+		var updateErr error
+		_, updateErr = transaction.ExecContext(ctx, updateQuery, updatedValue, existingID, tenantID)
 		if updateErr != nil {
 			return "", updateErr
 		}
@@ -157,7 +164,9 @@ func SequenceIdGetHandler(responseWriter http.ResponseWriter, request *http.Requ
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -208,7 +217,9 @@ func SequenceIdSaveHandler(responseWriter http.ResponseWriter, request *http.Req
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -235,7 +246,8 @@ func SequenceIdSaveHandler(responseWriter http.ResponseWriter, request *http.Req
 
 	if queryErr != nil || existingID == "" {
 		var newID string = uuid.New().String()
-		_, insertErr := database.ExecContext(request.Context(), `
+		var insertErr error
+		_, insertErr = database.ExecContext(request.Context(), `
 			INSERT INTO sequence_id (
 				id, tenant_id, leads, projects, invoice, orders, expense, cancellation, client
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -246,7 +258,8 @@ func SequenceIdSaveHandler(responseWriter http.ResponseWriter, request *http.Req
 		}
 		existingID = newID
 	} else {
-		_, updateErr := database.ExecContext(request.Context(), `
+		var updateErr error
+		_, updateErr = database.ExecContext(request.Context(), `
 			UPDATE sequence_id
 			SET leads = ?, projects = ?, invoice = ?, orders = ?, expense = ?, cancellation = ?, client = ?, updated_at = NOW(6)
 			WHERE id = ? AND tenant_id = ?

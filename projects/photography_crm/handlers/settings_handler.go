@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 
@@ -29,7 +30,9 @@ func toJSONBytes(data any) []byte {
 	if data == nil {
 		return []byte("[]")
 	}
-	byteData, marshalErr := json.Marshal(data)
+	var byteData []byte
+	var marshalErr error
+	byteData, marshalErr = json.Marshal(data)
 	if marshalErr != nil {
 		return []byte("[]")
 	}
@@ -42,12 +45,16 @@ func StudioSettingsGetHandler(responseWriter http.ResponseWriter, request *http.
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), "SELECT setting_key, data FROM studio_settings WHERE tenant_id = ?", tenantID)
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), "SELECT setting_key, data FROM studio_settings WHERE tenant_id = ?", tenantID)
 	if queryErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to retrieve studio settings", queryErr)
 		return
@@ -82,7 +89,9 @@ func StudioSettingsSaveHandler(responseWriter http.ResponseWriter, request *http
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -94,17 +103,22 @@ func StudioSettingsSaveHandler(responseWriter http.ResponseWriter, request *http
 		return
 	}
 
-	transaction, txErr := database.BeginTxx(request.Context(), nil)
+	var transaction *sqlx.Tx
+	var txErr error
+	transaction, txErr = database.BeginTxx(request.Context(), nil)
 	if txErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to begin transaction", txErr)
 		return
 	}
 	defer transaction.Rollback()
 
-	for settingKey, settingValue := range requestPayload {
+	var settingKey string
+	var settingValue any
+	for settingKey, settingValue = range requestPayload {
 		var bytePayload []byte = toJSONBytes(settingValue)
 		var settingID string = uuid.New().String()
-		_, execErr := transaction.ExecContext(request.Context(), `
+		var execErr error
+		_, execErr = transaction.ExecContext(request.Context(), `
 			INSERT INTO studio_settings (id, tenant_id, setting_key, data)
 			VALUES (?, ?, ?, ?)
 			ON DUPLICATE KEY UPDATE data = VALUES(data), updated_at = NOW(6)

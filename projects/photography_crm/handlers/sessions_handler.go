@@ -53,7 +53,9 @@ func SessionsListHandler(responseWriter http.ResponseWriter, request *http.Reque
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -75,7 +77,9 @@ func SessionsListHandler(responseWriter http.ResponseWriter, request *http.Reque
 	}
 	query += " ORDER BY s.date ASC"
 
-	rows, queryErr := database.QueryContext(request.Context(), query, queryArguments...)
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), query, queryArguments...)
 	if queryErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list project sessions", queryErr)
 		return
@@ -170,7 +174,9 @@ func CreateSessionHandler(responseWriter http.ResponseWriter, request *http.Requ
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -195,7 +201,8 @@ func CreateSessionHandler(responseWriter http.ResponseWriter, request *http.Requ
 		sessionPayload.Status = "New"
 	}
 
-	membersBytes, _ := json.Marshal(sessionPayload.Members)
+	var membersBytes []byte
+	membersBytes, _ = json.Marshal(sessionPayload.Members)
 
 	var projectIDPointer *string = nil
 	if sessionPayload.ProjectID != "" {
@@ -210,7 +217,8 @@ func CreateSessionHandler(responseWriter http.ResponseWriter, request *http.Requ
 		}
 	}
 
-	_, insertErr := database.ExecContext(request.Context(), `
+	var insertErr error
+	_, insertErr = database.ExecContext(request.Context(), `
 		INSERT INTO project_sessions (
 			id, tenant_id, project_id, title, project_name, session_manager,
 			project_type, shoot_timing, status, date, start_time, duration,
@@ -240,7 +248,9 @@ func UpdateSessionHandler(responseWriter http.ResponseWriter, request *http.Requ
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -253,7 +263,8 @@ func UpdateSessionHandler(responseWriter http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	membersBytes, _ := json.Marshal(sessionPayload.Members)
+	var membersBytes []byte
+	membersBytes, _ = json.Marshal(sessionPayload.Members)
 
 	var projectIDPointer *string = nil
 	if sessionPayload.ProjectID != "" {
@@ -268,7 +279,8 @@ func UpdateSessionHandler(responseWriter http.ResponseWriter, request *http.Requ
 		}
 	}
 
-	_, updateErr := database.ExecContext(request.Context(), `
+	var updateErr error
+	_, updateErr = database.ExecContext(request.Context(), `
 		UPDATE project_sessions SET
 			project_id = ?, title = ?, project_name = ?, session_manager = ?,
 			project_type = ?, shoot_timing = ?, status = ?, date = ?, start_time = ?,
@@ -298,7 +310,9 @@ func UpdateSessionStatusHandler(responseWriter http.ResponseWriter, request *htt
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -311,7 +325,8 @@ func UpdateSessionStatusHandler(responseWriter http.ResponseWriter, request *htt
 		return
 	}
 
-	_, updateErr := database.ExecContext(request.Context(), `
+	var updateErr error
+	_, updateErr = database.ExecContext(request.Context(), `
 		UPDATE project_sessions SET status = ? WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
 	`, requestPayload.Status, sessionID, tenantID)
 	if updateErr != nil {
@@ -333,13 +348,16 @@ func DeleteSessionHandler(responseWriter http.ResponseWriter, request *http.Requ
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 	var sessionID string = chi.URLParam(request, "id")
 
-	_, updateErr := database.ExecContext(request.Context(), `
+	var updateErr error
+	_, updateErr = database.ExecContext(request.Context(), `
 		UPDATE project_sessions SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
 	`, sessionID, tenantID)
 	if updateErr != nil {

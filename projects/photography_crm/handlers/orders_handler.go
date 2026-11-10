@@ -63,12 +63,16 @@ func OrdersListHandler(responseWriter http.ResponseWriter, request *http.Request
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT id, order_number, client_name, mobile_no, country_code, email, address,
 		       lead_source, reference_no, order_date, order_type, stage, assignee,
 		       COALESCE(related_project_id, ''), notes, discount, tax_percent, tax_amount,
@@ -84,7 +88,7 @@ func OrdersListHandler(responseWriter http.ResponseWriter, request *http.Request
 	}
 	defer rows.Close()
 
-	var ordersList = make([]OrderDTO, 0)
+	var ordersList []OrderDTO = make([]OrderDTO, 0)
 	for rows.Next() {
 		var (
 			orderID          string
@@ -159,7 +163,7 @@ func OrdersListHandler(responseWriter http.ResponseWriter, request *http.Request
 			_ = json.Unmarshal(rawPaymentsBytes, &paymentsData)
 		}
 
-		var orderDTO = OrderDTO{
+		var orderDTO OrderDTO = OrderDTO{
 			ID:               orderID,
 			OrderNumber:      orderNumber,
 			ClientName:       clientName,
@@ -200,7 +204,9 @@ func GetOrderHandler(responseWriter http.ResponseWriter, request *http.Request) 
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -287,7 +293,7 @@ func GetOrderHandler(responseWriter http.ResponseWriter, request *http.Request) 
 		_ = json.Unmarshal(rawPaymentsBytes, &paymentsData)
 	}
 
-	var orderDTO = OrderDTO{
+	var orderDTO OrderDTO = OrderDTO{
 		ID:               orderID,
 		OrderNumber:      orderNumber,
 		ClientName:       clientName,
@@ -326,7 +332,9 @@ func CreateOrderHandler(responseWriter http.ResponseWriter, request *http.Reques
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -342,7 +350,9 @@ func CreateOrderHandler(responseWriter http.ResponseWriter, request *http.Reques
 		orderPayload.ID = "ORD-" + uuid.New().String()[:8]
 	}
 	if orderPayload.OrderNumber == "" {
-		sequenceNumber, seqErr := AllocateNextSequenceNumber(request.Context(), database, tenantID, "orders")
+		var sequenceNumber string
+		var seqErr error
+		sequenceNumber, seqErr = AllocateNextSequenceNumber(request.Context(), database, tenantID, "orders")
 		if seqErr == nil && sequenceNumber != "" {
 			orderPayload.OrderNumber = sequenceNumber
 		} else {
@@ -356,16 +366,37 @@ func CreateOrderHandler(responseWriter http.ResponseWriter, request *http.Reques
 		orderPayload.Stage = "Order Confirmation"
 	}
 
-	itemsBytes, _ := json.Marshal(orderPayload.Items)
-	expensesBytes, _ := json.Marshal(orderPayload.Expenses)
-	paymentsBytes, _ := json.Marshal(orderPayload.Payments)
+	var itemsBytes []byte
+	var marshalItemsErr error
+	itemsBytes, marshalItemsErr = json.Marshal(orderPayload.Items)
+	if marshalItemsErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid items data")
+		return
+	}
+
+	var expensesBytes []byte
+	var marshalExpensesErr error
+	expensesBytes, marshalExpensesErr = json.Marshal(orderPayload.Expenses)
+	if marshalExpensesErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid expenses data")
+		return
+	}
+
+	var paymentsBytes []byte
+	var marshalPaymentsErr error
+	paymentsBytes, marshalPaymentsErr = json.Marshal(orderPayload.Payments)
+	if marshalPaymentsErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid payments data")
+		return
+	}
 
 	var relatedProjectIDPointer *string = nil
 	if orderPayload.RelatedProjectId != "" {
 		relatedProjectIDPointer = &orderPayload.RelatedProjectId
 	}
 
-	_, insertErr := database.ExecContext(request.Context(), `
+	var insertErr error
+	_, insertErr = database.ExecContext(request.Context(), `
 		INSERT INTO orders (
 			id, tenant_id, order_number, client_name, mobile_no, country_code, email,
 			address, lead_source, reference_no, order_date, order_type, stage, assignee,
@@ -402,7 +433,9 @@ func UpdateOrderHandler(responseWriter http.ResponseWriter, request *http.Reques
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -415,16 +448,37 @@ func UpdateOrderHandler(responseWriter http.ResponseWriter, request *http.Reques
 		return
 	}
 
-	itemsBytes, _ := json.Marshal(orderPayload.Items)
-	expensesBytes, _ := json.Marshal(orderPayload.Expenses)
-	paymentsBytes, _ := json.Marshal(orderPayload.Payments)
+	var itemsBytes []byte
+	var marshalItemsErr error
+	itemsBytes, marshalItemsErr = json.Marshal(orderPayload.Items)
+	if marshalItemsErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid items data")
+		return
+	}
+
+	var expensesBytes []byte
+	var marshalExpensesErr error
+	expensesBytes, marshalExpensesErr = json.Marshal(orderPayload.Expenses)
+	if marshalExpensesErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid expenses data")
+		return
+	}
+
+	var paymentsBytes []byte
+	var marshalPaymentsErr error
+	paymentsBytes, marshalPaymentsErr = json.Marshal(orderPayload.Payments)
+	if marshalPaymentsErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid payments data")
+		return
+	}
 
 	var relatedProjectIDPointer *string = nil
 	if orderPayload.RelatedProjectId != "" {
 		relatedProjectIDPointer = &orderPayload.RelatedProjectId
 	}
 
-	_, updateErr := database.ExecContext(request.Context(), `
+	var updateErr error
+	_, updateErr = database.ExecContext(request.Context(), `
 		UPDATE orders SET
 			client_name = ?, mobile_no = ?, country_code = ?, email = ?,
 			address = ?, lead_source = ?, reference_no = ?, order_date = ?, order_type = ?,
@@ -458,7 +512,9 @@ func UpdateOrderStageHandler(responseWriter http.ResponseWriter, request *http.R
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -471,7 +527,8 @@ func UpdateOrderStageHandler(responseWriter http.ResponseWriter, request *http.R
 		return
 	}
 
-	_, updateErr := database.ExecContext(request.Context(), `
+	var updateErr error
+	_, updateErr = database.ExecContext(request.Context(), `
 		UPDATE orders SET stage = ? WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
 	`, requestPayload.Stage, orderID, tenantID)
 	if updateErr != nil {
@@ -479,7 +536,7 @@ func UpdateOrderStageHandler(responseWriter http.ResponseWriter, request *http.R
 		return
 	}
 
-	var responsePayload = OrderStageUpdateResponse{
+	var responsePayload OrderStageUpdateResponse = OrderStageUpdateResponse{
 		Status: "ok",
 		ID:     orderID,
 		Stage:  requestPayload.Stage,
@@ -493,13 +550,16 @@ func DeleteOrderHandler(responseWriter http.ResponseWriter, request *http.Reques
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 	var orderID string = chi.URLParam(request, "id")
 
-	_, deleteErr := database.ExecContext(request.Context(), `
+	var deleteErr error
+	_, deleteErr = database.ExecContext(request.Context(), `
 		UPDATE orders SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
 	`, orderID, tenantID)
 	if deleteErr != nil {
@@ -507,7 +567,7 @@ func DeleteOrderHandler(responseWriter http.ResponseWriter, request *http.Reques
 		return
 	}
 
-	var responsePayload = OrderDeleteResponse{
+	var responsePayload OrderDeleteResponse = OrderDeleteResponse{
 		Status: "deleted",
 		ID:     orderID,
 	}

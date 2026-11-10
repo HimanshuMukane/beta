@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -60,37 +61,76 @@ func parseServicesList(rawBytes []byte) []ServiceItemDTO {
 	if fallbackErr != nil {
 		return []ServiceItemDTO{}
 	}
-	var servicesList = make([]ServiceItemDTO, 0, len(rawItems))
-	for _, rawItem := range rawItems {
+	var servicesList []ServiceItemDTO = make([]ServiceItemDTO, 0, len(rawItems))
+	var rawItemIndex int
+	for rawItemIndex = 0; rawItemIndex < len(rawItems); rawItemIndex++ {
+		var rawItem map[string]any = rawItems[rawItemIndex]
 		var serviceID string
-		if idVal, ok := rawItem["id"].(string); ok {
+		var rawIDAny any = rawItem["id"]
+		var idVal string
+		var isStringID bool
+		idVal, isStringID = rawIDAny.(string)
+		if isStringID {
 			serviceID = idVal
 		}
+
 		var serviceName string
-		if nameVal, ok := rawItem["serviceName"].(string); ok {
+		var rawServiceNameAny any = rawItem["serviceName"]
+		var rawNameAny any = rawItem["name"]
+		var nameVal string
+		var isStringName bool
+		nameVal, isStringName = rawServiceNameAny.(string)
+		if isStringName {
 			serviceName = nameVal
-		} else if nameVal, ok := rawItem["name"].(string); ok {
-			serviceName = nameVal
+		} else {
+			nameVal, isStringName = rawNameAny.(string)
+			if isStringName {
+				serviceName = nameVal
+			}
 		}
+
 		var quantity int = 1
-		if qtyVal, ok := rawItem["quantity"].(float64); ok {
-			quantity = int(qtyVal)
-		} else if qtyVal, ok := rawItem["qty"].(float64); ok {
-			quantity = int(qtyVal)
+		var rawQuantityAny any = rawItem["quantity"]
+		var rawQtyAny any = rawItem["qty"]
+		var floatQty float64
+		var isFloatQty bool
+		floatQty, isFloatQty = rawQuantityAny.(float64)
+		if isFloatQty {
+			quantity = int(floatQty)
+		} else {
+			floatQty, isFloatQty = rawQtyAny.(float64)
+			if isFloatQty {
+				quantity = int(floatQty)
+			}
 		}
 		if quantity <= 0 {
 			quantity = 1
 		}
+
 		var amount int64 = 0
-		if amtVal, ok := rawItem["amount"].(float64); ok {
-			amount = int64(amtVal)
-		} else if amtVal, ok := rawItem["cost"].(float64); ok {
-			amount = int64(amtVal)
+		var rawAmountAny any = rawItem["amount"]
+		var rawCostAny any = rawItem["cost"]
+		var floatAmount float64
+		var isFloatAmount bool
+		floatAmount, isFloatAmount = rawAmountAny.(float64)
+		if isFloatAmount {
+			amount = int64(floatAmount)
+		} else {
+			floatAmount, isFloatAmount = rawCostAny.(float64)
+			if isFloatAmount {
+				amount = int64(floatAmount)
+			}
 		}
+
 		var isCustom bool = false
-		if customVal, ok := rawItem["isCustom"].(bool); ok {
-			isCustom = customVal
+		var rawCustomAny any = rawItem["isCustom"]
+		var customBool bool
+		var isCustomBool bool
+		customBool, isCustomBool = rawCustomAny.(bool)
+		if isCustomBool {
+			isCustom = customBool
 		}
+
 		servicesList = append(servicesList, ServiceItemDTO{
 			ID:          serviceID,
 			ServiceName: serviceName,
@@ -108,12 +148,16 @@ func ServicesListHandler(responseWriter http.ResponseWriter, request *http.Reque
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT id, tenant_id, group_name, services
 		FROM services
 		WHERE tenant_id = ? AND deleted_at IS NULL
@@ -125,7 +169,7 @@ func ServicesListHandler(responseWriter http.ResponseWriter, request *http.Reque
 	}
 	defer rows.Close()
 
-	var serviceGroups = make([]ServiceGroupDTO, 0)
+	var serviceGroups []ServiceGroupDTO = make([]ServiceGroupDTO, 0)
 	for rows.Next() {
 		var serviceGroup ServiceGroupDTO
 		var rawServicesBytes []byte
@@ -152,7 +196,9 @@ func CreateServiceGroupHandler(responseWriter http.ResponseWriter, request *http
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -173,10 +219,17 @@ func CreateServiceGroupHandler(responseWriter http.ResponseWriter, request *http
 	if requestPayload.Services == nil {
 		requestPayload.Services = []ServiceItemDTO{}
 	}
-	servicesBytes, _ := json.Marshal(requestPayload.Services)
+	var servicesBytes []byte
+	var marshalErr error
+	servicesBytes, marshalErr = json.Marshal(requestPayload.Services)
+	if marshalErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid services data")
+		return
+	}
 
 	var serviceGroupID string = uuid.New().String()
-	_, insertErr := database.ExecContext(request.Context(), `
+	var insertErr error
+	_, insertErr = database.ExecContext(request.Context(), `
 		INSERT INTO services (id, tenant_id, group_name, services)
 		VALUES (?, ?, ?, ?)
 	`, serviceGroupID, tenantID, groupName, servicesBytes)
@@ -185,7 +238,7 @@ func CreateServiceGroupHandler(responseWriter http.ResponseWriter, request *http
 		return
 	}
 
-	var createdGroup = ServiceGroupDTO{
+	var createdGroup ServiceGroupDTO = ServiceGroupDTO{
 		ID:        serviceGroupID,
 		TenantID:  tenantID,
 		GroupName: groupName,
@@ -200,7 +253,9 @@ func UpdateServiceGroupHandler(responseWriter http.ResponseWriter, request *http
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -226,9 +281,16 @@ func UpdateServiceGroupHandler(responseWriter http.ResponseWriter, request *http
 	if requestPayload.Services == nil {
 		requestPayload.Services = []ServiceItemDTO{}
 	}
-	servicesBytes, _ := json.Marshal(requestPayload.Services)
+	var servicesBytes []byte
+	var marshalErr error
+	servicesBytes, marshalErr = json.Marshal(requestPayload.Services)
+	if marshalErr != nil {
+		utils.WriteError(responseWriter, http.StatusBadRequest, "Invalid services data")
+		return
+	}
 
-	_, updateErr := database.ExecContext(request.Context(), `
+	var updateErr error
+	_, updateErr = database.ExecContext(request.Context(), `
 		UPDATE services
 		SET group_name = ?, services = ?, updated_at = NOW(6)
 		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
@@ -238,7 +300,7 @@ func UpdateServiceGroupHandler(responseWriter http.ResponseWriter, request *http
 		return
 	}
 
-	var successResponse = ActionStatusSuccessResponse{
+	var successResponse ActionStatusSuccessResponse = ActionStatusSuccessResponse{
 		Status: "ok",
 	}
 	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
@@ -250,7 +312,9 @@ func DeleteServiceGroupHandler(responseWriter http.ResponseWriter, request *http
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -260,7 +324,8 @@ func DeleteServiceGroupHandler(responseWriter http.ResponseWriter, request *http
 		return
 	}
 
-	_, deleteErr := database.ExecContext(request.Context(), `
+	var deleteErr error
+	_, deleteErr = database.ExecContext(request.Context(), `
 		UPDATE services SET deleted_at = NOW(6) WHERE id = ? AND tenant_id = ?
 	`, serviceGroupID, tenantID)
 	if deleteErr != nil {
@@ -268,7 +333,7 @@ func DeleteServiceGroupHandler(responseWriter http.ResponseWriter, request *http
 		return
 	}
 
-	var successResponse = ActionStatusSuccessResponse{
+	var successResponse ActionStatusSuccessResponse = ActionStatusSuccessResponse{
 		Status: "ok",
 	}
 	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)
@@ -280,7 +345,9 @@ func BatchSaveServicesHandler(responseWriter http.ResponseWriter, request *http.
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -292,20 +359,25 @@ func BatchSaveServicesHandler(responseWriter http.ResponseWriter, request *http.
 		return
 	}
 
-	transaction, beginTxErr := database.BeginTxx(request.Context(), nil)
+	var transaction *sqlx.Tx
+	var beginTxErr error
+	transaction, beginTxErr = database.BeginTxx(request.Context(), nil)
 	if beginTxErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to start database transaction", beginTxErr)
 		return
 	}
 	defer transaction.Rollback()
 
-	_, resetErr := transaction.ExecContext(request.Context(), "UPDATE services SET deleted_at = NOW(6) WHERE tenant_id = ? AND deleted_at IS NULL", tenantID)
+	var resetErr error
+	_, resetErr = transaction.ExecContext(request.Context(), "UPDATE services SET deleted_at = NOW(6) WHERE tenant_id = ? AND deleted_at IS NULL", tenantID)
 	if resetErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update existing services", resetErr)
 		return
 	}
 
-	for _, groupItem := range requestPayload.Groups {
+	var groupIndex int
+	for groupIndex = 0; groupIndex < len(requestPayload.Groups); groupIndex++ {
+		var groupItem BatchSaveServiceGroupItem = requestPayload.Groups[groupIndex]
 		var groupName string = strings.TrimSpace(groupItem.GroupName)
 		if groupName == "" {
 			continue
@@ -314,13 +386,19 @@ func BatchSaveServicesHandler(responseWriter http.ResponseWriter, request *http.
 		if groupID == "" || strings.HasPrefix(groupID, "temp-") || strings.HasPrefix(groupID, "srv-") {
 			groupID = uuid.New().String()
 		}
-		var services = groupItem.Services
+		var services []ServiceItemDTO = groupItem.Services
 		if services == nil {
 			services = []ServiceItemDTO{}
 		}
-		servicesBytes, _ := json.Marshal(services)
+		var servicesBytes []byte
+		var marshalErr error
+		servicesBytes, marshalErr = json.Marshal(services)
+		if marshalErr != nil {
+			continue
+		}
 
-		_, insertErr := transaction.ExecContext(request.Context(), `
+		var insertErr error
+		_, insertErr = transaction.ExecContext(request.Context(), `
 			INSERT INTO services (id, tenant_id, group_name, services)
 			VALUES (?, ?, ?, ?)
 		`, groupID, tenantID, groupName, servicesBytes)
@@ -336,7 +414,7 @@ func BatchSaveServicesHandler(responseWriter http.ResponseWriter, request *http.
 		return
 	}
 
-	var successResponse = ActionStatusSuccessResponse{
+	var successResponse ActionStatusSuccessResponse = ActionStatusSuccessResponse{
 		Status: "ok",
 	}
 	utils.WriteJSON(responseWriter, http.StatusOK, successResponse)

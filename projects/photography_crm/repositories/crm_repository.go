@@ -12,10 +12,10 @@ import (
 )
 
 var (
-	ErrLeadNotFound      = errors.New("lead not found")
-	ErrClientNotFound    = errors.New("client not found")
-	ErrProjectNotFound   = errors.New("project not found")
-	ErrQuotationNotFound = errors.New("quotation not found")
+	ErrLeadNotFound     = errors.New("lead not found")
+	ErrClientNotFound   = errors.New("client not found")
+	ErrProjectNotFound  = errors.New("project not found")
+	ErrLeadNotConvert   = errors.New("lead cannot be converted")
 )
 
 type Lead struct {
@@ -30,33 +30,38 @@ type Lead struct {
 	Source              string     `json:"source"`
 	PhotographyService  string     `json:"photography_service"`
 	EstimatedValueMinor int64      `json:"estimated_value_minor"`
-	AssignedUserID      *uuid.UUID `json:"assigned_user_id"`
-	RequestedDate       string     `json:"requested_date"`
+	RequestedDate       *time.Time `json:"requested_date"`
 	Location            string     `json:"location"`
 	Notes               string     `json:"notes"`
 	Status              string     `json:"status"`
-	ConvertedClientID   *uuid.UUID `json:"converted_client_id"`
-	ConvertedProjectID  *uuid.UUID `json:"converted_project_id"`
 	CreatedAt           time.Time  `json:"created_at"`
 	UpdatedAt           time.Time  `json:"updated_at"`
 }
 
 type Client struct {
-	ID        uuid.UUID `json:"id"`
-	TenantID  uuid.UUID `json:"tenant_id"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Email     string    `json:"email"`
-	Phone     string    `json:"phone"`
-	Source    string    `json:"source"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID          uuid.UUID `json:"id"`
+	TenantID    uuid.UUID `json:"tenant_id"`
+	FirstName   string    `json:"first_name"`
+	LastName    string    `json:"last_name"`
+	Email       string    `json:"email"`
+	Phone       string    `json:"phone"`
+	Company     string    `json:"company"`
+	AddressLine string    `json:"address_line"`
+	City        string    `json:"city"`
+	State       string    `json:"state"`
+	PostalCode  string    `json:"postal_code"`
+	Country     string    `json:"country"`
+	Notes       string    `json:"notes"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type Project struct {
 	ID               uuid.UUID  `json:"id"`
 	TenantID         uuid.UUID  `json:"tenant_id"`
 	ClientID         uuid.UUID  `json:"client_id"`
+	WorkflowID       uuid.UUID  `json:"workflow_id"`
+	CurrentStageID   uuid.UUID  `json:"current_stage_id"`
 	Title            string     `json:"title"`
 	Status           string     `json:"status"`
 	TotalAmountMinor int64      `json:"total_amount_minor"`
@@ -67,36 +72,39 @@ type Project struct {
 }
 
 type CRMRepository struct {
-	db *sqlx.DB
+	database *sqlx.DB
 }
 
-func NewCRMRepository(db *sqlx.DB) *CRMRepository {
-	return &CRMRepository{db: db}
+func NewCRMRepository(databaseInstance *sqlx.DB) *CRMRepository {
+	return &CRMRepository{database: databaseInstance}
 }
 
-func (r *CRMRepository) CreateLead(ctx context.Context, l *Lead) error {
-	if l.ID == uuid.Nil {
-		id, err := uuid.NewV7()
-		if err != nil {
-			return err
+func (repository *CRMRepository) CreateLead(ctx context.Context, leadEntity *Lead) error {
+	if leadEntity.ID == uuid.Nil {
+		var newLeadID uuid.UUID
+		var generationErr error
+		newLeadID, generationErr = uuid.NewV7()
+		if generationErr != nil {
+			return generationErr
 		}
-		l.ID = id
+		leadEntity.ID = newLeadID
 	}
 
-	_, err := r.db.ExecContext(ctx, `
+	var executionErr error
+	_, executionErr = repository.database.ExecContext(ctx, `
 		INSERT INTO leads (
 			id, tenant_id, workflow_id, stage_id, title, contact_name, contact_email,
 			contact_phone, source, photography_service, estimated_value_minor,
 			requested_date, location, notes, status
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, l.ID.String(), l.TenantID.String(), l.WorkflowID.String(), l.StageID.String(),
-		l.Title, l.ContactName, l.ContactEmail, l.ContactPhone, l.Source,
-		l.PhotographyService, l.EstimatedValueMinor, l.RequestedDate, l.Location, l.Notes, l.Status)
-	return err
+	`, leadEntity.ID.String(), leadEntity.TenantID.String(), leadEntity.WorkflowID.String(), leadEntity.StageID.String(),
+		leadEntity.Title, leadEntity.ContactName, leadEntity.ContactEmail, leadEntity.ContactPhone, leadEntity.Source,
+		leadEntity.PhotographyService, leadEntity.EstimatedValueMinor, leadEntity.RequestedDate, leadEntity.Location, leadEntity.Notes, leadEntity.Status)
+	return executionErr
 }
 
-func (r *CRMRepository) GetLeadByID(ctx context.Context, tenantID, leadID uuid.UUID) (*Lead, error) {
-	row := r.db.QueryRowContext(ctx, `
+func (repository *CRMRepository) GetLeadByID(ctx context.Context, tenantID uuid.UUID, leadID uuid.UUID) (*Lead, error) {
+	var row *sql.Row = repository.database.QueryRowContext(ctx, `
 		SELECT id, tenant_id, workflow_id, stage_id, title, contact_name, contact_email,
 		       contact_phone, source, photography_service, estimated_value_minor,
 		       requested_date, location, notes, status, created_at, updated_at
@@ -105,23 +113,26 @@ func (r *CRMRepository) GetLeadByID(ctx context.Context, tenantID, leadID uuid.U
 		LIMIT 1
 	`, leadID.String(), tenantID.String())
 
-	var l Lead
-	var idStr, tStr, wStr, sStr string
-	err := row.Scan(
-		&idStr, &tStr, &wStr, &sStr, &l.Title, &l.ContactName, &l.ContactEmail,
-		&l.ContactPhone, &l.Source, &l.PhotographyService, &l.EstimatedValueMinor,
-		&l.RequestedDate, &l.Location, &l.Notes, &l.Status, &l.CreatedAt, &l.UpdatedAt,
+	var leadEntity Lead
+	var idString string
+	var tenantIDString string
+	var workflowIDString string
+	var stageIDString string
+	var scanErr error = row.Scan(
+		&idString, &tenantIDString, &workflowIDString, &stageIDString, &leadEntity.Title, &leadEntity.ContactName, &leadEntity.ContactEmail,
+		&leadEntity.ContactPhone, &leadEntity.Source, &leadEntity.PhotographyService, &leadEntity.EstimatedValueMinor,
+		&leadEntity.RequestedDate, &leadEntity.Location, &leadEntity.Notes, &leadEntity.Status, &leadEntity.CreatedAt, &leadEntity.UpdatedAt,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(scanErr, sql.ErrNoRows) {
 		return nil, ErrLeadNotFound
 	}
-	if err != nil {
-		return nil, fmt.Errorf("get lead: %w", err)
+	if scanErr != nil {
+		return nil, fmt.Errorf("get lead: %w", scanErr)
 	}
 
-	l.ID, _ = uuid.Parse(idStr)
-	l.TenantID, _ = uuid.Parse(tStr)
-	l.WorkflowID, _ = uuid.Parse(wStr)
-	l.StageID, _ = uuid.Parse(sStr)
-	return &l, nil
+	leadEntity.ID, _ = uuid.Parse(idString)
+	leadEntity.TenantID, _ = uuid.Parse(tenantIDString)
+	leadEntity.WorkflowID, _ = uuid.Parse(workflowIDString)
+	leadEntity.StageID, _ = uuid.Parse(stageIDString)
+	return &leadEntity, nil
 }

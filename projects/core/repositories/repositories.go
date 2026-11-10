@@ -38,7 +38,9 @@ func (repo *RoleRepository) CreateRole(ctx context.Context, name string) (*model
 		return nil, errors.New("role name must be between 1 and 50 bytes")
 	}
 
-	roleID, err := uuid.NewV7()
+	var roleID uuid.UUID
+	var err error
+	roleID, err = uuid.NewV7()
 	if err != nil {
 		return nil, fmt.Errorf("generate role id: %w", err)
 	}
@@ -62,7 +64,9 @@ func (repo *RoleRepository) GetRoleByID(ctx context.Context, roleID uuid.UUID) (
 		return nil, ErrRoleNotFound
 	}
 
-	roleRow, err := repo.queries.GetRoleByID(ctx, roleID)
+	var roleRow sqlc.Role
+	var err error
+	roleRow, err = repo.queries.GetRoleByID(ctx, roleID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrRoleNotFound
 	}
@@ -70,7 +74,7 @@ func (repo *RoleRepository) GetRoleByID(ctx context.Context, roleID uuid.UUID) (
 		return nil, fmt.Errorf("get role by id: %w", err)
 	}
 
-	role := &models.Role{
+	var role *models.Role = &models.Role{
 		ID:        roleRow.ID,
 		Name:      roleRow.Name,
 		CreatedAt: roleRow.CreatedAt,
@@ -88,7 +92,9 @@ func (repo *RoleRepository) GetRoleByName(ctx context.Context, name string) (*mo
 		return nil, ErrRoleNotFound
 	}
 
-	roleRow, err := repo.queries.GetRoleByName(ctx, name)
+	var roleRow sqlc.Role
+	var err error
+	roleRow, err = repo.queries.GetRoleByName(ctx, name)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrRoleNotFound
 	}
@@ -96,7 +102,7 @@ func (repo *RoleRepository) GetRoleByName(ctx context.Context, name string) (*mo
 		return nil, fmt.Errorf("get role by name: %w", err)
 	}
 
-	role := &models.Role{
+	var role *models.Role = &models.Role{
 		ID:        roleRow.ID,
 		Name:      roleRow.Name,
 		CreatedAt: roleRow.CreatedAt,
@@ -133,14 +139,16 @@ func (repo *UserRepository) CreateUser(ctx context.Context, param *CreateUserPar
 	}
 
 	if param.ID == uuid.Nil {
-		userID, err := uuid.NewV7()
+		var userID uuid.UUID
+		var err error
+		userID, err = uuid.NewV7()
 		if err != nil {
 			return nil, fmt.Errorf("generate user id: %w", err)
 		}
 		param.ID = userID
 	}
 
-	createUserParams := sqlc.CreateUserParams{
+	var createUserParams sqlc.CreateUserParams = sqlc.CreateUserParams{
 		ID:           param.ID,
 		FirstName:    strings.TrimSpace(param.FirstName),
 		LastName:     strings.TrimSpace(param.LastName),
@@ -156,7 +164,7 @@ func (repo *UserRepository) CreateUser(ctx context.Context, param *CreateUserPar
 		createUserParams.RoleID = uuid.NullUUID{UUID: *param.RoleID, Valid: true}
 	}
 
-	err := repo.queries.CreateUser(ctx, createUserParams)
+	var err error = repo.queries.CreateUser(ctx, createUserParams)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return nil, ErrEmailAlreadyExists
@@ -173,7 +181,9 @@ func (repo *UserRepository) GetUserByEmail(ctx context.Context, email string) (*
 		return nil, ErrUserNotFound
 	}
 
-	userRow, err := repo.queries.GetUserByEmail(ctx, email)
+	var userRow sqlc.GetUserByEmailRow
+	var err error
+	userRow, err = repo.queries.GetUserByEmail(ctx, email)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrUserNotFound
 	}
@@ -181,7 +191,7 @@ func (repo *UserRepository) GetUserByEmail(ctx context.Context, email string) (*
 		return nil, fmt.Errorf("get user by email: %w", err)
 	}
 
-	user := &models.User{
+	var user *models.User = &models.User{
 		ID:           userRow.ID,
 		FirstName:    userRow.FirstName,
 		LastName:     userRow.LastName,
@@ -206,7 +216,9 @@ func (repo *UserRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (
 		return nil, ErrUserNotFound
 	}
 
-	userRow, err := repo.queries.GetUserByID(ctx, userID)
+	var userRow sqlc.GetUserByIDRow
+	var err error
+	userRow, err = repo.queries.GetUserByID(ctx, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrUserNotFound
 	}
@@ -214,7 +226,7 @@ func (repo *UserRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (
 		return nil, fmt.Errorf("get user by id: %w", err)
 	}
 
-	user := &models.User{
+	var user *models.User = &models.User{
 		ID:           userRow.ID,
 		FirstName:    userRow.FirstName,
 		LastName:     userRow.LastName,
@@ -254,7 +266,9 @@ func (repo *TenantRepository) CreateTenant(ctx context.Context, tenant *models.T
 		return errors.New("tenant cannot be nil")
 	}
 	if tenant.ID == uuid.Nil {
-		tenantID, err := uuid.NewV7()
+		var tenantID uuid.UUID
+		var err error
+		tenantID, err = uuid.NewV7()
 		if err != nil {
 			return fmt.Errorf("generate tenant id: %w", err)
 		}
@@ -274,7 +288,7 @@ func (repo *TenantRepository) CreateTenant(ctx context.Context, tenant *models.T
 		tenant.Timezone = "Asia/Kolkata"
 	}
 
-	err := repo.queries.CreateTenant(ctx, sqlc.CreateTenantParams{
+	var err error = repo.queries.CreateTenant(ctx, sqlc.CreateTenantParams{
 		ID:                 tenant.ID,
 		Name:               tenant.Name,
 		Slug:               tenant.Slug,
@@ -294,7 +308,9 @@ func (repo *TenantRepository) CreateTenant(ctx context.Context, tenant *models.T
 }
 
 func (repo *TenantRepository) GetTenantByID(ctx context.Context, tenantID uuid.UUID) (*models.Tenant, error) {
-	tenantRow, err := repo.queries.GetTenantByID(ctx, tenantID)
+	var tenantRow sqlc.Tenant
+	var err error
+	tenantRow, err = repo.queries.GetTenantByID(ctx, tenantID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTenantNotFound
 	}
@@ -302,7 +318,7 @@ func (repo *TenantRepository) GetTenantByID(ctx context.Context, tenantID uuid.U
 		return nil, fmt.Errorf("get tenant by id: %w", err)
 	}
 
-	tenant := &models.Tenant{
+	var tenant *models.Tenant = &models.Tenant{
 		ID:                 tenantRow.ID,
 		Name:               tenantRow.Name,
 		Slug:               tenantRow.Slug,
@@ -325,7 +341,9 @@ func (repo *TenantRepository) CreateMembership(ctx context.Context, membership *
 		return errors.New("membership cannot be nil")
 	}
 	if membership.ID == uuid.Nil {
-		membershipID, err := uuid.NewV7()
+		var membershipID uuid.UUID
+		var err error
+		membershipID, err = uuid.NewV7()
 		if err != nil {
 			return fmt.Errorf("generate membership id: %w", err)
 		}
@@ -345,7 +363,9 @@ func (repo *TenantRepository) CreateMembership(ctx context.Context, membership *
 }
 
 func (repo *TenantRepository) GetMembership(ctx context.Context, tenantID, userID uuid.UUID) (*models.Membership, error) {
-	membershipRow, err := repo.queries.GetMembership(ctx, tenantID, userID)
+	var membershipRow sqlc.GetMembershipRow
+	var err error
+	membershipRow, err = repo.queries.GetMembership(ctx, tenantID, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrMembershipNotFound
 	}
@@ -353,7 +373,7 @@ func (repo *TenantRepository) GetMembership(ctx context.Context, tenantID, userI
 		return nil, fmt.Errorf("get membership: %w", err)
 	}
 
-	membership := &models.Membership{
+	var membership *models.Membership = &models.Membership{
 		ID:                       membershipRow.ID,
 		TenantID:                 membershipRow.TenantID,
 		UserID:                   membershipRow.UserID,
@@ -374,13 +394,17 @@ func (repo *TenantRepository) GetMembership(ctx context.Context, tenantID, userI
 }
 
 func (repo *TenantRepository) ListUserMemberships(ctx context.Context, userID uuid.UUID) ([]models.Membership, error) {
-	membershipRows, err := repo.queries.ListUserMemberships(ctx, userID)
+	var membershipRows []sqlc.ListUserMembershipsRow
+	var err error
+	membershipRows, err = repo.queries.ListUserMemberships(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("list user memberships: %w", err)
 	}
 
-	memberships := make([]models.Membership, len(membershipRows))
-	for index, membershipRow := range membershipRows {
+	var memberships []models.Membership = make([]models.Membership, len(membershipRows))
+	var index int
+	for index = 0; index < len(membershipRows); index++ {
+		var membershipRow sqlc.ListUserMembershipsRow = membershipRows[index]
 		memberships[index] = models.Membership{
 			ID:                       membershipRow.ID,
 			TenantID:                 membershipRow.TenantID,

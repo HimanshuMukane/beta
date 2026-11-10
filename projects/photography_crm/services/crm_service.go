@@ -11,21 +11,20 @@ import (
 )
 
 var (
-	ErrLeadNotFound      = repositories.ErrLeadNotFound
-	ErrClientNotFound    = repositories.ErrClientNotFound
-	ErrProjectNotFound   = repositories.ErrProjectNotFound
-	ErrQuotationNotFound = repositories.ErrQuotationNotFound
+	ErrLeadNotFound    = repositories.ErrLeadNotFound
+	ErrClientNotFound  = repositories.ErrClientNotFound
+	ErrProjectNotFound = repositories.ErrProjectNotFound
 )
 
 type CRMService struct {
-	db   *sqlx.DB
-	repo *repositories.CRMRepository
+	database   *sqlx.DB
+	repository *repositories.CRMRepository
 }
 
-func NewCRMService(db *sqlx.DB) *CRMService {
+func NewCRMService(databaseInstance *sqlx.DB) *CRMService {
 	return &CRMService{
-		db:   db,
-		repo: repositories.NewCRMRepository(db),
+		database:   databaseInstance,
+		repository: repositories.NewCRMRepository(databaseInstance),
 	}
 }
 
@@ -34,55 +33,65 @@ type ConvertLeadResult struct {
 	Project *repositories.Project
 }
 
-func (s *CRMService) ConvertLeadToClient(ctx context.Context, tenantID, leadID uuid.UUID) (*ConvertLeadResult, error) {
-	lead, err := s.repo.GetLeadByID(ctx, tenantID, leadID)
-	if err != nil {
-		return nil, fmt.Errorf("fetch lead: %w", err)
+func (service *CRMService) ConvertLeadToClient(ctx context.Context, tenantID uuid.UUID, leadID uuid.UUID) (*ConvertLeadResult, error) {
+	var leadEntity *repositories.Lead
+	var fetchErr error
+	leadEntity, fetchErr = service.repository.GetLeadByID(ctx, tenantID, leadID)
+	if fetchErr != nil {
+		return nil, fmt.Errorf("fetch lead: %w", fetchErr)
 	}
 
-	names := strings.SplitN(strings.TrimSpace(lead.ContactName), " ", 2)
-	firstName := names[0]
-	lastName := ""
+	var names []string = strings.SplitN(strings.TrimSpace(leadEntity.ContactName), " ", 2)
+	var firstName string = names[0]
+	var lastName string = ""
 	if len(names) > 1 {
 		lastName = names[1]
 	}
 
-	clientID, _ := uuid.NewV7()
-	projectID, _ := uuid.NewV7()
+	var clientID uuid.UUID
+	clientID, _ = uuid.NewV7()
+	var projectID uuid.UUID
+	projectID, _ = uuid.NewV7()
 
-	tx, err := s.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("begin tx: %w", err)
+	var transaction *sqlx.Tx
+	var txErr error
+	transaction, txErr = service.database.BeginTxx(ctx, nil)
+	if txErr != nil {
+		return nil, fmt.Errorf("begin tx: %w", txErr)
 	}
-	defer tx.Rollback()
+	defer transaction.Rollback()
 
-	_, err = tx.ExecContext(ctx, `
-		INSERT INTO clients (id, tenant_id, first_name, last_name, email, phone, source)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, clientID.String(), tenantID.String(), firstName, lastName, lead.ContactEmail, lead.ContactPhone, lead.Source)
-	if err != nil {
-		return nil, fmt.Errorf("insert client: %w", err)
+	var insertClientErr error
+	_, insertClientErr = transaction.ExecContext(ctx, `
+		INSERT INTO clients (id, tenant_id, first_name, last_name, email, phone)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, clientID.String(), tenantID.String(), firstName, lastName, leadEntity.ContactEmail, leadEntity.ContactPhone)
+	if insertClientErr != nil {
+		return nil, fmt.Errorf("insert client: %w", insertClientErr)
 	}
 
-	_, err = tx.ExecContext(ctx, `
+	var insertProjectErr error
+	_, insertProjectErr = transaction.ExecContext(ctx, `
 		INSERT INTO projects (id, tenant_id, client_id, title, status, total_amount_minor)
 		VALUES (?, ?, ?, ?, 'booked', ?)
-	`, projectID.String(), tenantID.String(), clientID.String(), lead.Title, lead.EstimatedValueMinor)
-	if err != nil {
-		return nil, fmt.Errorf("insert project: %w", err)
+	`, projectID.String(), tenantID.String(), clientID.String(), leadEntity.Title, leadEntity.EstimatedValueMinor)
+	if insertProjectErr != nil {
+		return nil, fmt.Errorf("insert project: %w", insertProjectErr)
 	}
 
-	_, err = tx.ExecContext(ctx, `
+	var updateLeadErr error
+	_, updateLeadErr = transaction.ExecContext(ctx, `
 		UPDATE leads
-		SET status = 'converted', converted_client_id = ?, converted_project_id = ?
+		SET status = 'converted'
 		WHERE id = ? AND tenant_id = ?
-	`, clientID.String(), projectID.String(), leadID.String(), tenantID.String())
-	if err != nil {
-		return nil, fmt.Errorf("update lead: %w", err)
+	`, leadID.String(), tenantID.String())
+	if updateLeadErr != nil {
+		return nil, fmt.Errorf("update lead: %w", updateLeadErr)
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("commit lead conversion: %w", err)
+	var commitErr error = transaction.Commit()
+	if commitErr != nil {
+		return nil, fmt.Errorf("commit lead conversion: %w", commitErr)
 	}
 
 	return &ConvertLeadResult{
@@ -91,17 +100,16 @@ func (s *CRMService) ConvertLeadToClient(ctx context.Context, tenantID, leadID u
 			TenantID:  tenantID,
 			FirstName: firstName,
 			LastName:  lastName,
-			Email:     lead.ContactEmail,
-			Phone:     lead.ContactPhone,
-			Source:    lead.Source,
+			Email:     leadEntity.ContactEmail,
+			Phone:     leadEntity.ContactPhone,
 		},
 		Project: &repositories.Project{
 			ID:               projectID,
 			TenantID:         tenantID,
 			ClientID:         clientID,
-			Title:            lead.Title,
+			Title:            leadEntity.Title,
 			Status:           "booked",
-			TotalAmountMinor: lead.EstimatedValueMinor,
+			TotalAmountMinor: leadEntity.EstimatedValueMinor,
 		},
 	}, nil
 }

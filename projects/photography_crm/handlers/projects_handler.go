@@ -109,14 +109,32 @@ func parseProjectManager(rawBytes []byte) ProjectManagerDTO {
 func calculateTasksCount(tasks any) ProjectTasksCountDTO {
 	var completedCount int = 0
 	var totalCount int = 0
-	if taskList, ok := tasks.([]any); ok {
+	var taskList []any
+	var isTaskList bool
+	taskList, isTaskList = tasks.([]any)
+	if isTaskList {
 		totalCount = len(taskList)
-		for _, taskItem := range taskList {
-			if taskMap, ok := taskItem.(map[string]any); ok {
-				if statusString, ok := taskMap["status"].(string); ok && strings.EqualFold(statusString, "completed") {
+		var taskIndex int
+		for taskIndex = 0; taskIndex < len(taskList); taskIndex++ {
+			var taskItem any = taskList[taskIndex]
+			var taskMap map[string]any
+			var isTaskMap bool
+			taskMap, isTaskMap = taskItem.(map[string]any)
+			if isTaskMap {
+				var rawStatusAny any = taskMap["status"]
+				var statusString string
+				var isStatusString bool
+				statusString, isStatusString = rawStatusAny.(string)
+				if isStatusString && strings.EqualFold(statusString, "completed") {
 					completedCount++
-				} else if isCompleted, ok := taskMap["completed"].(bool); ok && isCompleted {
-					completedCount++
+				} else {
+					var rawCompletedAny any = taskMap["completed"]
+					var isCompleted bool
+					var isBool bool
+					isCompleted, isBool = rawCompletedAny.(bool)
+					if isBool && isCompleted {
+						completedCount++
+					}
 				}
 			}
 		}
@@ -127,11 +145,23 @@ func calculateTasksCount(tasks any) ProjectTasksCountDTO {
 func calculateDeliverablesCount(deliverables any) ProjectDeliverablesCountDTO {
 	var readyCount int = 0
 	var totalCount int = 0
-	if deliverableList, ok := deliverables.([]any); ok {
+	var deliverableList []any
+	var isDeliverableList bool
+	deliverableList, isDeliverableList = deliverables.([]any)
+	if isDeliverableList {
 		totalCount = len(deliverableList)
-		for _, deliverableItem := range deliverableList {
-			if deliverableMap, ok := deliverableItem.(map[string]any); ok {
-				if statusString, ok := deliverableMap["status"].(string); ok && (strings.EqualFold(statusString, "ready") || strings.EqualFold(statusString, "completed")) {
+		var deliverableIndex int
+		for deliverableIndex = 0; deliverableIndex < len(deliverableList); deliverableIndex++ {
+			var deliverableItem any = deliverableList[deliverableIndex]
+			var deliverableMap map[string]any
+			var isDeliverableMap bool
+			deliverableMap, isDeliverableMap = deliverableItem.(map[string]any)
+			if isDeliverableMap {
+				var rawStatusAny any = deliverableMap["status"]
+				var statusString string
+				var isStatusString bool
+				statusString, isStatusString = rawStatusAny.(string)
+				if isStatusString && (strings.EqualFold(statusString, "ready") || strings.EqualFold(statusString, "completed")) {
 					readyCount++
 				}
 			}
@@ -146,12 +176,16 @@ func ProjectsListHandler(responseWriter http.ResponseWriter, request *http.Reque
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT p.id, p.project_name, p.client_name, p.client_initials, p.client_mobile,
 		       p.client_country_code, p.client_email, p.client_address, p.lead_source,
 		       p.project_manager, p.project_type, p.project_address, p.status, p.stage,
@@ -286,7 +320,9 @@ func GetProjectHandler(responseWriter http.ResponseWriter, request *http.Request
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -459,7 +495,9 @@ func CreateProjectHandler(responseWriter http.ResponseWriter, request *http.Requ
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -475,20 +513,30 @@ func CreateProjectHandler(responseWriter http.ResponseWriter, request *http.Requ
 		projectPayload.ID = "PRJ-" + uuid.New().String()[:8]
 	}
 	if projectPayload.ClientInitials == "" && len(projectPayload.ClientName) > 0 {
-		projectPayload.ClientInitials = string([]rune(projectPayload.ClientName)[:1])
+		projectPayload.ClientInitials = strings.ToUpper(projectPayload.ClientName[0:1])
 	}
 
-	managerBytes, _ := json.Marshal(projectPayload.ProjectManager)
-	segmentsBytes, _ := json.Marshal(projectPayload.Segments)
-	documentsBytes, _ := json.Marshal(projectPayload.Documents)
-	sessionsBytes, _ := json.Marshal(projectPayload.Sessions)
-	tasksBytes, _ := json.Marshal(projectPayload.Tasks)
-	printingBytes, _ := json.Marshal(projectPayload.Printing)
-	deliverablesBytes, _ := json.Marshal(projectPayload.Deliverables)
-	expensesBytes, _ := json.Marshal(projectPayload.Expenses)
-	financeBytes, _ := json.Marshal(projectPayload.Finance)
+	var managerBytes []byte
+	managerBytes, _ = json.Marshal(projectPayload.ProjectManager)
+	var segmentsBytes []byte
+	segmentsBytes, _ = json.Marshal(projectPayload.Segments)
+	var documentsBytes []byte
+	documentsBytes, _ = json.Marshal(projectPayload.Documents)
+	var sessionsBytes []byte
+	sessionsBytes, _ = json.Marshal(projectPayload.Sessions)
+	var tasksBytes []byte
+	tasksBytes, _ = json.Marshal(projectPayload.Tasks)
+	var printingBytes []byte
+	printingBytes, _ = json.Marshal(projectPayload.Printing)
+	var deliverablesBytes []byte
+	deliverablesBytes, _ = json.Marshal(projectPayload.Deliverables)
+	var expensesBytes []byte
+	expensesBytes, _ = json.Marshal(projectPayload.Expenses)
+	var financeBytes []byte
+	financeBytes, _ = json.Marshal(projectPayload.Finance)
 
-	_, insertErr := database.ExecContext(request.Context(), `
+	var insertErr error
+	_, insertErr = database.ExecContext(request.Context(), `
 		INSERT INTO projects (
 			id, tenant_id, project_name, client_name, client_initials, client_mobile,
 			client_country_code, client_email, client_address, lead_source, project_manager,
@@ -515,44 +563,88 @@ func CreateProjectHandler(responseWriter http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	if sessionList, ok := projectPayload.Sessions.([]any); ok && len(sessionList) > 0 {
-		for _, sessionObject := range sessionList {
-			if sessionMap, ok := sessionObject.(map[string]any); ok {
+	var sessionList []any
+	var isSessionList bool
+	sessionList, isSessionList = projectPayload.Sessions.([]any)
+	if isSessionList && len(sessionList) > 0 {
+		var sessionIndex int
+		for sessionIndex = 0; sessionIndex < len(sessionList); sessionIndex++ {
+			var sessionObject any = sessionList[sessionIndex]
+			var sessionMap map[string]any
+			var isSessionMap bool
+			sessionMap, isSessionMap = sessionObject.(map[string]any)
+			if isSessionMap {
 				var sessionID string
-				if idVal, ok := sessionMap["id"].(string); ok {
+				var rawIDAny any = sessionMap["id"]
+				var idVal string
+				var isIDString bool
+				idVal, isIDString = rawIDAny.(string)
+				if isIDString {
 					sessionID = idVal
 				}
 				if sessionID == "" {
 					sessionID = "SES-" + uuid.New().String()[:8]
 				}
+
 				var sessionTitle string
-				if titleVal, ok := sessionMap["title"].(string); ok {
+				var rawTitleAny any = sessionMap["title"]
+				var titleVal string
+				var isTitleString bool
+				titleVal, isTitleString = rawTitleAny.(string)
+				if isTitleString {
 					sessionTitle = titleVal
 				}
+
 				var sessionDate string
-				if dateVal, ok := sessionMap["date"].(string); ok {
+				var rawDateAny any = sessionMap["date"]
+				var dateVal string
+				var isDateString bool
+				dateVal, isDateString = rawDateAny.(string)
+				if isDateString {
 					sessionDate = dateVal
 				}
+
 				var sessionTimeRange string
-				if timeVal, ok := sessionMap["timeRange"].(string); ok {
+				var rawTimeRangeAny any = sessionMap["timeRange"]
+				var timeVal string
+				var isTimeRangeString bool
+				timeVal, isTimeRangeString = rawTimeRangeAny.(string)
+				if isTimeRangeString {
 					sessionTimeRange = timeVal
 				}
+
 				var venue string
-				if venueVal, ok := sessionMap["venue"].(string); ok {
+				var rawVenueAny any = sessionMap["venue"]
+				var venueVal string
+				var isVenueString bool
+				venueVal, isVenueString = rawVenueAny.(string)
+				if isVenueString {
 					venue = venueVal
 				}
+
 				var city string
-				if cityVal, ok := sessionMap["city"].(string); ok {
+				var rawCityAny any = sessionMap["city"]
+				var cityVal string
+				var isCityString bool
+				cityVal, isCityString = rawCityAny.(string)
+				if isCityString {
 					city = cityVal
 				}
+
 				var sessionStatus string
-				if statusVal, ok := sessionMap["status"].(string); ok {
+				var rawStatusAny any = sessionMap["status"]
+				var statusVal string
+				var isStatusString bool
+				statusVal, isStatusString = rawStatusAny.(string)
+				if isStatusString {
 					sessionStatus = statusVal
 				}
 				if sessionStatus == "" {
 					sessionStatus = "New"
 				}
-				sessionMembersBytes, _ := json.Marshal(sessionMap["members"])
+
+				var sessionMembersBytes []byte
+				sessionMembersBytes, _ = json.Marshal(sessionMap["members"])
 
 				_, _ = database.ExecContext(request.Context(), `
 					INSERT INTO project_sessions (
@@ -577,7 +669,9 @@ func UpdateProjectHandler(responseWriter http.ResponseWriter, request *http.Requ
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -590,17 +684,27 @@ func UpdateProjectHandler(responseWriter http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	managerBytes, _ := json.Marshal(projectPayload.ProjectManager)
-	segmentsBytes, _ := json.Marshal(projectPayload.Segments)
-	documentsBytes, _ := json.Marshal(projectPayload.Documents)
-	sessionsBytes, _ := json.Marshal(projectPayload.Sessions)
-	tasksBytes, _ := json.Marshal(projectPayload.Tasks)
-	printingBytes, _ := json.Marshal(projectPayload.Printing)
-	deliverablesBytes, _ := json.Marshal(projectPayload.Deliverables)
-	expensesBytes, _ := json.Marshal(projectPayload.Expenses)
-	financeBytes, _ := json.Marshal(projectPayload.Finance)
+	var managerBytes []byte
+	managerBytes, _ = json.Marshal(projectPayload.ProjectManager)
+	var segmentsBytes []byte
+	segmentsBytes, _ = json.Marshal(projectPayload.Segments)
+	var documentsBytes []byte
+	documentsBytes, _ = json.Marshal(projectPayload.Documents)
+	var sessionsBytes []byte
+	sessionsBytes, _ = json.Marshal(projectPayload.Sessions)
+	var tasksBytes []byte
+	tasksBytes, _ = json.Marshal(projectPayload.Tasks)
+	var printingBytes []byte
+	printingBytes, _ = json.Marshal(projectPayload.Printing)
+	var deliverablesBytes []byte
+	deliverablesBytes, _ = json.Marshal(projectPayload.Deliverables)
+	var expensesBytes []byte
+	expensesBytes, _ = json.Marshal(projectPayload.Expenses)
+	var financeBytes []byte
+	financeBytes, _ = json.Marshal(projectPayload.Finance)
 
-	_, updateErr := database.ExecContext(request.Context(), `
+	var updateErr error
+	_, updateErr = database.ExecContext(request.Context(), `
 		UPDATE projects SET
 			project_name = ?, client_name = ?, client_initials = ?, client_mobile = ?,
 			client_country_code = ?, client_email = ?, client_address = ?, lead_source = ?,
@@ -634,7 +738,9 @@ func UpdateProjectStageHandler(responseWriter http.ResponseWriter, request *http
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -656,7 +762,8 @@ func UpdateProjectStageHandler(responseWriter http.ResponseWriter, request *http
 	query += " WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL"
 	queryArguments = append(queryArguments, projectID, tenantID)
 
-	_, updateErr := database.ExecContext(request.Context(), query, queryArguments...)
+	var updateErr error
+	_, updateErr = database.ExecContext(request.Context(), query, queryArguments...)
 	if updateErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update project stage", updateErr)
 		return
@@ -676,13 +783,16 @@ func DeleteProjectHandler(responseWriter http.ResponseWriter, request *http.Requ
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 	var projectID string = chi.URLParam(request, "id")
 
-	_, deleteErr := database.ExecContext(request.Context(), `
+	var deleteErr error
+	_, deleteErr = database.ExecContext(request.Context(), `
 		UPDATE projects SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
 	`, projectID, tenantID)
 	if deleteErr != nil {

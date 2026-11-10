@@ -61,7 +61,7 @@ func RegisterBusinessAPIHandler(configuration utils.Config) http.HandlerFunc {
 			return
 		}
 
-		passwordHash, hashErr := security.HashPassword(requestPayload.Password)
+		var passwordHash, hashErr = security.HashPassword(requestPayload.Password)
 		if hashErr != nil {
 			utils.WriteError(responseWriter, http.StatusInternalServerError, "Failed to secure password")
 			return

@@ -90,12 +90,16 @@ func LeadsListHandler(responseWriter http.ResponseWriter, request *http.Request)
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 
-	rows, queryErr := database.QueryContext(request.Context(), `
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), `
 		SELECT id, name, mobile_no, country_code, email, address, lead_source, generate,
 		       assignee_name, assignee_initials, lead_pipeline, pipeline_stage, lead_stage,
 		       quote_amount, followup_date, project_type, quote_type, project_start_date,
@@ -248,7 +252,9 @@ func GetLeadHandler(responseWriter http.ResponseWriter, request *http.Request) {
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -403,7 +409,9 @@ func CreateLeadHandler(responseWriter http.ResponseWriter, request *http.Request
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -421,20 +429,33 @@ func CreateLeadHandler(responseWriter http.ResponseWriter, request *http.Request
 
 	var assigneeName string = "Rohan Mehta"
 	var assigneeInitials string = "RM"
-	if assigneeMap, ok := leadPayload.Assignee.(map[string]any); ok {
-		if nameVal, ok := assigneeMap["name"].(string); ok && nameVal != "" {
+	var assigneeMap map[string]any
+	var isAssigneeMap bool
+	assigneeMap, isAssigneeMap = leadPayload.Assignee.(map[string]any)
+	if isAssigneeMap {
+		var nameVal string
+		var isNameString bool
+		nameVal, isNameString = assigneeMap["name"].(string)
+		if isNameString && nameVal != "" {
 			assigneeName = nameVal
 		}
-		if initVal, ok := assigneeMap["initials"].(string); ok && initVal != "" {
+		var initVal string
+		var isInitString bool
+		initVal, isInitString = assigneeMap["initials"].(string)
+		if isInitString && initVal != "" {
 			assigneeInitials = initVal
 		}
 	}
 
-	segmentsBytes, _ := json.Marshal(leadPayload.ProjectSegments)
-	servicesBytes, _ := json.Marshal(leadPayload.SelectedServices)
-	deliverablesBytes, _ := json.Marshal(leadPayload.SelectedDeliverables)
+	var segmentsBytes []byte
+	segmentsBytes, _ = json.Marshal(leadPayload.ProjectSegments)
+	var servicesBytes []byte
+	servicesBytes, _ = json.Marshal(leadPayload.SelectedServices)
+	var deliverablesBytes []byte
+	deliverablesBytes, _ = json.Marshal(leadPayload.SelectedDeliverables)
 
-	_, insertErr := database.ExecContext(request.Context(), `
+	var insertErr error
+	_, insertErr = database.ExecContext(request.Context(), `
 		INSERT INTO leads (
 			id, tenant_id, name, mobile_no, country_code, email, address, lead_source,
 			generate, assignee_name, assignee_initials, lead_pipeline, pipeline_stage,
@@ -474,7 +495,9 @@ func UpdateLeadHandler(responseWriter http.ResponseWriter, request *http.Request
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -489,20 +512,33 @@ func UpdateLeadHandler(responseWriter http.ResponseWriter, request *http.Request
 
 	var assigneeName string = "Rohan Mehta"
 	var assigneeInitials string = "RM"
-	if assigneeMap, ok := leadPayload.Assignee.(map[string]any); ok {
-		if nameVal, ok := assigneeMap["name"].(string); ok && nameVal != "" {
+	var assigneeMap map[string]any
+	var isAssigneeMap bool
+	assigneeMap, isAssigneeMap = leadPayload.Assignee.(map[string]any)
+	if isAssigneeMap {
+		var nameVal string
+		var isNameString bool
+		nameVal, isNameString = assigneeMap["name"].(string)
+		if isNameString && nameVal != "" {
 			assigneeName = nameVal
 		}
-		if initVal, ok := assigneeMap["initials"].(string); ok && initVal != "" {
+		var initVal string
+		var isInitString bool
+		initVal, isInitString = assigneeMap["initials"].(string)
+		if isInitString && initVal != "" {
 			assigneeInitials = initVal
 		}
 	}
 
-	segmentsBytes, _ := json.Marshal(leadPayload.ProjectSegments)
-	servicesBytes, _ := json.Marshal(leadPayload.SelectedServices)
-	deliverablesBytes, _ := json.Marshal(leadPayload.SelectedDeliverables)
+	var segmentsBytes []byte
+	segmentsBytes, _ = json.Marshal(leadPayload.ProjectSegments)
+	var servicesBytes []byte
+	servicesBytes, _ = json.Marshal(leadPayload.SelectedServices)
+	var deliverablesBytes []byte
+	deliverablesBytes, _ = json.Marshal(leadPayload.SelectedDeliverables)
 
-	_, updateErr := database.ExecContext(request.Context(), `
+	var updateErr error
+	_, updateErr = database.ExecContext(request.Context(), `
 		UPDATE leads SET
 			name = ?, mobile_no = ?, country_code = ?, email = ?, address = ?, lead_source = ?,
 			generate = ?, assignee_name = ?, assignee_initials = ?, lead_pipeline = ?,
@@ -538,7 +574,9 @@ func UpdateLeadStageHandler(responseWriter http.ResponseWriter, request *http.Re
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -560,7 +598,8 @@ func UpdateLeadStageHandler(responseWriter http.ResponseWriter, request *http.Re
 	query += " WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL"
 	queryArguments = append(queryArguments, leadID, tenantID)
 
-	_, updateErr := database.ExecContext(request.Context(), query, queryArguments...)
+	var updateErr error
+	_, updateErr = database.ExecContext(request.Context(), query, queryArguments...)
 	if updateErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to update lead stage", updateErr)
 		return
@@ -581,13 +620,16 @@ func DeleteLeadHandler(responseWriter http.ResponseWriter, request *http.Request
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
 	var leadID string = chi.URLParam(request, "id")
 
-	_, deleteErr := database.ExecContext(request.Context(), `
+	var deleteErr error
+	_, deleteErr = database.ExecContext(request.Context(), `
 		UPDATE leads SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
 	`, leadID, tenantID)
 	if deleteErr != nil {
@@ -608,7 +650,9 @@ func ConvertLeadHandler(responseWriter http.ResponseWriter, request *http.Reques
 		utils.WriteError(responseWriter, http.StatusServiceUnavailable, "Database unavailable")
 		return
 	}
-	tenantID, hasTenantID := requireTenantID(responseWriter, request)
+	var tenantID string
+	var hasTenantID bool
+	tenantID, hasTenantID = requireTenantID(responseWriter, request)
 	if !hasTenantID {
 		return
 	}
@@ -649,14 +693,16 @@ func ConvertLeadHandler(responseWriter http.ResponseWriter, request *http.Reques
 	}
 
 	var clientInitials string = "PR"
-	var nameParts = strings.Fields(clientName)
-	if len(nameParts) > 1 {
-		clientInitials = strings.ToUpper(string([]rune(nameParts[0])[:1]) + string([]rune(nameParts[1])[:1]))
+	var nameParts []string = strings.Fields(clientName)
+	if len(nameParts) > 1 && len(nameParts[0]) > 0 && len(nameParts[1]) > 0 {
+		clientInitials = strings.ToUpper(nameParts[0][0:1] + nameParts[1][0:1])
 	} else if len(nameParts) == 1 && len(nameParts[0]) > 0 {
-		clientInitials = strings.ToUpper(string([]rune(nameParts[0])[:1]))
+		clientInitials = strings.ToUpper(nameParts[0][0:1])
 	}
 
-	transaction, txErr := database.BeginTx(request.Context(), nil)
+	var transaction *sql.Tx
+	var txErr error
+	transaction, txErr = database.BeginTx(request.Context(), nil)
 	if txErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to begin transaction", txErr)
 		return
@@ -675,7 +721,8 @@ func ConvertLeadHandler(responseWriter http.ResponseWriter, request *http.Reques
 			firstName = nameParts[0]
 			lastName = strings.Join(nameParts[1:], " ")
 		}
-		_, insertClientErr := transaction.ExecContext(request.Context(), `
+		var insertClientErr error
+		_, insertClientErr = transaction.ExecContext(request.Context(), `
 			INSERT INTO clients (id, tenant_id, first_name, last_name, email, phone, source)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
 		`, clientID, tenantID, firstName, lastName, email, mobileNumber, leadSource)
@@ -696,7 +743,8 @@ func ConvertLeadHandler(responseWriter http.ResponseWriter, request *http.Reques
 		EventDiscountAmount: 0,
 		PaymentHistory:      []any{},
 	}
-	financeBytes, _ := json.Marshal(financeModel)
+	var financeBytes []byte
+	financeBytes, _ = json.Marshal(financeModel)
 
 	var projectAddress string = ""
 	if nullableAddress.Valid {
@@ -711,7 +759,8 @@ func ConvertLeadHandler(responseWriter http.ResponseWriter, request *http.Reques
 		projectEndDate = nullableEndDate.String
 	}
 
-	_, insertProjectErr := transaction.ExecContext(request.Context(), `
+	var insertProjectErr error
+	_, insertProjectErr = transaction.ExecContext(request.Context(), `
 		INSERT INTO projects (
 			id, tenant_id, client_id, project_name, client_name, client_initials, client_mobile,
 			client_country_code, client_email, client_address, lead_source, project_manager,
@@ -736,7 +785,8 @@ func ConvertLeadHandler(responseWriter http.ResponseWriter, request *http.Reques
 		return
 	}
 
-	_, updateLeadErr := transaction.ExecContext(request.Context(), `
+	var updateLeadErr error
+	_, updateLeadErr = transaction.ExecContext(request.Context(), `
 		UPDATE leads SET pipeline_stage = 'converted', lead_stage = 'Booked', status = 'converted',
 		converted_client_id = ?, converted_project_id = ?
 		WHERE id = ? AND tenant_id = ?

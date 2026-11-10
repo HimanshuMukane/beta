@@ -24,19 +24,21 @@ type ServiceApp struct {
 	Server *http.Server
 }
 
+type AppDefinition struct {
+	name          string
+	projectID     string
+	envFile       string
+	portEnv       string
+	defaultPort   string
+	dbName        string
+	cookieName    string
+	routerBuilder func(pool *utils.DBPool, cfg utils.Config) http.Handler
+}
+
 func main() {
 	_ = godotenv.Load()
 
-	apps := []struct {
-		name          string
-		projectID     string
-		envFile       string
-		portEnv       string
-		defaultPort   string
-		dbName        string
-		cookieName    string
-		routerBuilder func(pool *utils.DBPool, cfg utils.Config) http.Handler
-	}{
+	var appDefinitions []AppDefinition = []AppDefinition{
 		{
 			name:          "Photography CRM",
 			projectID:     "photography_crm",
@@ -49,43 +51,47 @@ func main() {
 		},
 	}
 
-	sessionSecret := os.Getenv("SESSION_SECRET")
+	var sessionSecret string = os.Getenv("SESSION_SECRET")
 	if sessionSecret == "" {
 		sessionSecret = "0123456789012345678901234567890123456789012345678901234567890123"
 	}
 
-	appEnv := os.Getenv("APP_ENV")
+	var appEnv string = os.Getenv("APP_ENV")
 	if appEnv == "" {
 		appEnv = "development"
 	}
 
-	dbHost := os.Getenv("DB_HOST")
+	var dbHost string = os.Getenv("DB_HOST")
 	if dbHost == "" {
 		dbHost = "127.0.0.1"
 	}
-	dbPort := os.Getenv("DB_PORT")
+	var dbPort string = os.Getenv("DB_PORT")
 	if dbPort == "" {
 		dbPort = "3306"
 	}
-	dbPassword := os.Getenv("DB_PASSWORD")
+	var dbPassword string = os.Getenv("DB_PASSWORD")
 	if dbPassword == "" {
 		dbPassword = "especa_root_password"
 	}
 
-	activeServices := make([]*ServiceApp, 0, len(apps))
+	var activeServices []*ServiceApp = make([]*ServiceApp, 0, len(appDefinitions))
 	defer func() {
-		for _, s := range activeServices {
-			if s.Pool != nil {
-				_ = s.Pool.Close()
+		var serviceIndex int
+		for serviceIndex = 0; serviceIndex < len(activeServices); serviceIndex++ {
+			var serviceInstance *ServiceApp = activeServices[serviceIndex]
+			if serviceInstance.Pool != nil {
+				_ = serviceInstance.Pool.Close()
 			}
 		}
 	}()
 
-	for _, a := range apps {
-		// Read service-specific .env file if available
-		localEnv, _ := godotenv.Read(filepath.Clean(a.envFile))
+	var appIndex int
+	for appIndex = 0; appIndex < len(appDefinitions); appIndex++ {
+		var appDef AppDefinition = appDefinitions[appIndex]
+		var localEnv map[string]string
+		localEnv, _ = godotenv.Read(filepath.Clean(appDef.envFile))
 
-		port := os.Getenv(a.portEnv)
+		var port string = os.Getenv(appDef.portEnv)
 		if port == "" && localEnv != nil {
 			port = localEnv["SERVER_PORT"]
 			if port == "" {
@@ -93,33 +99,33 @@ func main() {
 			}
 		}
 		if port == "" {
-			port = a.defaultPort
+			port = appDef.defaultPort
 		}
 
-		dbName := a.dbName
+		var dbName string = appDef.dbName
 		if localEnv != nil && localEnv["DB_NAME"] != "" {
 			dbName = localEnv["DB_NAME"]
 		}
 
-		dbUser := "root"
+		var dbUser string = "root"
 		if localEnv != nil && localEnv["DB_USER"] != "" {
 			dbUser = localEnv["DB_USER"]
 		}
 
-		serviceDbPassword := dbPassword
+		var serviceDbPassword string = dbPassword
 		if localEnv != nil && localEnv["DB_PASSWORD"] != "" {
 			serviceDbPassword = localEnv["DB_PASSWORD"]
 		}
 
-		cookieName := a.cookieName
+		var cookieName string = appDef.cookieName
 		if localEnv != nil && localEnv["SESSION_COOKIE_NAME"] != "" {
 			cookieName = localEnv["SESSION_COOKIE_NAME"]
 		}
 
-		databaseURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local", dbUser, serviceDbPassword, dbHost, dbPort, dbName)
+		var databaseURL string = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local", dbUser, serviceDbPassword, dbHost, dbPort, dbName)
 
-		cfg := utils.Config{
-			AppName:           a.projectID,
+		var config utils.Config = utils.Config{
+			AppName:           appDef.projectID,
 			AppEnv:            appEnv,
 			ServerPort:        port,
 			DatabaseURL:       databaseURL,
@@ -131,47 +137,61 @@ func main() {
 			SessionSecure:     appEnv == "production",
 		}
 
-		pool, err := utils.InitDBPool(cfg)
-		if err != nil {
-			slog.Error("Database pool initialization failed", "service", a.name, "error", err)
+		var dbPool *utils.DBPool
+		var initErr error
+		dbPool, initErr = utils.InitDBPool(config)
+		if initErr != nil {
+			slog.Error("Database pool initialization failed", "service", appDef.name, "error", initErr)
 			continue
 		}
 
-		router := a.routerBuilder(pool, cfg)
-		server := &http.Server{
-			Addr:    ":" + port,
-			Handler: router,
+		var router http.Handler = appDef.routerBuilder(dbPool, config)
+		var serverInstance *http.Server = &http.Server{
+			Addr:              ":" + port,
+			Handler:           router,
+			ReadTimeout:       15 * time.Second,
+			ReadHeaderTimeout: 5 * time.Second,
+			WriteTimeout:      30 * time.Second,
+			IdleTimeout:       60 * time.Second,
 		}
 
-		service := &ServiceApp{
-			Name:   a.name,
+		var serviceInstance *ServiceApp = &ServiceApp{
+			Name:   appDef.name,
 			Port:   port,
-			Pool:   pool,
-			Server: server,
+			Pool:   dbPool,
+			Server: serverInstance,
 		}
-		activeServices = append(activeServices, service)
+		activeServices = append(activeServices, serviceInstance)
 	}
 
-	for _, s := range activeServices {
+	var activeIndex int
+	for activeIndex = 0; activeIndex < len(activeServices); activeIndex++ {
+		var serviceItem *ServiceApp = activeServices[activeIndex]
 		go func(srv *ServiceApp) {
 			slog.Info("Service listening", "service", srv.Name, "port", srv.Port)
-			if err := srv.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				slog.Error("Service error", "service", srv.Name, "error", err)
+			var listenErr error = srv.Server.ListenAndServe()
+			if listenErr != nil && !errors.Is(listenErr, http.ErrServerClosed) {
+				slog.Error("Service error", "service", srv.Name, "error", listenErr)
 			}
-		}(s)
+		}(serviceItem)
 	}
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	var shutdownSignalChannel chan os.Signal = make(chan os.Signal, 1)
+	signal.Notify(shutdownSignalChannel, syscall.SIGINT, syscall.SIGTERM)
+	<-shutdownSignalChannel
 
 	slog.Info("Shutting down multi-listener services...")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	var shutdownContext context.Context
+	var cancelShutdown context.CancelFunc
+	shutdownContext, cancelShutdown = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelShutdown()
 
-	for _, s := range activeServices {
-		if err := s.Server.Shutdown(ctx); err != nil {
-			slog.Error("Shutdown error", "service", s.Name, "error", err)
+	var shutdownIndex int
+	for shutdownIndex = 0; shutdownIndex < len(activeServices); shutdownIndex++ {
+		var serviceInstance *ServiceApp = activeServices[shutdownIndex]
+		var shutdownErr error = serviceInstance.Server.Shutdown(shutdownContext)
+		if shutdownErr != nil {
+			slog.Error("Shutdown error", "service", serviceInstance.Name, "error", shutdownErr)
 		}
 	}
 	slog.Info("All services stopped.")
