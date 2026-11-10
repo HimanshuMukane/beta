@@ -28,8 +28,16 @@ func RegisterBackendRoutes(
 		r.With(middleware.RequireAuth(cfg)).Get("/workspaces", handlers.WorkspacesAPIHandler())
 	})
 
+	r.Route("/api/workflows", func(r chi.Router) {
+		r.Get("/", handlers.WorkflowsListHandler)
+		r.Post("/", handlers.CreateWorkflowStageHandler)
+		r.Put("/batch", handlers.SaveWorkflowStagesBatchHandler)
+		r.Put("/{id}", handlers.UpdateWorkflowStageHandler)
+		r.Delete("/{id}", handlers.DeleteWorkflowStageHandler)
+	})
+
 	r.Route("/api/leads", func(r chi.Router) {
-		r.Get("/", handlers.LeadsHandler)
+		r.Get("/", handlers.LeadsListHandler)
 		r.Post("/", handlers.CreateLeadHandler)
 		r.Put("/{id}", handlers.UpdateLeadHandler)
 		r.Patch("/{id}/stage", handlers.UpdateLeadStageHandler)
@@ -39,8 +47,8 @@ func RegisterBackendRoutes(
 
 	r.Route("/api/projects", func(r chi.Router) {
 		r.Get("/", handlers.ProjectsListHandler)
+		r.Get("/{id}", handlers.GetProjectHandler)
 		r.Post("/", handlers.CreateProjectHandler)
-		r.Get("/{id}", handlers.GetProjectDetailsHandler)
 		r.Put("/{id}", handlers.UpdateProjectHandler)
 		r.Patch("/{id}/stage", handlers.UpdateProjectStageHandler)
 		r.Delete("/{id}", handlers.DeleteProjectHandler)
@@ -60,6 +68,14 @@ func RegisterBackendRoutes(
 		r.Put("/{id}", handlers.UpdateOrderHandler)
 		r.Patch("/{id}/stage", handlers.UpdateOrderStageHandler)
 		r.Delete("/{id}", handlers.DeleteOrderHandler)
+	})
+
+	r.Route("/api/order-presets", func(r chi.Router) {
+		r.Get("/", handlers.OrderPresetsListHandler)
+		r.Post("/", handlers.CreateOrderPresetHandler)
+		r.Put("/batch", handlers.SaveOrderPresetsBatchHandler)
+		r.Put("/{id}", handlers.UpdateOrderPresetHandler)
+		r.Delete("/{id}", handlers.DeleteOrderPresetHandler)
 	})
 
 	r.Route("/api/billing", func(r chi.Router) {
@@ -90,5 +106,73 @@ func RegisterBackendRoutes(
 		r.Get("/", handlers.RolesListHandler)
 		r.Post("/", handlers.CreateRoleHandler)
 		r.Delete("/{id}", handlers.DeleteRoleHandler)
+	})
+
+	r.Route("/api/crew", func(r chi.Router) {
+		r.Get("/", handlers.CrewMembersListHandler)
+		r.Post("/", handlers.CreateCrewMemberHandler)
+		r.Delete("/{id}", handlers.DeleteCrewMemberHandler)
+	})
+
+	r.Route("/api/sequence-id", func(r chi.Router) {
+		r.Get("/", handlers.SequenceIdGetHandler)
+		r.Post("/", handlers.SequenceIdSaveHandler)
+	})
+
+	r.Route("/api/services", func(r chi.Router) {
+		r.Get("/", handlers.ServicesListHandler)
+		r.Post("/", handlers.CreateServiceGroupHandler)
+		r.Put("/batch", handlers.BatchSaveServicesHandler)
+		r.Put("/{id}", handlers.UpdateServiceGroupHandler)
+		r.Delete("/{id}", handlers.DeleteServiceGroupHandler)
+	})
+
+	r.Route("/api/deliverables", func(r chi.Router) {
+		r.Get("/", handlers.DeliverablesListHandler)
+		r.Post("/", handlers.CreateDeliverableGroupHandler)
+		r.Put("/batch", handlers.BatchSaveDeliverablesHandler)
+		r.Put("/{id}", handlers.UpdateDeliverableGroupHandler)
+		r.Delete("/{id}", handlers.DeleteDeliverableGroupHandler)
+	})
+
+	r.Route("/api/packages", func(r chi.Router) {
+		r.Get("/", handlers.PackagesListHandler)
+		r.Post("/", handlers.CreatePackageHandler)
+		r.Put("/{id}", handlers.UpdatePackageHandler)
+		r.Delete("/{id}", handlers.DeletePackageHandler)
+	})
+
+	r.Route("/api/crew", func(r chi.Router) {
+		r.Get("/", handlers.CrewMembersListHandler)
+		r.Post("/", handlers.CreateCrewMemberHandler)
+		r.Delete("/{id}", handlers.DeleteCrewMemberHandler)
+	})
+
+	r.Route("/api/sequence-id", func(r chi.Router) {
+		r.Get("/", handlers.SequenceIdGetHandler)
+		r.Post("/", handlers.SequenceIdSaveHandler)
+	})
+
+	r.Route("/api/services", func(r chi.Router) {
+		r.Get("/", handlers.ServicesListHandler)
+		r.Post("/", handlers.CreateServiceGroupHandler)
+		r.Put("/batch", handlers.BatchSaveServicesHandler)
+		r.Put("/{id}", handlers.UpdateServiceGroupHandler)
+		r.Delete("/{id}", handlers.DeleteServiceGroupHandler)
+	})
+
+	r.Route("/api/deliverables", func(r chi.Router) {
+		r.Get("/", handlers.DeliverablesListHandler)
+		r.Post("/", handlers.CreateDeliverableGroupHandler)
+		r.Put("/batch", handlers.BatchSaveDeliverablesHandler)
+		r.Put("/{id}", handlers.UpdateDeliverableGroupHandler)
+		r.Delete("/{id}", handlers.DeleteDeliverableGroupHandler)
+	})
+
+	r.Route("/api/packages", func(r chi.Router) {
+		r.Get("/", handlers.PackagesListHandler)
+		r.Post("/", handlers.CreatePackageHandler)
+		r.Put("/{id}", handlers.UpdatePackageHandler)
+		r.Delete("/{id}", handlers.DeletePackageHandler)
 	})
 }

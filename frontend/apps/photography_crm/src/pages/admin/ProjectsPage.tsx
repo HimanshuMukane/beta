@@ -1,21 +1,18 @@
 import * as React from 'react'
+import { Card, CardContent } from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { Badge } from '@repo/ui/components/ui/badge'
+import { Checkbox } from '@repo/ui/components/ui/checkbox'
 import {
-  Card,
-  CardContent,
-  Button,
-  Badge,
-  Checkbox,
   DataTable,
-  toast,
-  cn,
-} from '@repo/ui'
+  type DataTableFeatures,
+  type DataTableFilterConfig,
+  type DataTableBulkAction,
+  type DataTableRowAction,
+} from '@repo/ui/components/data-table'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { cn } from '@repo/ui/lib/utils'
 import { createColumnHelper } from '@tanstack/react-table'
-import type {
-  DataTableFeatures,
-  DataTableFilterConfig,
-  DataTableBulkAction,
-  DataTableRowAction,
-} from '@repo/ui'
 import {
   IconPlus,
   IconTable,
@@ -27,8 +24,9 @@ import {
   IconPhoto,
   IconBriefcase,
 } from '@tabler/icons-react'
-import type { Project, ProjectStage, ProjectStatus } from '../types/project'
-import { ProjectKanbanView } from '../components/ProjectKanbanView'
+import type { Project, ProjectStage, ProjectStatus } from '../../types/project'
+import { ProjectKanbanView } from '../../components/ProjectKanbanView'
+import { useWorkflows } from '../../hooks/useWorkflows'
 
 interface ProjectsPageProps {
   projects: Project[]
@@ -39,16 +37,6 @@ interface ProjectsPageProps {
 }
 
 const columnHelper = createColumnHelper<DataTableFeatures, Project>()
-
-const STAGES: (ProjectStage | 'All')[] = [
-  'All',
-  'Booked',
-  'Shoot Planning',
-  'Shoot Completed',
-  'Editing',
-  'Delivery',
-  'Closure',
-]
 
 const STATUSES: (ProjectStatus | 'All')[] = [
   'All',
@@ -67,8 +55,25 @@ export function ProjectsPage({
   onDeleteProject,
   onStageChange,
 }: ProjectsPageProps) {
+  const { workflows } = useWorkflows('project')
+
+  const dynamicStages: string[] = React.useMemo(() => {
+    if (workflows && workflows.length > 0) {
+      return workflows.map((w) => w.stage)
+    }
+    return ['Booked', 'Shoot Planning', 'Shoot Completed', 'Editing', 'Delivery', 'Closure']
+  }, [workflows])
+
+  const stageColorMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    ;(workflows || []).forEach((w) => {
+      map.set(w.stage.toLowerCase(), w.color_code)
+    })
+    return map
+  }, [workflows])
+
   const [viewMode, setViewMode] = React.useState<'table' | 'kanban'>('table')
-  const [stageFilter, setStageFilter] = React.useState<ProjectStage | 'All'>('All')
+  const [stageFilter, setStageFilter] = React.useState<string>('All')
   const [statusFilter, setStatusFilter] = React.useState<ProjectStatus | 'All'>('All')
 
   // Filtered projects
@@ -233,26 +238,21 @@ export function ProjectsPage({
           header: 'Stage',
           cell: (info) => {
             const val = info.getValue() as ProjectStage
-            const getStageBadge = () => {
-              switch (val) {
-                case 'Booked':
-                  return 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30'
-                case 'Shoot Planning':
-                  return 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
-                case 'Shoot Completed':
-                  return 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30'
-                case 'Editing':
-                  return 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
-                case 'Delivery':
-                  return 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30'
-                case 'Closure':
-                  return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
-                default:
-                  return 'bg-muted text-muted-foreground'
-              }
-            }
+            const color = stageColorMap.get(val.toLowerCase())
             return (
-              <Badge variant="outline" className={cn('text-[11px] font-semibold whitespace-nowrap', getStageBadge())}>
+              <Badge
+                variant="outline"
+                className="text-[11px] font-semibold whitespace-nowrap"
+                style={
+                  color
+                    ? {
+                        backgroundColor: `${color}20`,
+                        borderColor: `${color}60`,
+                        color: color,
+                      }
+                    : undefined
+                }
+              >
                 {val}
               </Badge>
             )
@@ -290,20 +290,23 @@ export function ProjectsPage({
   )
 
   // Filters for tanstack table
-  const filterConfigs: DataTableFilterConfig[] = [
-    {
-      columnId: 'stage',
-      title: 'Stage',
-      type: 'select',
-      options: STAGES.filter((s) => s !== 'All').map((s) => ({ label: s, value: s })),
-    },
-    {
-      columnId: 'status',
-      title: 'Status',
-      type: 'select',
-      options: STATUSES.filter((s) => s !== 'All').map((s) => ({ label: s, value: s })),
-    },
-  ]
+  const filterConfigs: DataTableFilterConfig[] = React.useMemo(
+    () => [
+      {
+        columnId: 'stage',
+        title: 'Stage',
+        type: 'select',
+        options: dynamicStages.map((s) => ({ label: s, value: s })),
+      },
+      {
+        columnId: 'status',
+        title: 'Status',
+        type: 'select',
+        options: STATUSES.filter((s) => s !== 'All').map((s) => ({ label: s, value: s })),
+      },
+    ],
+    [dynamicStages]
+  )
 
   // Bulk actions
   const bulkActions: DataTableBulkAction<Project>[] = [
@@ -456,7 +459,7 @@ export function ProjectsPage({
       {/* Stage Navigation Filter Bar */}
       <div className="border-b">
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none -mb-px">
-          {STAGES.map((stg) => {
+          {['All', ...dynamicStages].map((stg) => {
             const count =
               stg === 'All'
                 ? projects.length

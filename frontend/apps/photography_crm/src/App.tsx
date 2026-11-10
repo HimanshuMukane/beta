@@ -8,50 +8,63 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom'
-import {
-  DashboardShell,
-  Toaster,
-  toast,
-  AuthProvider,
-  ProtectedRoute,
-} from '@repo/ui'
-import SigninPage from './pages/auth/SigninPage'
-import SignupPage from './pages/auth/SignupPage'
+import { DashboardShell } from '@repo/ui/components/dashboard-shell'
+import { Toaster, toast } from '@repo/ui/components/ui/sonner'
+import { AuthProvider, useAuth } from '@repo/ui/hooks/use-auth'
+import { ProtectedRoute } from '@repo/ui/components/protected-route'
+
+const SigninPage = lazy(() => import('./pages/auth/SigninPage'))
+const SignupPage = lazy(() => import('./pages/auth/SignupPage'))
 import type { Lead, PipelineStage } from './types/lead'
 import type { Project, ProjectStage } from './types/project'
 import type { ProjectSession, SessionStatus } from './types/session'
 import type { Order, OrderStage } from './types/order'
 import type { SettingsTab } from './types/settings'
 import { PhotographySidebar, type ReportCategory } from './components/PhotographySidebar'
+import { UserSidebar, type UserRouteKey } from './components/UserSidebar'
 import { leadsApi, projectsApi, sessionsApi, ordersApi } from './api/crmApi'
 
-// Lazy Load Core Pages
+// Lazy Load User Portal Pages
+const UserHomePage = lazy(() =>
+  import('./pages/user/UserHomePage').then((m) => ({ default: m.UserHomePage }))
+)
+const UserShootsPage = lazy(() =>
+  import('./pages/user/UserShootsPage').then((m) => ({ default: m.UserShootsPage }))
+)
+const UserTasksPage = lazy(() =>
+  import('./pages/user/UserTasksPage').then((m) => ({ default: m.UserTasksPage }))
+)
+const UserDeliverablesPage = lazy(() =>
+  import('./pages/user/UserDeliverablesPage').then((m) => ({ default: m.UserDeliverablesPage }))
+)
+
+// Lazy Load Core Admin Pages
 const LeadsPage = lazy(() =>
-  import('./pages/LeadsPage').then((m) => ({ default: m.LeadsPage }))
+  import('./pages/admin/LeadsPage').then((m) => ({ default: m.LeadsPage }))
 )
 const LeadFormPage = lazy(() =>
-  import('./pages/LeadFormPage').then((m) => ({ default: m.LeadFormPage }))
+  import('./pages/admin/LeadFormPage').then((m) => ({ default: m.LeadFormPage }))
 )
 const ProjectsPage = lazy(() =>
-  import('./pages/ProjectsPage').then((m) => ({ default: m.ProjectsPage }))
+  import('./pages/admin/ProjectsPage').then((m) => ({ default: m.ProjectsPage }))
 )
 const ProjectCreatePage = lazy(() =>
-  import('./pages/ProjectCreatePage').then((m) => ({ default: m.ProjectCreatePage }))
+  import('./pages/admin/ProjectCreatePage').then((m) => ({ default: m.ProjectCreatePage }))
 )
 const ProjectEditPage = lazy(() =>
-  import('./pages/ProjectEditPage').then((m) => ({ default: m.ProjectEditPage }))
+  import('./pages/admin/ProjectEditPage').then((m) => ({ default: m.ProjectEditPage }))
 )
 const SessionsPage = lazy(() =>
-  import('./pages/SessionsPage').then((m) => ({ default: m.SessionsPage }))
+  import('./pages/admin/SessionsPage').then((m) => ({ default: m.SessionsPage }))
 )
 const BillingsPage = lazy(() =>
-  import('./pages/BillingsPage').then((m) => ({ default: m.BillingsPage }))
+  import('./pages/admin/BillingsPage').then((m) => ({ default: m.BillingsPage }))
 )
 const OrdersPage = lazy(() =>
-  import('./pages/OrdersPage').then((m) => ({ default: m.OrdersPage }))
+  import('./pages/admin/OrdersPage').then((m) => ({ default: m.OrdersPage }))
 )
 const OrderFormPage = lazy(() =>
-  import('./pages/OrderFormPage').then((m) => ({ default: m.OrderFormPage }))
+  import('./pages/admin/OrderFormPage').then((m) => ({ default: m.OrderFormPage }))
 )
 
 // Lazy Load Reports Pages
@@ -119,6 +132,12 @@ function AppContent() {
   const navigate = useNavigate()
   const location = useLocation()
   const pathname = location.pathname
+  const { user } = useAuth()
+  const isAdmin = useMemo(() => {
+    if (!user) return false
+    const role = (user.role_name || '').toLowerCase().trim()
+    return role === 'admin'
+  }, [user])
 
   const [leads, setLeads] = useState<Lead[]>([])
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
@@ -133,11 +152,16 @@ function AppContent() {
   const [sessions, setSessions] = useState<ProjectSession[]>([])
 
   useEffect(() => {
-    leadsApi.list().then(setLeads).catch((err) => console.error('Failed to load leads:', err))
-    projectsApi.list().then(setProjects).catch((err) => console.error('Failed to load projects:', err))
-    sessionsApi.list().then(setSessions).catch((err) => console.error('Failed to load sessions:', err))
-    ordersApi.list().then(setOrders).catch((err) => console.error('Failed to load orders:', err))
-  }, [])
+    if (pathname.startsWith('/leads')) {
+      leadsApi.list().then(setLeads).catch((err) => console.error('Failed to load leads:', err))
+    } else if (pathname.startsWith('/projects')) {
+      projectsApi.list().then(setProjects).catch((err) => console.error('Failed to load projects:', err))
+    } else if (pathname.startsWith('/sessions')) {
+      sessionsApi.list().then(setSessions).catch((err) => console.error('Failed to load sessions:', err))
+    } else if (pathname.startsWith('/orders')) {
+      ordersApi.list().then(setOrders).catch((err) => console.error('Failed to load orders:', err))
+    }
+  }, [pathname])
 
   // Derive current route key for sidebar active states
   const currentRoute = useMemo(() => {
@@ -149,6 +173,13 @@ function AppContent() {
     if (pathname.startsWith('/reports')) return 'reports'
     if (pathname.startsWith('/settings')) return 'settings'
     return 'projects'
+  }, [pathname])
+
+  const currentUserRoute: UserRouteKey = useMemo(() => {
+    if (pathname.startsWith('/shoots')) return 'shoots'
+    if (pathname.startsWith('/tasks')) return 'tasks'
+    if (pathname.startsWith('/deliverables')) return 'deliverables'
+    return 'home'
   }, [pathname])
 
   const activeReport: ReportCategory = useMemo(() => {
@@ -422,6 +453,19 @@ function AppContent() {
 
   // Dynamic Interactive Breadcrumb Def
   const breadcrumbItems = useMemo(() => {
+    if (!isAdmin) {
+      if (pathname.startsWith('/shoots')) {
+        return [{ label: 'Shoots' }]
+      }
+      if (pathname.startsWith('/tasks')) {
+        return [{ label: 'Tasks' }]
+      }
+      if (pathname.startsWith('/deliverables')) {
+        return [{ label: 'Deliverables' }]
+      }
+      return [{ label: 'Home' }]
+    }
+
     if (pathname.startsWith('/settings')) {
       const titles: Record<SettingsTab, string> = {
         'master-data': 'Master Data',
@@ -517,34 +561,49 @@ function AppContent() {
     }
 
     return [{ label: 'Projects' }]
-  }, [activeSetting, activeReport, pathname, editingLead, editingProject, editingOrder])
+  }, [isAdmin, activeSetting, activeReport, pathname, editingLead, editingProject, editingOrder])
 
   return (
     <DashboardShell
-      title="Photography CRM"
+      title={isAdmin ? "Photography CRM" : "Photography Portal"}
       breadcrumb={breadcrumbItems}
       sidebar={
-        <PhotographySidebar
-          currentRoute={currentRoute}
-          activeReport={activeReport}
-          activeSetting={activeSetting}
-          onSelectRoute={(r) => {
-            const routeMap: Record<string, string> = {
-              'projects-list': '/projects',
-              'sessions-list': '/sessions',
-              'leads-list': '/leads',
-              'billings': '/billings',
-              'orders-list': '/orders',
-            }
-            navigate(routeMap[r] || '/projects')
-          }}
-          onSelectReport={(rep) => {
-            navigate(`/reports/${rep}`)
-          }}
-          onSelectSetting={(set) => {
-            navigate(`/settings/${set}`)
-          }}
-        />
+        isAdmin ? (
+          <PhotographySidebar
+            currentRoute={currentRoute}
+            activeReport={activeReport}
+            activeSetting={activeSetting}
+            onSelectRoute={(r) => {
+              const routeMap: Record<string, string> = {
+                'projects-list': '/projects',
+                'sessions-list': '/sessions',
+                'leads-list': '/leads',
+                'billings': '/billings',
+                'orders-list': '/orders',
+              }
+              navigate(routeMap[r] || '/projects')
+            }}
+            onSelectReport={(rep) => {
+              navigate(`/reports/${rep}`)
+            }}
+            onSelectSetting={(set) => {
+              navigate(`/settings/${set}`)
+            }}
+          />
+        ) : (
+          <UserSidebar
+            currentRoute={currentUserRoute}
+            onSelectRoute={(r) => {
+              const userRouteMap: Record<UserRouteKey, string> = {
+                home: '/home',
+                shoots: '/shoots',
+                tasks: '/tasks',
+                deliverables: '/deliverables',
+              }
+              navigate(userRouteMap[r] || '/home')
+            }}
+          />
+        )
       }
     >
       <Toaster position="bottom-right" richColors />
@@ -558,187 +617,234 @@ function AppContent() {
         }
       >
         <Routes>
-          {/* Default redirect to projects */}
-          <Route path="/" element={<Navigate to="/projects" replace />} />
+          {isAdmin ? (
+            <>
+              {/* Default redirect for Admin */}
+              <Route path="/" element={<Navigate to="/projects" replace />} />
 
-          {/* Core Modules */}
-          <Route
-            path="/projects"
-            element={
-              <ProjectsPage
-                projects={projects}
-                onAddNewProject={handleNavigateToCreateProject}
-                onEditProject={handleNavigateToEditProject}
-                onDeleteProject={handleDeleteProject}
-                onStageChange={handleProjectStageChange}
+              {/* Core Modules */}
+              <Route
+                path="/projects"
+                element={
+                  <ProjectsPage
+                    projects={projects}
+                    onAddNewProject={handleNavigateToCreateProject}
+                    onEditProject={handleNavigateToEditProject}
+                    onDeleteProject={handleDeleteProject}
+                    onStageChange={handleProjectStageChange}
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/projects/create"
-            element={
-              <ProjectCreatePage
-                initialData={projectPrefillData || undefined}
-                onBack={handleNavigateToProjectsList}
-                onSave={handleSaveProject}
+              <Route
+                path="/projects/create"
+                element={
+                  <ProjectCreatePage
+                    initialData={projectPrefillData || undefined}
+                    onBack={handleNavigateToProjectsList}
+                    onSave={handleSaveProject}
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/projects/edit/:id"
-            element={
-              <ProjectEditPageWrapper
-                projects={projects}
-                editingProject={editingProject}
-                onBack={handleNavigateToProjectsList}
-                onSave={handleSaveProject}
-                onDelete={handleDeleteProject}
+              <Route
+                path="/projects/edit/:id"
+                element={
+                  <ProjectEditPageWrapper
+                    projects={projects}
+                    editingProject={editingProject}
+                    onBack={handleNavigateToProjectsList}
+                    onSave={handleSaveProject}
+                    onDelete={handleDeleteProject}
+                  />
+                }
               />
-            }
-          />
 
-          <Route
-            path="/sessions"
-            element={
-              <SessionsPage
-                sessions={sessions}
-                onAddNewSession={() => { }}
-                onEditSession={() => { }}
-                onDeleteSession={handleDeleteSession}
-                onStatusChange={handleSessionStatusChange}
-                onSaveSession={handleSaveSession}
-                existingProjectNames={projects.map((p) => p.projectName)}
+              <Route
+                path="/sessions"
+                element={
+                  <SessionsPage
+                    sessions={sessions}
+                    onAddNewSession={() => { }}
+                    onEditSession={() => { }}
+                    onDeleteSession={handleDeleteSession}
+                    onStatusChange={handleSessionStatusChange}
+                    onSaveSession={handleSaveSession}
+                    existingProjectNames={projects.map((p) => p.projectName)}
+                  />
+                }
               />
-            }
-          />
 
-          <Route
-            path="/leads"
-            element={
-              <LeadsPage
-                leads={leads}
-                onAddNewLead={handleNavigateToCreateLead}
-                onEditLead={handleNavigateToEditLead}
-                onDeleteLead={handleDeleteLead}
-                onStageChange={handleLeadStageChange}
-                onConvertToProject={handleConvertLeadToProject}
+              <Route
+                path="/leads"
+                element={
+                  <LeadsPage
+                    leads={leads}
+                    onAddNewLead={handleNavigateToCreateLead}
+                    onEditLead={handleNavigateToEditLead}
+                    onDeleteLead={handleDeleteLead}
+                    onStageChange={handleLeadStageChange}
+                    onConvertToProject={handleConvertLeadToProject}
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/leads/create"
-            element={
-              <LeadFormPage
-                initialLead={editingLead}
-                onBack={handleNavigateToLeadsList}
-                onSave={handleSaveLead}
+              <Route
+                path="/leads/create"
+                element={
+                  <LeadFormPage
+                    initialLead={editingLead}
+                    onBack={handleNavigateToLeadsList}
+                    onSave={handleSaveLead}
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/leads/edit/:id"
-            element={
-              <LeadEditPageWrapper
-                leads={leads}
-                editingLead={editingLead}
-                onBack={handleNavigateToLeadsList}
-                onSave={handleSaveLead}
+              <Route
+                path="/leads/edit/:id"
+                element={
+                  <LeadEditPageWrapper
+                    leads={leads}
+                    editingLead={editingLead}
+                    onBack={handleNavigateToLeadsList}
+                    onSave={handleSaveLead}
+                  />
+                }
               />
-            }
-          />
 
-          <Route path="/billings" element={<BillingsPage />} />
+              <Route path="/billings" element={<BillingsPage />} />
 
-          <Route
-            path="/orders"
-            element={
-              <OrdersPage
-                orders={orders}
-                onAddNewOrder={handleNavigateToCreateOrder}
-                onEditOrder={handleNavigateToEditOrder}
-                onDeleteOrder={handleDeleteOrder}
-                onStageChange={handleOrderStageChange}
+              <Route
+                path="/orders"
+                element={
+                  <OrdersPage
+                    orders={orders}
+                    onAddNewOrder={handleNavigateToCreateOrder}
+                    onEditOrder={handleNavigateToEditOrder}
+                    onDeleteOrder={handleDeleteOrder}
+                    onStageChange={handleOrderStageChange}
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/orders/create"
-            element={
-              <OrderFormPage
-                initialOrder={editingOrder}
-                onBack={handleNavigateToOrdersList}
-                onSave={handleSaveOrder}
-                existingProjectOptions={projects.map((p) => ({ id: p.id, name: p.projectName }))}
+              <Route
+                path="/orders/create"
+                element={
+                  <OrderFormPage
+                    initialOrder={editingOrder}
+                    onBack={handleNavigateToOrdersList}
+                    onSave={handleSaveOrder}
+                    existingProjectOptions={projects.map((p) => ({ id: p.id, name: p.projectName }))}
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/orders/edit/:id"
-            element={
-              <OrderEditPageWrapper
-                orders={orders}
-                editingOrder={editingOrder}
-                onBack={handleNavigateToOrdersList}
-                onSave={handleSaveOrder}
-                existingProjectOptions={projects.map((p) => ({ id: p.id, name: p.projectName }))}
+              <Route
+                path="/orders/edit/:id"
+                element={
+                  <OrderEditPageWrapper
+                    orders={orders}
+                    editingOrder={editingOrder}
+                    onBack={handleNavigateToOrdersList}
+                    onSave={handleSaveOrder}
+                    existingProjectOptions={projects.map((p) => ({ id: p.id, name: p.projectName }))}
+                  />
+                }
               />
-            }
-          />
 
-          {/* Reports Routes */}
-          <Route path="/reports/billing" element={<BillingReportPage />} />
-          <Route path="/reports/leads" element={<LeadsReportPage />} />
-          <Route path="/reports/orders" element={<OrdersReportPage />} />
-          <Route path="/reports/sessions" element={<SessionsReportPage />} />
-          <Route path="/reports/finance" element={<FinanceReportPage />} />
-          <Route path="/reports/master-report" element={<MasterReportPage />} />
-          <Route path="/reports/account-analytics" element={<AccountAnalyticsPage />} />
-          <Route path="/reports/feedback" element={<FeedbackReportPage />} />
+              {/* Reports Routes */}
+              <Route path="/reports/billing" element={<BillingReportPage />} />
+              <Route path="/reports/leads" element={<LeadsReportPage />} />
+              <Route path="/reports/orders" element={<OrdersReportPage />} />
+              <Route path="/reports/sessions" element={<SessionsReportPage />} />
+              <Route path="/reports/finance" element={<FinanceReportPage />} />
+              <Route path="/reports/master-report" element={<MasterReportPage />} />
+              <Route path="/reports/account-analytics" element={<AccountAnalyticsPage />} />
+              <Route path="/reports/feedback" element={<FeedbackReportPage />} />
 
-          {/* Settings Routes */}
-          <Route path="/settings/master-data" element={<MasterDataPage />} />
-          <Route path="/settings/photographers" element={<PhotographersPage />} />
-          <Route path="/settings/sequence-id" element={<SequenceIdPage />} />
-          <Route path="/settings/preset-services" element={<ServicesSettingsPage />} />
-          <Route path="/settings/preset-packages" element={<PackagesSettingsPage />} />
-          <Route path="/settings/preset-orders" element={<OrdersSettingsPage />} />
-          <Route path="/settings/preset-deliverables" element={<DeliverablesSettingsPage />} />
-          <Route
-            path="/settings/template-forms"
-            element={
-              <TemplateCustomizerPage
-                title="Lead Intake & Inquiry Forms"
-                subtitle="Customize public lead capture form questions, branding, and disclaimers"
-                type="form"
+              {/* Settings Routes */}
+              <Route path="/settings/master-data" element={<MasterDataPage />} />
+              <Route path="/settings/photographers" element={<PhotographersPage />} />
+              <Route path="/settings/sequence-id" element={<SequenceIdPage />} />
+              <Route path="/settings/preset-services" element={<ServicesSettingsPage />} />
+              <Route path="/settings/preset-packages" element={<PackagesSettingsPage />} />
+              <Route path="/settings/preset-orders" element={<OrdersSettingsPage />} />
+              <Route path="/settings/preset-deliverables" element={<DeliverablesSettingsPage />} />
+              <Route
+                path="/settings/template-forms"
+                element={
+                  <TemplateCustomizerPage
+                    title="Lead Intake & Inquiry Forms"
+                    subtitle="Customize public lead capture form questions, branding, and disclaimers"
+                    type="form"
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/settings/template-quotation-pdf"
-            element={
-              <TemplateCustomizerPage
-                title="Quotation PDF Template"
-                subtitle="Visual design, payment schedules, and terms on client quotation estimates"
-                type="quotation"
+              <Route
+                path="/settings/template-quotation-pdf"
+                element={
+                  <TemplateCustomizerPage
+                    title="Quotation PDF Template"
+                    subtitle="Visual design, payment schedules, and terms on client quotation estimates"
+                    type="quotation"
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/settings/template-invoice-pdf"
-            element={
-              <TemplateCustomizerPage
-                title="Invoice PDF Template"
-                subtitle="Tax invoice layout, bank details, and studio payment remittance instructions"
-                type="invoice"
+              <Route
+                path="/settings/template-invoice-pdf"
+                element={
+                  <TemplateCustomizerPage
+                    title="Invoice PDF Template"
+                    subtitle="Tax invoice layout, bank details, and studio payment remittance instructions"
+                    type="invoice"
+                  />
+                }
               />
-            }
-          />
-          <Route path="/settings/template-contracts" element={<ContractTemplatePage />} />
-          <Route path="/settings/template-feedbacks" element={<FeedbackTemplatePage />} />
-          <Route path="/settings/stages-workflow" element={<WorkflowPage />} />
+              <Route path="/settings/template-contracts" element={<ContractTemplatePage />} />
+              <Route path="/settings/template-feedbacks" element={<FeedbackTemplatePage />} />
+              <Route path="/settings/stages-workflow" element={<WorkflowPage />} />
 
-          {/* Catch-all redirect */}
-          <Route path="*" element={<Navigate to="/projects" replace />} />
+              {/* Catch-all redirect for Admin */}
+              <Route path="*" element={<Navigate to="/projects" replace />} />
+            </>
+          ) : (
+            <>
+              {/* Default redirect for non-Admin users */}
+              <Route path="/" element={<Navigate to="/home" replace />} />
+
+              {/* User Portal Pages */}
+              <Route
+                path="/home"
+                element={<UserHomePage sessions={sessions} projects={projects} />}
+              />
+              <Route
+                path="/shoots"
+                element={
+                  <UserShootsPage
+                    sessions={sessions}
+                    onSaveSession={handleSaveSession}
+                    onStatusChange={handleSessionStatusChange}
+                    existingProjectNames={projects.map((p) => p.projectName)}
+                  />
+                }
+              />
+              <Route
+                path="/tasks"
+                element={
+                  <UserTasksPage
+                    projects={projects}
+                    onUpdateProject={handleSaveProject}
+                  />
+                }
+              />
+              <Route
+                path="/deliverables"
+                element={
+                  <UserDeliverablesPage
+                    projects={projects}
+                    onUpdateProject={handleSaveProject}
+                  />
+                }
+              />
+
+              {/* Catch-all redirect for non-Admin */}
+              <Route path="*" element={<Navigate to="/home" replace />} />
+            </>
+          )}
         </Routes>
       </Suspense>
     </DashboardShell>
@@ -821,18 +927,26 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/signin" element={<SigninPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute fallback={<Navigate to="/signin" replace />}>
-                <AppContent />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+        <Suspense
+          fallback={
+            <div className="flex min-h-screen items-center justify-center text-xs text-muted-foreground">
+              Loading...
+            </div>
+          }
+        >
+          <Routes>
+            <Route path="/signin" element={<SigninPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute fallback={<Navigate to="/signin" replace />}>
+                  <AppContent />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   )

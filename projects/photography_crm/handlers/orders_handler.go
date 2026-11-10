@@ -12,33 +12,33 @@ import (
 )
 
 type OrderDTO struct {
-	ID               string `json:"id"`
-	OrderNumber      string `json:"orderNumber"`
-	ClientName       string `json:"clientName"`
-	MobileNo         string `json:"mobileNo"`
-	CountryCode      string `json:"countryCode,omitempty"`
-	Email            string `json:"email,omitempty"`
-	Address          string `json:"address,omitempty"`
-	LeadSource       string `json:"leadSource,omitempty"`
-	ReferenceNo      string `json:"referenceNo,omitempty"`
-	OrderDate        string `json:"orderDate"`
-	OrderType        string `json:"orderType"`
-	Stage            string `json:"stage"`
-	Assignee         string `json:"assignee"`
-	Items            any    `json:"items"`
-	Expenses         any    `json:"expenses"`
-	Payments         any    `json:"payments,omitempty"`
-	Notes            string `json:"notes,omitempty"`
-	Discount         int64  `json:"discount"`
+	ID               string  `json:"id"`
+	OrderNumber      string  `json:"orderNumber"`
+	ClientName       string  `json:"clientName"`
+	MobileNo         string  `json:"mobileNo"`
+	CountryCode      string  `json:"countryCode,omitempty"`
+	Email            string  `json:"email,omitempty"`
+	Address          string  `json:"address,omitempty"`
+	LeadSource       string  `json:"leadSource,omitempty"`
+	ReferenceNo      string  `json:"referenceNo,omitempty"`
+	OrderDate        string  `json:"orderDate"`
+	OrderType        string  `json:"orderType"`
+	Stage            string  `json:"stage"`
+	Assignee         string  `json:"assignee"`
+	RelatedProjectId string  `json:"relatedProjectId,omitempty"`
+	Notes            string  `json:"notes,omitempty"`
+	Discount         int64   `json:"discount"`
 	TaxPercent       float64 `json:"taxPercent"`
-	TaxAmount        int64  `json:"taxAmount"`
-	SubTotal         int64  `json:"subTotal"`
-	TotalAmount      int64  `json:"totalAmount"`
-	PaidAmount       int64  `json:"paidAmount"`
-	BalanceAmount    int64  `json:"balanceAmount"`
-	PaymentStatus    string `json:"paymentStatus"`
-	CreatedDate      string `json:"createdDate"`
-	RelatedProjectId string `json:"relatedProjectId,omitempty"`
+	TaxAmount        int64   `json:"taxAmount"`
+	SubTotal         int64   `json:"subTotal"`
+	TotalAmount      int64   `json:"totalAmount"`
+	PaidAmount       int64   `json:"paidAmount"`
+	BalanceAmount    int64   `json:"balanceAmount"`
+	PaymentStatus    string  `json:"paymentStatus"`
+	CreatedDate      string  `json:"createdDate"`
+	Items            any     `json:"items"`
+	Expenses         any     `json:"expenses"`
+	Payments         any     `json:"payments,omitempty"`
 }
 
 func OrdersListHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,11 +52,11 @@ func OrdersListHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.QueryContext(r.Context(), `
 		SELECT id, order_number, client_name, mobile_no, country_code, email, address,
 		       lead_source, reference_no, order_date, order_type, stage, assignee,
-		       notes, discount, tax_percent, tax_amount, sub_total, total_amount,
-		       paid_amount, balance_amount, payment_status, related_project_id,
+		       COALESCE(related_project_id, ''), notes, discount, tax_percent, tax_amount,
+		       sub_total, total_amount, paid_amount, balance_amount, payment_status,
 		       items, expenses, payments, created_at
 		FROM orders
-		WHERE tenant_id = ?
+		WHERE tenant_id = ? AND deleted_at IS NULL
 		ORDER BY created_at DESC
 	`, tid)
 	if err != nil {
@@ -65,68 +65,63 @@ func OrdersListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var result []OrderDTO
+	result := make([]OrderDTO, 0)
 	for rows.Next() {
-		var id, orderNum, clientName, mobileNo, countryCode, email, address string
-		var leadSource, refNo, orderDate, orderType, stage, assignee, notes string
-		var paymentStatus, relatedProjID                                   string
-		var discount, taxAmount, subTotal, totalAmount, paidAmount, balance int64
-		var taxPercent                                                     float64
-		var createdAt                                                      time.Time
-		var itemsRaw, expensesRaw, paymentsRaw                             []byte
 		var (
-			sCode, sEmail, sAddr, sSource, sRef, sNotes, sProjID sql.NullString
+			id, orderNum, clientName, mobile, countryCode, email, orderDate, orderType, stage, assignee, relProjID, paymentStatus string
+			discount, taxAmount, subTotal, totalAmount, paidAmount, balanceAmount                                                  int64
+			taxPercent                                                                                                             float64
+			createdAt                                                                                                              time.Time
+			itemsRaw, expRaw, payRaw                                                                                               []byte
+		)
+		var (
+			sAddr, sLeadSource, sRefNo, sNotes sql.NullString
 		)
 
 		err := rows.Scan(
-			&id, &orderNum, &clientName, &mobileNo, &sCode, &sEmail, &sAddr,
-			&sSource, &sRef, &orderDate, &orderType, &stage, &assignee,
-			&sNotes, &discount, &taxPercent, &taxAmount, &subTotal, &totalAmount,
-			&paidAmount, &balance, &paymentStatus, &sProjID,
-			&itemsRaw, &expensesRaw, &paymentsRaw, &createdAt,
+			&id, &orderNum, &clientName, &mobile, &countryCode, &email, &sAddr,
+			&sLeadSource, &sRefNo, &orderDate, &orderType, &stage, &assignee,
+			&relProjID, &sNotes, &discount, &taxPercent, &taxAmount,
+			&subTotal, &totalAmount, &paidAmount, &balanceAmount, &paymentStatus,
+			&itemsRaw, &expRaw, &payRaw, &createdAt,
 		)
 		if err != nil {
 			continue
 		}
 
-		if sCode.Valid {
-			countryCode = sCode.String
-		} else {
-			countryCode = "+91"
-		}
-		if sEmail.Valid {
-			email = sEmail.String
-		}
+		address := ""
 		if sAddr.Valid {
 			address = sAddr.String
 		}
-		if sSource.Valid {
-			leadSource = sSource.String
+		leadSource := ""
+		if sLeadSource.Valid {
+			leadSource = sLeadSource.String
 		}
-		if sRef.Valid {
-			refNo = sRef.String
+		refNo := ""
+		if sRefNo.Valid {
+			refNo = sRefNo.String
 		}
+		notes := ""
 		if sNotes.Valid {
 			notes = sNotes.String
 		}
-		if sProjID.Valid {
-			relatedProjID = sProjID.String
+
+		var items, expenses, payments any
+		if len(itemsRaw) > 0 {
+			_ = json.Unmarshal(itemsRaw, &items)
+		}
+		if len(expRaw) > 0 {
+			_ = json.Unmarshal(expRaw, &expenses)
+		}
+		if len(payRaw) > 0 {
+			_ = json.Unmarshal(payRaw, &payments)
 		}
 
-		var items any = []any{}
-		parseJSONColumn(itemsRaw, &items)
-
-		var expenses any = []any{}
-		parseJSONColumn(expensesRaw, &expenses)
-
-		var payments any = []any{}
-		parseJSONColumn(paymentsRaw, &payments)
-
-		result = append(result, OrderDTO{
+		dto := OrderDTO{
 			ID:               id,
 			OrderNumber:      orderNum,
 			ClientName:       clientName,
-			MobileNo:         mobileNo,
+			MobileNo:         mobile,
 			CountryCode:      countryCode,
 			Email:            email,
 			Address:          address,
@@ -136,9 +131,7 @@ func OrdersListHandler(w http.ResponseWriter, r *http.Request) {
 			OrderType:        orderType,
 			Stage:            stage,
 			Assignee:         assignee,
-			Items:            items,
-			Expenses:         expenses,
-			Payments:         payments,
+			RelatedProjectId: relProjID,
 			Notes:            notes,
 			Discount:         discount,
 			TaxPercent:       taxPercent,
@@ -146,16 +139,16 @@ func OrdersListHandler(w http.ResponseWriter, r *http.Request) {
 			SubTotal:         subTotal,
 			TotalAmount:      totalAmount,
 			PaidAmount:       paidAmount,
-			BalanceAmount:    balance,
+			BalanceAmount:    balanceAmount,
 			PaymentStatus:    paymentStatus,
 			CreatedDate:      createdAt.Format("02/01/2006"),
-			RelatedProjectId: relatedProjID,
-		})
+			Items:            items,
+			Expenses:         expenses,
+			Payments:         payments,
+		}
+		result = append(result, dto)
 	}
 
-	if result == nil {
-		result = []OrderDTO{}
-	}
 	utils.WriteJSON(w, http.StatusOK, result)
 }
 
@@ -174,31 +167,33 @@ func CreateOrderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.ID == "" {
-		payload.ID = "ord-" + uuid.New().String()[:8]
+		payload.ID = "ORD-" + uuid.New().String()[:8]
 	}
-	if payload.Stage == "" {
-		payload.Stage = "Order Confirmation"
+	if payload.OrderNumber == "" {
+		payload.OrderNumber = "ORD-" + uuid.New().String()[:6]
 	}
 	if payload.PaymentStatus == "" {
 		payload.PaymentStatus = "Pending"
 	}
-	if payload.OrderType == "" {
-		payload.OrderType = "Walk-in"
-	}
-	if payload.CountryCode == "" {
-		payload.CountryCode = "+91"
+	if payload.Stage == "" {
+		payload.Stage = "Order Confirmation"
 	}
 
-	itemsJSON := toJSONBytes(payload.Items)
-	expensesJSON := toJSONBytes(payload.Expenses)
-	paymentsJSON := toJSONBytes(payload.Payments)
+	itemsJSON, _ := json.Marshal(payload.Items)
+	expensesJSON, _ := json.Marshal(payload.Expenses)
+	paymentsJSON, _ := json.Marshal(payload.Payments)
+
+	var relProjVal *string
+	if payload.RelatedProjectId != "" {
+		relProjVal = &payload.RelatedProjectId
+	}
 
 	_, err := db.ExecContext(r.Context(), `
 		INSERT INTO orders (
 			id, tenant_id, order_number, client_name, mobile_no, country_code, email,
 			address, lead_source, reference_no, order_date, order_type, stage, assignee,
-			notes, discount, tax_percent, tax_amount, sub_total, total_amount,
-			paid_amount, balance_amount, payment_status, related_project_id,
+			related_project_id, notes, discount, tax_percent, tax_amount, sub_total,
+			total_amount, paid_amount, balance_amount, payment_status,
 			items, expenses, payments
 		) VALUES (
 			?, ?, ?, ?, ?, ?, ?,
@@ -207,11 +202,13 @@ func CreateOrderHandler(w http.ResponseWriter, r *http.Request) {
 			?, ?, ?, ?,
 			?, ?, ?
 		)
-	`, payload.ID, tid, payload.OrderNumber, payload.ClientName, payload.MobileNo, payload.CountryCode, payload.Email,
+	`,
+		payload.ID, tid, payload.OrderNumber, payload.ClientName, payload.MobileNo, payload.CountryCode, payload.Email,
 		payload.Address, payload.LeadSource, payload.ReferenceNo, payload.OrderDate, payload.OrderType, payload.Stage, payload.Assignee,
-		payload.Notes, payload.Discount, payload.TaxPercent, payload.TaxAmount, payload.SubTotal, payload.TotalAmount,
-		payload.PaidAmount, payload.BalanceAmount, payload.PaymentStatus, payload.RelatedProjectId,
-		itemsJSON, expensesJSON, paymentsJSON)
+		relProjVal, payload.Notes, payload.Discount, payload.TaxPercent, payload.TaxAmount, payload.SubTotal,
+		payload.TotalAmount, payload.PaidAmount, payload.BalanceAmount, payload.PaymentStatus,
+		itemsJSON, expensesJSON, paymentsJSON,
+	)
 
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -237,24 +234,33 @@ func UpdateOrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	itemsJSON := toJSONBytes(payload.Items)
-	expensesJSON := toJSONBytes(payload.Expenses)
-	paymentsJSON := toJSONBytes(payload.Payments)
+	itemsJSON, _ := json.Marshal(payload.Items)
+	expensesJSON, _ := json.Marshal(payload.Expenses)
+	paymentsJSON, _ := json.Marshal(payload.Payments)
+
+	var relProjVal *string
+	if payload.RelatedProjectId != "" {
+		relProjVal = &payload.RelatedProjectId
+	}
 
 	_, err := db.ExecContext(r.Context(), `
 		UPDATE orders SET
-			order_number = ?, client_name = ?, mobile_no = ?, country_code = ?, email = ?,
+			client_name = ?, mobile_no = ?, country_code = ?, email = ?,
 			address = ?, lead_source = ?, reference_no = ?, order_date = ?, order_type = ?,
-			stage = ?, assignee = ?, notes = ?, discount = ?, tax_percent = ?, tax_amount = ?,
-			sub_total = ?, total_amount = ?, paid_amount = ?, balance_amount = ?,
-			payment_status = ?, related_project_id = ?, items = ?, expenses = ?, payments = ?
-		WHERE id = ? AND tenant_id = ?
-	`, payload.OrderNumber, payload.ClientName, payload.MobileNo, payload.CountryCode, payload.Email,
+			stage = ?, assignee = ?, related_project_id = ?, notes = ?, discount = ?,
+			tax_percent = ?, tax_amount = ?, sub_total = ?, total_amount = ?,
+			paid_amount = ?, balance_amount = ?, payment_status = ?,
+			items = ?, expenses = ?, payments = ?
+		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+	`,
+		payload.ClientName, payload.MobileNo, payload.CountryCode, payload.Email,
 		payload.Address, payload.LeadSource, payload.ReferenceNo, payload.OrderDate, payload.OrderType,
-		payload.Stage, payload.Assignee, payload.Notes, payload.Discount, payload.TaxPercent, payload.TaxAmount,
-		payload.SubTotal, payload.TotalAmount, payload.PaidAmount, payload.BalanceAmount,
-		payload.PaymentStatus, payload.RelatedProjectId, itemsJSON, expensesJSON, paymentsJSON,
-		id, tid)
+		payload.Stage, payload.Assignee, relProjVal, payload.Notes, payload.Discount,
+		payload.TaxPercent, payload.TaxAmount, payload.SubTotal, payload.TotalAmount,
+		payload.PaidAmount, payload.BalanceAmount, payload.PaymentStatus,
+		itemsJSON, expensesJSON, paymentsJSON,
+		id, tid,
+	)
 
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -282,7 +288,9 @@ func UpdateOrderStageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := db.ExecContext(r.Context(), "UPDATE orders SET stage = ? WHERE id = ? AND tenant_id = ?", req.Stage, id, tid)
+	_, err := db.ExecContext(r.Context(), `
+		UPDATE orders SET stage = ? WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+	`, req.Stage, id, tid)
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -300,7 +308,9 @@ func DeleteOrderHandler(w http.ResponseWriter, r *http.Request) {
 	tid := getTenantID(r, db)
 	id := chi.URLParam(r, "id")
 
-	_, err := db.ExecContext(r.Context(), "DELETE FROM orders WHERE id = ? AND tenant_id = ?", id, tid)
+	_, err := db.ExecContext(r.Context(), `
+		UPDATE orders SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
+	`, id, tid)
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return

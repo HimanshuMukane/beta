@@ -7,15 +7,15 @@ import {
   IconReceipt2,
   IconCoins,
 } from '@tabler/icons-react'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
 import {
-  Button,
-  Input,
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-  toast,
-} from '@repo/ui'
-import { useStudioSettings } from '../../hooks/useStudioSettings'
+} from '@repo/ui/components/ui/tooltip'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { useOrderPresets } from '../../hooks/useOrderPresets'
 
 export interface OrderPresetItem {
   id: string
@@ -34,16 +34,14 @@ const INITIAL_ORDERS_DATA: OrderPresetItem[] = [
 ]
 
 export function OrdersSettingsPage() {
-  const { settings, updateSettings } = useStudioSettings()
-  const [items, setItems] = React.useState<OrderPresetItem[]>(
-    settings?.ordersPresets || INITIAL_ORDERS_DATA
-  )
+  const { presets, savePresets, isSaving } = useOrderPresets()
+  const [items, setItems] = React.useState<OrderPresetItem[]>(INITIAL_ORDERS_DATA)
 
   React.useEffect(() => {
-    if (settings?.ordersPresets) {
-      setItems(settings.ordersPresets)
+    if (presets && presets.length > 0) {
+      setItems(presets)
     }
-  }, [settings?.ordersPresets])
+  }, [presets])
 
   const handleUpdate = (id: string, field: keyof OrderPresetItem, value: any) => {
     setItems((prev) =>
@@ -62,26 +60,34 @@ export function OrdersSettingsPage() {
     setItems((prev) => [...prev, newItem])
   }
 
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = async (id: string) => {
     if (items.length <= 1) {
       toast.error('At least one line item is required')
       return
     }
     const updated = items.filter((item) => item.id !== id)
     setItems(updated)
-    updateSettings({ ordersPresets: updated })
-    toast.success('Line item removed')
+    try {
+      await savePresets(updated)
+      toast.success('Line item removed')
+    } catch {
+      toast.error('Failed to remove item')
+    }
   }
 
-  const handleSaveAll = () => {
+  const handleSaveAll = async () => {
     const valid = items.filter((i) => i.name.trim().length > 0)
     if (valid.length === 0) {
       toast.error('Please enter at least one item name')
       return
     }
     setItems(valid)
-    updateSettings({ ordersPresets: valid })
-    toast.success('Orders preset configuration saved')
+    try {
+      await savePresets(valid)
+      toast.success('Orders preset configuration saved')
+    } catch {
+      toast.error('Failed to save orders preset configuration')
+    }
   }
 
   return (
@@ -102,10 +108,11 @@ export function OrdersSettingsPage() {
         <Button
           type="button"
           onClick={handleSaveAll}
+          disabled={isSaving}
           className="h-8 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground self-start sm:self-auto shadow-xs"
         >
           <IconCheck className="h-3.5 w-3.5" />
-          Save Changes
+          {isSaving ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
 
@@ -251,4 +258,3 @@ export function OrdersSettingsPage() {
     </div>
   )
 }
-

@@ -41,13 +41,15 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
+} from '@repo/ui/components/ui/sidebar'
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-  Button,
-  useAuth,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/collapsible'
+import { Button } from '@repo/ui/components/ui/button'
+import { useAuth } from '@repo/ui/hooks/use-auth'
+import { cn } from '@repo/ui/lib/utils'
 import type { SettingsTab } from '../types/settings'
 
 export type ReportCategory =

@@ -1,4 +1,4 @@
-import { apiClient } from '@repo/ui'
+import { apiClient } from '@repo/ui/lib/api-client'
 import type {
   MasterDataCategory,
   TeamDesignation,

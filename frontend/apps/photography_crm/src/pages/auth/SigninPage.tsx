@@ -1,12 +1,10 @@
 import * as React from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import {
-  Button,
-  Input,
-  Label,
-  SplitAuthLayout,
-  toast,
-} from '@repo/ui'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import { Label } from '@repo/ui/components/ui/label'
+import { SplitAuthLayout } from '@repo/ui/components/split-auth-layout'
+import { toast } from '@repo/ui/components/ui/sonner'
 import { IconCamera, IconLock, IconMail, IconArrowRight } from '@tabler/icons-react'
 import { useAuth } from '@repo/ui/hooks/use-auth'
 

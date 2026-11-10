@@ -5,29 +5,33 @@ import {
   IconTrash,
   IconDeviceFloppy,
 } from '@tabler/icons-react'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import { Label } from '@repo/ui/components/ui/label'
 import {
-  Button,
-  Input,
-  Label,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
+} from '@repo/ui/components/ui/card'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Badge,
-  toast,
+} from '@repo/ui/components/ui/select'
+import { Badge } from '@repo/ui/components/ui/badge'
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/dialog'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { cn } from '@repo/ui/lib/utils'
 import type {
   Order,
   OrderLineItem,
@@ -35,10 +39,11 @@ import type {
   OrderStage,
   OrderPaymentStatus,
   OrderPaymentRecord,
-} from '../types/order'
-import { LeadSourceCombobox } from '../components/LeadSourceCombobox'
-import { PhoneInputField } from '../components/PhoneInputField'
-import type { LeadSource } from '../types/lead'
+} from '../../types/order'
+import { LeadSourceCombobox } from '../../components/LeadSourceCombobox'
+import { PhoneInputField } from '../../components/PhoneInputField'
+import type { LeadSource } from '../../types/lead'
+import { useOrderPresets } from '../../hooks/useOrderPresets'
 
 export const ORDER_TYPES: string[] = [
   'Walk-in',
@@ -89,6 +94,8 @@ export function OrderFormPage({
 
   // Orders Details
   const [referenceNo, setReferenceNo] = React.useState(initialOrder?.referenceNo || '')
+
+  const { presets } = useOrderPresets()
   const [orderDate, setOrderDate] = React.useState(
     initialOrder?.orderDate || new Date().toISOString().replace('T', ' ').substring(0, 16)
   )
@@ -169,8 +176,8 @@ export function OrderFormPage({
   }
 
   const handleSelectPredefinedItem = (id: string, selectedName: string) => {
-    const predefined = POPULAR_LINE_ITEMS.find((p) => p.name === selectedName)
-    const cost = predefined ? predefined.cost : 0
+    const presetItem = presets.find((p) => p.name === selectedName)
+    const cost = presetItem ? presetItem.amount : (POPULAR_LINE_ITEMS.find((p) => p.name === selectedName)?.cost || 0)
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item
@@ -608,17 +615,22 @@ export function OrderFormPage({
                         />
                         {/* Quick preset selector */}
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] text-muted-foreground">Suggestions:</span>
-                          {POPULAR_LINE_ITEMS.slice(0, 3).map((preset) => (
-                            <button
-                              key={preset.name}
-                              type="button"
-                              onClick={() => handleSelectPredefinedItem(item.id, preset.name)}
-                              className="text-[10px] text-primary hover:underline bg-primary/5 px-1.5 py-0.5 rounded border border-primary/20"
-                            >
-                              {preset.name.split('(')[0]}
-                            </button>
-                          ))}
+                          <span className="text-[10px] text-muted-foreground">Presets:</span>
+                          {(presets.length > 0
+                            ? presets.map((p) => ({ name: p.name, cost: p.amount }))
+                            : POPULAR_LINE_ITEMS
+                          )
+                            .slice(0, 5)
+                            .map((preset) => (
+                              <button
+                                key={preset.name}
+                                type="button"
+                                onClick={() => handleSelectPredefinedItem(item.id, preset.name)}
+                                className="text-[10px] text-primary hover:underline bg-primary/5 px-1.5 py-0.5 rounded border border-primary/20"
+                              >
+                                {preset.name.split('(')[0]}
+                              </button>
+                            ))}
                         </div>
                       </div>
                     </td>

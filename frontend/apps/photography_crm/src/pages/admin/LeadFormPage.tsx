@@ -4,30 +4,32 @@ import {
   IconDeviceFloppy,
   IconEdit,
 } from '@tabler/icons-react'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import { Label } from '@repo/ui/components/ui/label'
 import {
-  Button,
-  Input,
-  Label,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
+} from '@repo/ui/components/ui/card'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Badge,
-  toast,
-} from '@repo/ui'
-import type { Lead, ProjectSegment, ServiceItem, LeadSource } from '../types/lead'
-import { EditServiceDrawer } from '../components/EditServiceDrawer'
-import { DeliverablesDropdown } from '../components/DeliverablesDropdown'
-import { DateTimePickerCustom } from '../components/DateTimePickerCustom'
-import { LeadSourceCombobox } from '../components/LeadSourceCombobox'
-import { PhoneInputField } from '../components/PhoneInputField'
-import { ProjectSegmentsEditor } from '../components/ProjectSegmentsEditor'
+} from '@repo/ui/components/ui/select'
+import { Badge } from '@repo/ui/components/ui/badge'
+import { toast } from '@repo/ui/components/ui/sonner'
+import type { Lead, ProjectSegment, ServiceItem, LeadSource } from '../../types/lead'
+import { EditServiceDrawer } from '../../components/EditServiceDrawer'
+import { DeliverablesDropdown } from '../../components/DeliverablesDropdown'
+import { DateTimePickerCustom } from '../../components/DateTimePickerCustom'
+import { LeadSourceCombobox } from '../../components/LeadSourceCombobox'
+import { PhoneInputField } from '../../components/PhoneInputField'
+import { ProjectSegmentsEditor } from '../../components/ProjectSegmentsEditor'
 
 interface LeadFormPageProps {
   initialLead?: Lead | null

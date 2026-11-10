@@ -12,6 +12,7 @@ import (
 
 type SessionDTO struct {
 	ID                  string   `json:"id"`
+	ProjectID           string   `json:"projectId,omitempty"`
 	Title               string   `json:"title"`
 	ProjectName         string   `json:"projectName"`
 	SessionManager      string   `json:"sessionManager"`
@@ -37,66 +38,76 @@ func SessionsListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tid := getTenantID(r, db)
+	projectIDFilter := r.URL.Query().Get("projectId")
 
-	rows, err := db.QueryContext(r.Context(), `
-		SELECT id, title, project_name, session_manager, project_type, shoot_timing,
-		       status, session_date, start_time, duration, time_range, venue, city,
-		       location_link, remarks, members, shoots_activity_count
-		FROM project_sessions
-		WHERE tenant_id = ?
-		ORDER BY session_date DESC, start_time ASC
-	`, tid)
+	query := `
+		SELECT s.id, COALESCE(s.project_id, ''), s.title, COALESCE(p.project_name, s.project_name, ''),
+		       s.session_manager, s.project_type, s.shoot_timing, s.status, s.date,
+		       s.start_time, s.duration, s.time_range, s.venue, s.city, s.location_link,
+		       s.remarks, s.members, s.shoots_activity_count
+		FROM project_sessions s
+		LEFT JOIN projects p ON p.id = s.project_id AND p.deleted_at IS NULL
+		WHERE s.tenant_id = ? AND s.deleted_at IS NULL
+	`
+	args := []any{tid}
+	if projectIDFilter != "" {
+		query += " AND s.project_id = ?"
+		args = append(args, projectIDFilter)
+	}
+	query += " ORDER BY s.date ASC"
+
+	rows, err := db.QueryContext(r.Context(), query, args...)
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
 
-	var result []SessionDTO
+	result := make([]SessionDTO, 0)
 	for rows.Next() {
-		var id, title, projName, mgr, pType, timing, status, date, start, dur, tRange, venue, city, link, remarks string
-		var activity int
-		var membersRaw []byte
 		var (
-			sStart, sDur, sRange, sVenue, sCity, sLink, sRemarks sql.NullString
+			id, projID, title, projName, mgr, pType, timing, status, date, timeRange, venue, city string
+			shootsCount                                                                           int
+			membersRaw                                                                            []byte
+		)
+		var (
+			sStartTime, sDuration, sLoc, sRemarks sql.NullString
 		)
 
 		err := rows.Scan(
-			&id, &title, &projName, &mgr, &pType, &timing,
-			&status, &date, &sStart, &sDur, &sRange, &sVenue, &sCity,
-			&sLink, &sRemarks, &membersRaw, &activity,
+			&id, &projID, &title, &projName, &mgr, &pType, &timing, &status, &date,
+			&sStartTime, &sDuration, &timeRange, &venue, &city, &sLoc, &sRemarks,
+			&membersRaw, &shootsCount,
 		)
 		if err != nil {
 			continue
 		}
 
-		if sStart.Valid {
-			start = sStart.String
+		startTime := ""
+		if sStartTime.Valid {
+			startTime = sStartTime.String
 		}
-		if sDur.Valid {
-			dur = sDur.String
+		duration := ""
+		if sDuration.Valid {
+			duration = sDuration.String
 		}
-		if sRange.Valid {
-			tRange = sRange.String
+		locationLink := ""
+		if sLoc.Valid {
+			locationLink = sLoc.String
 		}
-		if sVenue.Valid {
-			venue = sVenue.String
-		}
-		if sCity.Valid {
-			city = sCity.String
-		}
-		if sLink.Valid {
-			link = sLink.String
-		}
+		remarks := ""
 		if sRemarks.Valid {
 			remarks = sRemarks.String
 		}
 
-		var members []string = []string{}
-		parseJSONColumn(membersRaw, &members)
+		members := make([]string, 0)
+		if len(membersRaw) > 0 {
+			_ = json.Unmarshal(membersRaw, &members)
+		}
 
-		result = append(result, SessionDTO{
+		dto := SessionDTO{
 			ID:                  id,
+			ProjectID:           projID,
 			Title:               title,
 			ProjectName:         projName,
 			SessionManager:      mgr,
@@ -104,21 +115,19 @@ func SessionsListHandler(w http.ResponseWriter, r *http.Request) {
 			ShootTiming:         timing,
 			Status:              status,
 			Date:                date,
-			StartTime:           start,
-			Duration:            dur,
-			TimeRange:           tRange,
+			StartTime:           startTime,
+			Duration:            duration,
+			TimeRange:           timeRange,
 			Venue:               venue,
 			City:                city,
-			LocationLink:        link,
+			LocationLink:        locationLink,
 			Remarks:             remarks,
 			Members:             members,
-			ShootsActivityCount: activity,
-		})
+			ShootsActivityCount: shootsCount,
+		}
+		result = append(result, dto)
 	}
 
-	if result == nil {
-		result = []SessionDTO{}
-	}
 	utils.WriteJSON(w, http.StatusOK, result)
 }
 
@@ -137,33 +146,47 @@ func CreateSessionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.ID == "" {
-		payload.ID = "ses-" + uuid.New().String()[:8]
+		payload.ID = "SES-" + uuid.New().String()[:8]
 	}
-	if payload.Status == "" {
-		payload.Status = "Scheduled"
-	}
-	if payload.ShootTiming == "" {
-		payload.ShootTiming = "Morning"
+	if payload.ShootsActivityCount == 0 {
+		payload.ShootsActivityCount = 1
 	}
 	if payload.SessionManager == "" {
 		payload.SessionManager = "especa"
 	}
+	if payload.Status == "" {
+		payload.Status = "New"
+	}
 
-	membersJSON := toJSONBytes(payload.Members)
+	membersJSON, _ := json.Marshal(payload.Members)
+
+	var projIDVal *string
+	if payload.ProjectID != "" {
+		projIDVal = &payload.ProjectID
+	} else if payload.ProjectName != "" {
+		var matchedID string
+		if err := db.QueryRowContext(r.Context(), `
+			SELECT id FROM projects WHERE tenant_id = ? AND project_name = ? AND deleted_at IS NULL LIMIT 1
+		`, tid, payload.ProjectName).Scan(&matchedID); err == nil && matchedID != "" {
+			projIDVal = &matchedID
+		}
+	}
 
 	_, err := db.ExecContext(r.Context(), `
 		INSERT INTO project_sessions (
-			id, tenant_id, project_name, title, session_manager, project_type,
-			shoot_timing, status, session_date, start_time, duration, time_range,
-			venue, city, location_link, remarks, members, shoots_activity_count
+			id, tenant_id, project_id, title, project_name, session_manager,
+			project_type, shoot_timing, status, date, start_time, duration,
+			time_range, venue, city, location_link, remarks, members, shoots_activity_count
 		) VALUES (
 			?, ?, ?, ?, ?, ?,
 			?, ?, ?, ?, ?, ?,
-			?, ?, ?, ?, ?, ?
+			?, ?, ?, ?, ?, ?, ?
 		)
-	`, payload.ID, tid, payload.ProjectName, payload.Title, payload.SessionManager, payload.ProjectType,
-		payload.ShootTiming, payload.Status, payload.Date, payload.StartTime, payload.Duration, payload.TimeRange,
-		payload.Venue, payload.City, payload.LocationLink, payload.Remarks, membersJSON, payload.ShootsActivityCount)
+	`,
+		payload.ID, tid, projIDVal, payload.Title, payload.ProjectName, payload.SessionManager,
+		payload.ProjectType, payload.ShootTiming, payload.Status, payload.Date, payload.StartTime, payload.Duration,
+		payload.TimeRange, payload.Venue, payload.City, payload.LocationLink, payload.Remarks, membersJSON, payload.ShootsActivityCount,
+	)
 
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -188,20 +211,34 @@ func UpdateSessionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	membersJSON := toJSONBytes(payload.Members)
+	membersJSON, _ := json.Marshal(payload.Members)
+
+	var projIDVal *string
+	if payload.ProjectID != "" {
+		projIDVal = &payload.ProjectID
+	} else if payload.ProjectName != "" {
+		var matchedID string
+		if err := db.QueryRowContext(r.Context(), `
+			SELECT id FROM projects WHERE tenant_id = ? AND project_name = ? AND deleted_at IS NULL LIMIT 1
+		`, tid, payload.ProjectName).Scan(&matchedID); err == nil && matchedID != "" {
+			projIDVal = &matchedID
+		}
+	}
 
 	_, err := db.ExecContext(r.Context(), `
 		UPDATE project_sessions SET
-			project_name = ?, title = ?, session_manager = ?, project_type = ?,
-			shoot_timing = ?, status = ?, session_date = ?, start_time = ?,
+			project_id = ?, title = ?, project_name = ?, session_manager = ?,
+			project_type = ?, shoot_timing = ?, status = ?, date = ?, start_time = ?,
 			duration = ?, time_range = ?, venue = ?, city = ?, location_link = ?,
 			remarks = ?, members = ?, shoots_activity_count = ?
-		WHERE id = ? AND tenant_id = ?
-	`, payload.ProjectName, payload.Title, payload.SessionManager, payload.ProjectType,
-		payload.ShootTiming, payload.Status, payload.Date, payload.StartTime,
+		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+	`,
+		projIDVal, payload.Title, payload.ProjectName, payload.SessionManager,
+		payload.ProjectType, payload.ShootTiming, payload.Status, payload.Date, payload.StartTime,
 		payload.Duration, payload.TimeRange, payload.Venue, payload.City, payload.LocationLink,
 		payload.Remarks, membersJSON, payload.ShootsActivityCount,
-		id, tid)
+		id, tid,
+	)
 
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -229,7 +266,9 @@ func UpdateSessionStatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := db.ExecContext(r.Context(), "UPDATE project_sessions SET status = ? WHERE id = ? AND tenant_id = ?", req.Status, id, tid)
+	_, err := db.ExecContext(r.Context(), `
+		UPDATE project_sessions SET status = ? WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+	`, req.Status, id, tid)
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -247,7 +286,9 @@ func DeleteSessionHandler(w http.ResponseWriter, r *http.Request) {
 	tid := getTenantID(r, db)
 	id := chi.URLParam(r, "id")
 
-	_, err := db.ExecContext(r.Context(), "DELETE FROM project_sessions WHERE id = ? AND tenant_id = ?", id, tid)
+	_, err := db.ExecContext(r.Context(), `
+		UPDATE project_sessions SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
+	`, id, tid)
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return

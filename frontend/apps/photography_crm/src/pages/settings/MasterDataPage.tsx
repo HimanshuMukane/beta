@@ -7,19 +7,18 @@ import {
   IconX,
   IconDatabase,
 } from '@tabler/icons-react'
+import { Card, CardContent } from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
 import {
-  Card,
-  CardContent,
-  Button,
-  Input,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  toast,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/dialog'
+import { toast } from '@repo/ui/components/ui/sonner'
 import type { MasterDataCategory, MasterDataItem } from '../../types/settings'
 import { settingsApi } from '../../api/settingsApi'
 

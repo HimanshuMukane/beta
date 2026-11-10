@@ -42,3 +42,4 @@ const Toaster = ({ position = "bottom-right", ...props }: ToasterProps) => {
 }
 
 export { Toaster }
+export { toast } from "sonner"

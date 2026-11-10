@@ -1,6 +1,6 @@
 import React from 'react'
 import { ErrorBoundary as ReactErrorBoundary, FallbackProps } from 'react-error-boundary'
-import { Button } from '@repo/ui'
+import { Button } from '@repo/ui/components/ui/button'
 import { IconAlertTriangle, IconRotate } from '@tabler/icons-react'
 
 // Deduplication cache to prevent flooding logs with the same error

@@ -13,24 +13,28 @@ import {
   IconSignature,
   IconVariable,
 } from '@tabler/icons-react'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import { Label } from '@repo/ui/components/ui/label'
 import {
-  Button,
-  Input,
-  Label,
   Popover,
   PopoverContent,
   PopoverTrigger,
+} from '@repo/ui/components/ui/popover'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+} from '@repo/ui/components/ui/select'
+import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-  toast,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/tooltip'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { cn } from '@repo/ui/lib/utils'
 
 interface MergeVariable {
   key: string

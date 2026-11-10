@@ -1,26 +1,25 @@
 import * as React from 'react'
+import { Card, CardContent } from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { Badge } from '@repo/ui/components/ui/badge'
+import { Checkbox } from '@repo/ui/components/ui/checkbox'
 import {
-  Card,
-  CardContent,
-  Button,
-  Badge,
-  Checkbox,
   DataTable,
-  toast,
+  type DataTableFeatures,
+  type DataTableFilterConfig,
+  type DataTableBulkAction,
+  type DataTableRowAction,
+} from '@repo/ui/components/data-table'
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/dialog'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { cn } from '@repo/ui/lib/utils'
 import { createColumnHelper } from '@tanstack/react-table'
-import type {
-  DataTableFeatures,
-  DataTableFilterConfig,
-  DataTableBulkAction,
-  DataTableRowAction,
-} from '@repo/ui'
 import {
   IconTable,
   IconLayoutKanban,
@@ -28,8 +27,9 @@ import {
   IconTrash,
   IconEye,
 } from '@tabler/icons-react'
-import type { Order, OrderStage, OrderPaymentStatus } from '../types/order'
-import { OrderKanbanView } from '../components/OrderKanbanView'
+import type { Order, OrderStage, OrderPaymentStatus } from '../../types/order'
+import { OrderKanbanView } from '../../components/OrderKanbanView'
+import { useWorkflows } from '../../hooks/useWorkflows'
 
 interface OrdersPageProps {
   orders: Order[]
@@ -42,14 +42,6 @@ interface OrdersPageProps {
 
 const columnHelper = createColumnHelper<DataTableFeatures, Order>()
 
-const STAGES: (OrderStage | 'All')[] = [
-  'All',
-  'Order Confirmation',
-  'Product Ready',
-  'Ready For Delivery',
-  'Product Delivered',
-]
-
 export function OrdersPage({
   orders,
   onAddNewOrder,
@@ -57,8 +49,30 @@ export function OrdersPage({
   onDeleteOrder,
   onStageChange,
 }: OrdersPageProps) {
+  const { workflows } = useWorkflows('order')
+
+  const dynamicStages: string[] = React.useMemo(() => {
+    if (workflows && workflows.length > 0) {
+      return workflows.map((w) => w.stage)
+    }
+    return [
+      'Order Confirmation',
+      'Product Ready',
+      'Ready For Delivery',
+      'Product Delivered',
+    ]
+  }, [workflows])
+
+  const stageColorMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    ;(workflows || []).forEach((w) => {
+      map.set(w.stage.toLowerCase(), w.color_code)
+    })
+    return map
+  }, [workflows])
+
   const [viewMode, setViewMode] = React.useState<'table' | 'kanban'>('table')
-  const [stageFilter, setStageFilter] = React.useState<OrderStage | 'All'>('All')
+  const [stageFilter, setStageFilter] = React.useState<string>('All')
   const [paymentFilter] = React.useState<OrderPaymentStatus | 'All'>('All')
 
   // Selected Order for detail modal
@@ -153,50 +167,25 @@ export function OrdersPage({
           header: 'Stage',
           cell: (info) => {
             const stage = info.getValue()
-            const stageConfig: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-              'Order Confirmation': {
-                bg: 'bg-sky-500/10',
-                text: 'text-sky-400',
-                border: 'border-sky-500/20',
-                dot: 'bg-sky-400',
-              },
-              'Product Ready': {
-                bg: 'bg-amber-500/10',
-                text: 'text-amber-400',
-                border: 'border-amber-500/20',
-                dot: 'bg-amber-400',
-              },
-              'Ready For Delivery': {
-                bg: 'bg-violet-500/10',
-                text: 'text-violet-400',
-                border: 'border-violet-500/20',
-                dot: 'bg-violet-400',
-              },
-              'Product Delivered': {
-                bg: 'bg-emerald-500/10',
-                text: 'text-emerald-400',
-                border: 'border-emerald-500/20',
-                dot: 'bg-emerald-400',
-              },
-            }
-
-            const current = stageConfig[stage] || {
-              bg: 'bg-slate-500/10',
-              text: 'text-slate-400',
-              border: 'border-slate-500/20',
-              dot: 'bg-slate-400',
-            }
+            const color = stageColorMap.get(stage.toLowerCase())
 
             return (
               <span
-                className={cn(
-                  'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium tracking-tight border shadow-2xs backdrop-blur-xs transition-colors',
-                  current.bg,
-                  current.text,
-                  current.border
-                )}
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium tracking-tight border shadow-2xs backdrop-blur-xs transition-colors"
+                style={
+                  color
+                    ? {
+                        backgroundColor: `${color}15`,
+                        color: color,
+                        borderColor: `${color}40`,
+                      }
+                    : undefined
+                }
               >
-                <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', current.dot)} />
+                <span
+                  className="h-1.5 w-1.5 rounded-full shrink-0"
+                  style={color ? { backgroundColor: color } : undefined}
+                />
                 <span>{stage}</span>
               </span>
             )
@@ -298,10 +287,10 @@ export function OrdersPage({
         columnId: 'stage',
         title: 'Stage',
         type: 'select',
-        options: STAGES.filter((s) => s !== 'All').map((s) => ({ label: s, value: s })),
+        options: dynamicStages.map((s) => ({ label: s, value: s })),
       },
     ],
-    []
+    [dynamicStages]
   )
 
   const rowActions: DataTableRowAction<Order>[] = React.useMemo(
@@ -393,7 +382,7 @@ export function OrdersPage({
 
           {/* Quick Stage Filter Badges */}
           <div className="hidden md:flex items-center gap-1 border-l pl-3">
-            {STAGES.map((s) => (
+            {['All', ...dynamicStages].map((s) => (
               <button
                 key={s}
                 type="button"

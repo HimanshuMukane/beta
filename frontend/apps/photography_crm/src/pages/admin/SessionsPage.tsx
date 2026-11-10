@@ -1,17 +1,17 @@
 import * as React from 'react'
+import { Card } from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { Badge } from '@repo/ui/components/ui/badge'
+import { Input } from '@repo/ui/components/ui/input'
 import {
-  Card,
-  Button,
-  Badge,
-  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  toast,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/select'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { cn } from '@repo/ui/lib/utils'
 import {
   IconCalendar,
   IconClock,
@@ -24,9 +24,9 @@ import {
   IconExternalLink,
   IconUsers,
 } from '@tabler/icons-react'
-import type { ProjectSession, SessionStatus } from '../types/session'
-import { PROJECT_TYPES } from '../types/session'
-import { CreateSessionDrawer } from '../components/CreateSessionDrawer'
+import type { ProjectSession, SessionStatus } from '../../types/session'
+import { PROJECT_TYPES } from '../../types/session'
+import { CreateSessionDrawer } from '../../components/CreateSessionDrawer'
 
 interface SessionsPageProps {
   sessions: ProjectSession[]

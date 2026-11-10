@@ -1,12 +1,12 @@
+import { Input } from '@repo/ui/components/ui/input'
 import {
-  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/select'
+import { cn } from '@repo/ui/lib/utils'
 import { COUNTRY_CODES } from '../lib/formatters'
 
 interface PhoneInputFieldProps {

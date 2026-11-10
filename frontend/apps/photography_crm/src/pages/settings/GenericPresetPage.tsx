@@ -3,11 +3,9 @@ import {
   IconPlus,
   IconTrash,
 } from '@tabler/icons-react'
-import {
-  Button,
-  Input,
-  toast,
-} from '@repo/ui'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import { toast } from '@repo/ui/components/ui/sonner'
 
 interface PresetItem {
   id: string

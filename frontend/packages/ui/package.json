@@ -15,7 +15,8 @@
     "./kanban": "./src/components/kanban/kanban.tsx",
     "./login-form": "./src/components/login-form.tsx",
     "./signup-form": "./src/components/signup-form.tsx",
-    "./globals.css": "./src/globals.css"
+    "./globals.css": "./src/globals.css",
+    "./*": "./src/*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -1,12 +1,12 @@
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
 import {
-  Button,
-  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/select'
 import { IconCalendar, IconTrash, IconGripVertical } from '@tabler/icons-react'
 import type { ProjectSegment } from '../types/project'
 import { PROJECT_TYPES } from '../lib/formatters'

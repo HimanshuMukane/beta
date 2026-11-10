@@ -1,20 +1,22 @@
 import * as React from 'react'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import { Label } from '@repo/ui/components/ui/label'
 import {
-  Button,
-  Input,
-  Label,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+} from '@repo/ui/components/ui/dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  toast,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/select'
+import { toast } from '@repo/ui/components/ui/sonner'
 import type { ProjectExpenseItem } from '../types/project'
 
 interface ProjectExpenseModalProps {

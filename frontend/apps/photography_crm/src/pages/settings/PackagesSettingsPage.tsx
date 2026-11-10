@@ -7,19 +7,20 @@ import {
   IconTrendingUp,
   IconCopy,
 } from '@tabler/icons-react'
+import { Card } from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
 import {
-  Card,
-  Button,
-  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Textarea,
-  Badge,
-  toast,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/select'
+import { Textarea } from '@repo/ui/components/ui/textarea'
+import { Badge } from '@repo/ui/components/ui/badge'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { apiClient } from '@repo/ui/lib/api-client'
 import { DeliverablesDropdown } from '../../components/DeliverablesDropdown'
 import { settingsApi } from '../../api/settingsApi'
 
@@ -79,15 +80,59 @@ const SAMPLE_PACKAGES: StudioPackage[] = [
 
 export function PackagesSettingsPage() {
   const [packages, setPackages] = React.useState<StudioPackage[]>(SAMPLE_PACKAGES)
+  const [availableServiceGroups, setAvailableServiceGroups] = React.useState<string[]>(DEFAULT_SERVICE_GROUPS)
+  const [availableServices, setAvailableServices] = React.useState<Array<{ id: string; name: string; cost: number; groupName: string }>>([])
   const [viewMode, setViewMode] = React.useState<'list' | 'editor'>('list')
   const [editingPackageId, setEditingPackageId] = React.useState<string | null>(null)
 
+  // Load from /api/packages and /api/services
   React.useEffect(() => {
-    settingsApi.getSettings().then((store) => {
-      if (store.packages && store.packages.length > 0) {
-        setPackages(store.packages)
-      }
-    }).catch(() => {})
+    apiClient<StudioPackage[]>('/api/packages')
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPackages(data)
+        } else {
+          settingsApi.getSettings().then((store) => {
+            if (store.packages && store.packages.length > 0) {
+              setPackages(store.packages)
+            }
+          }).catch(() => { })
+        }
+      })
+      .catch(() => {
+        settingsApi.getSettings().then((store) => {
+          if (store.packages && store.packages.length > 0) {
+            setPackages(store.packages)
+          }
+        }).catch(() => { })
+      })
+
+    // Load available service groups and services from /api/services
+    apiClient<Array<{ id: string; group_name: string; services: any }>>('/api/services')
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const groups: string[] = []
+          const srvList: Array<{ id: string; name: string; cost: number; groupName: string }> = []
+          for (const grp of data) {
+            if (grp.group_name && !groups.includes(grp.group_name)) {
+              groups.push(grp.group_name)
+            }
+            if (Array.isArray(grp.services)) {
+              for (const s of grp.services) {
+                srvList.push({
+                  id: s.id,
+                  name: s.serviceName || s.name || '',
+                  cost: s.amount || s.cost || 200,
+                  groupName: grp.group_name,
+                })
+              }
+            }
+          }
+          if (groups.length > 0) setAvailableServiceGroups(groups)
+          if (srvList.length > 0) setAvailableServices(srvList)
+        }
+      })
+      .catch(() => { })
   }, [])
 
   // Editor Form State
@@ -126,25 +171,34 @@ export function PackagesSettingsPage() {
   }
 
   // Delete package
-  const handleDeletePackage = (id: string) => {
+  const handleDeletePackage = async (id: string) => {
+    try {
+      await apiClient(`/api/packages/${id}`, { method: 'DELETE' })
+    } catch { }
     setPackages((prev) => {
       const updated = prev.filter((p) => p.id !== id)
-      settingsApi.updateSettings({ packages: updated }).catch(() => {})
+      settingsApi.updateSettings({ packages: updated }).catch(() => { })
       return updated
     })
     toast.success('Package deleted')
   }
 
   // Duplicate package
-  const handleDuplicatePackage = (pkg: StudioPackage) => {
+  const handleDuplicatePackage = async (pkg: StudioPackage) => {
     const duplicated: StudioPackage = {
       ...pkg,
       id: `pkg-${Date.now()}`,
       name: `${pkg.name} (Copy)`,
     }
+    try {
+      await apiClient('/api/packages', {
+        method: 'POST',
+        body: JSON.stringify(duplicated),
+      })
+    } catch { }
     setPackages((prev) => {
       const updated = [duplicated, ...prev]
-      settingsApi.updateSettings({ packages: updated }).catch(() => {})
+      settingsApi.updateSettings({ packages: updated }).catch(() => { })
       return updated
     })
     toast.success('Package duplicated')
@@ -152,9 +206,10 @@ export function PackagesSettingsPage() {
 
   // Add new Service Group in editor
   const handleAddServiceGroup = () => {
+    const groupName = availableServiceGroups[0] || 'Evening Reception'
     const newGroup: PackageServiceGroup = {
       id: `grp-${Date.now()}`,
-      groupName: 'Wedding',
+      groupName,
       quantity: 1,
       services: [],
     }
@@ -168,10 +223,14 @@ export function PackagesSettingsPage() {
 
   // Add service inside group
   const handleAddServiceToGroup = (groupId: string, isCustom = false) => {
+    const group = serviceGroups.find((g) => g.id === groupId)
+    const grpName = group?.groupName || ''
+    const matchedPreset = availableServices.find((s) => s.groupName === grpName) || availableServices[0]
+
     const newService: PackageServiceItem = {
       id: `srv-${Date.now()}`,
-      name: isCustom ? 'Custom Service' : 'Candid Photography',
-      cost: 200,
+      name: isCustom ? 'Custom Service' : (matchedPreset?.name || 'Traditional Photography'),
+      cost: isCustom ? 0 : (matchedPreset?.cost || 200),
       quantity: 1,
       isCustom,
     }
@@ -218,7 +277,7 @@ export function PackagesSettingsPage() {
   }, [serviceGroups])
 
   // Save package handler
-  const handleSavePackage = () => {
+  const handleSavePackage = async () => {
     if (!packageName.trim()) {
       toast.error('Package Name is required')
       return
@@ -228,15 +287,29 @@ export function PackagesSettingsPage() {
       id: editingPackageId || `pkg-${Date.now()}`,
       name: packageName.trim(),
       description: packageDescription.trim(),
-      totalCost: totalCalculatedCost || 60000,
+      totalCost: totalCalculatedCost || 0,
       serviceGroups,
       deliverables: selectedDeliverables,
     }
 
+    try {
+      if (editingPackageId && !editingPackageId.startsWith('pkg-1')) {
+        await apiClient(`/api/packages/${editingPackageId}`, {
+          method: 'PUT',
+          body: JSON.stringify(saved),
+        })
+      } else {
+        await apiClient('/api/packages', {
+          method: 'POST',
+          body: JSON.stringify(saved),
+        })
+      }
+    } catch { }
+
     setPackages((prev) => {
       const exists = prev.some((p) => p.id === saved.id)
       const updated = exists ? prev.map((p) => (p.id === saved.id ? saved : p)) : [saved, ...prev]
-      settingsApi.updateSettings({ packages: updated }).catch(() => {})
+      settingsApi.updateSettings({ packages: updated }).catch(() => { })
       return updated
     })
 
@@ -418,7 +491,7 @@ export function PackagesSettingsPage() {
                           <SelectValue placeholder="Group Name (e.g. Wedding)" />
                         </SelectTrigger>
                         <SelectContent>
-                          {DEFAULT_SERVICE_GROUPS.map((g) => (
+                          {availableServiceGroups.map((g) => (
                             <SelectItem key={g} value={g} className="text-xs">
                               {g}
                             </SelectItem>

@@ -7,16 +7,17 @@ import {
   IconTrash,
   IconEye,
 } from '@tabler/icons-react'
+import { Badge } from '@repo/ui/components/ui/badge'
+import { Button } from '@repo/ui/components/ui/button'
 import {
-  Badge,
-  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/dropdown-menu'
+import { cn } from '@repo/ui/lib/utils'
 import type { Lead, PipelineStage } from '../types/lead'
+import { useWorkflows } from '../hooks/useWorkflows'
 
 interface LeadKanbanViewProps {
   leads: Lead[]
@@ -69,8 +70,17 @@ export function LeadKanbanView({
   onStageChange,
   onAddNewLead,
 }: LeadKanbanViewProps) {
+  const { workflows } = useWorkflows('lead')
   const [draggedLeadId, setDraggedLeadId] = React.useState<string | null>(null)
   const [dragOverColumn, setDragOverColumn] = React.useState<PipelineStage | null>(null)
+
+  const stageColorMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    ;(workflows || []).forEach((w) => {
+      map.set(w.stage.toLowerCase(), w.color_code)
+    })
+    return map
+  }, [workflows])
 
   // Drag and drop events
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
@@ -268,9 +278,26 @@ export function LeadKanbanView({
 
                       {/* Sub-Stage Pill */}
                       <div className="flex items-center justify-between pt-0.5">
-                        <span className="text-[11px] font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded-md">
-                          {lead.leadStage}
-                        </span>
+                        {(() => {
+                          const c = stageColorMap.get(lead.leadStage.toLowerCase())
+                          return (
+                            <span
+                              className="text-[11px] font-medium px-2 py-0.5 rounded-md"
+                              style={
+                                c
+                                  ? {
+                                      backgroundColor: `${c}20`,
+                                      borderColor: `${c}60`,
+                                      color: c,
+                                      borderWidth: '1px',
+                                    }
+                                  : undefined
+                              }
+                            >
+                              {lead.leadStage}
+                            </span>
+                          )
+                        })()}
                         <span className="text-xs font-bold text-foreground tabular-nums">
                           ₹{lead.quoteAmount.toLocaleString('en-IN')}
                         </span>

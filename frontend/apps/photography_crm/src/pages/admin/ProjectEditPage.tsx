@@ -17,35 +17,47 @@ import {
   IconCheck,
   IconInbox,
 } from '@tabler/icons-react'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import { Badge } from '@repo/ui/components/ui/badge'
 import {
-  Button,
-  Input,
-  Badge,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
+} from '@repo/ui/components/ui/card'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  RichTextEditor,
+} from '@repo/ui/components/ui/select'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+} from '@repo/ui/components/ui/dropdown-menu'
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  toast,
-  cn,
-} from '@repo/ui'
-import { CreateSessionDrawer } from '../components/CreateSessionDrawer'
-import { ProductionMatrixView } from '../components/ProductionMatrixView'
-import { ProjectExpenseModal } from '../components/ProjectExpenseModal'
-import { AddDeliverableModal } from '../components/AddDeliverableModal'
+} from '@repo/ui/components/ui/popover'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { cn } from '@repo/ui/lib/utils'
+import { useWorkflows } from '../../hooks/useWorkflows'
+
+const RichTextEditor = React.lazy(() =>
+  import('@repo/ui/components/rich-text-editor/rich-text-editor').then((m) => ({
+    default: m.RichTextEditor,
+  }))
+)
+import { CreateSessionDrawer } from '../../components/CreateSessionDrawer'
+import { ProductionMatrixView } from '../../components/ProductionMatrixView'
+import { ProjectExpenseModal } from '../../components/ProjectExpenseModal'
+import { AddDeliverableModal } from '../../components/AddDeliverableModal'
 import type {
   Project,
   ProjectStage,
@@ -55,7 +67,7 @@ import type {
   ProjectPrintingItem,
   CustomerDeliverable,
   ProjectExpenseItem,
-} from '../types/project'
+} from '../../types/project'
 
 interface ProjectEditPageProps {
   project: Project
@@ -109,11 +121,24 @@ export function ProjectEditPage({
   onUpdate,
   onDelete,
 }: ProjectEditPageProps) {
+  const { workflows } = useWorkflows('project')
   const [activeTab, setActiveTab] = React.useState<ProjectTab>('Documents')
   const [status, setStatus] = React.useState<ProjectStatus>(project.status)
   const [stage, setStage] = React.useState<ProjectStage>(project.stage)
   const [projectName, setProjectName] = React.useState(project.projectName)
   const [isEditingTitle, setIsEditingTitle] = React.useState(false)
+
+  const dynamicStages = React.useMemo(() => {
+    if (workflows && workflows.length > 0) {
+      return workflows.map((w) => w.stage)
+    }
+    return STAGES
+  }, [workflows])
+
+  const stageColor = React.useMemo(() => {
+    const item = workflows?.find((w) => w.stage.toLowerCase() === stage.toLowerCase())
+    return item?.color_code || '#2563eb'
+  }, [workflows, stage])
 
   // Sub-items states
   const [documents] = React.useState<ProjectDocument[]>(project.documents || [])
@@ -301,11 +326,14 @@ export function ProjectEditPage({
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] uppercase font-bold text-muted-foreground">Stage</span>
             <Select value={stage} onValueChange={(val) => handleStageChange(val as ProjectStage)}>
-              <SelectTrigger className="h-8 text-xs font-semibold rounded-full bg-blue-600 text-white hover:bg-blue-700 px-3 border-0 min-w-[120px]">
+              <SelectTrigger
+                className="h-8 text-xs font-semibold rounded-full text-white px-3 border-0 min-w-[120px]"
+                style={{ backgroundColor: stageColor }}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {STAGES.map((sg) => (
+                {dynamicStages.map((sg) => (
                   <SelectItem key={sg} value={sg} className="text-xs font-medium">
                     {sg}
                   </SelectItem>
@@ -1230,12 +1258,18 @@ export function ProjectEditPage({
           </CardHeader>
           <CardContent>
             <div className="min-h-[300px]">
-              <RichTextEditor
-                content={notes}
-                onChange={handleSaveNotes}
-                placeholder="Write private studio notes, client must-have shots, or shooting constraints..."
-                className="min-h-[260px] border rounded-xl"
-              />
+              <React.Suspense
+                fallback={
+                  <div className="h-[260px] w-full animate-pulse rounded-xl border border-input bg-muted/20" />
+                }
+              >
+                <RichTextEditor
+                  content={notes}
+                  onChange={handleSaveNotes}
+                  placeholder="Write private studio notes, client must-have shots, or shooting constraints..."
+                  className="min-h-[260px] border rounded-xl"
+                />
+              </React.Suspense>
             </div>
           </CardContent>
         </Card>

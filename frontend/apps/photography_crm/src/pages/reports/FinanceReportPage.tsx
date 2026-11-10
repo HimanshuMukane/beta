@@ -4,9 +4,9 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  Button,
-  toast,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { toast } from '@repo/ui/components/ui/sonner'
 import {
   IconChartPie,
   IconTrendingUp,

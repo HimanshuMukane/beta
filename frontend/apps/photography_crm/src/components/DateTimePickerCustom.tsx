@@ -10,9 +10,9 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Button,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/popover'
+import { Button } from '@repo/ui/components/ui/button'
+import { cn } from '@repo/ui/lib/utils'
 
 interface DateTimePickerCustomProps {
   value: string // ISO string or "YYYY-MM-DDTHH:mm"

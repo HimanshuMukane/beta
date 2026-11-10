@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"core/utils"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -21,7 +22,7 @@ func RolesListHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	rows, err := db.QueryContext(r.Context(), "SELECT id, name FROM roles WHERE name != 'admin' AND deleted_at IS NULL ORDER BY name ASC")
+	rows, err := db.QueryContext(r.Context(), "SELECT id, name FROM roles WHERE LOWER(name) != 'admin' AND deleted_at IS NULL ORDER BY name ASC")
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -92,11 +93,10 @@ func DeleteRoleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := db.ExecContext(r.Context(), "DELETE FROM roles WHERE id = ?", id)
+	_, err := db.ExecContext(r.Context(), "UPDATE roles SET deleted_at = NOW(6) WHERE id = ?", id)
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to delete role"})
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
-

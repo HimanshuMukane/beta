@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { apiClient } from '@repo/ui/lib/api-client'
 import {
   IconPlus,
   IconMinus,
@@ -11,21 +12,25 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  Button,
-  Input,
+} from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+} from '@repo/ui/components/ui/select'
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  toast,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/dialog'
+import { toast } from '@repo/ui/components/ui/sonner'
 import { settingsApi } from '../../api/settingsApi'
 
 export interface ServiceItem {
@@ -62,16 +67,80 @@ export function ServicesSettingsPage() {
   const [serviceGroups, setServiceGroups] = React.useState<string[]>(DEFAULT_SERVICE_GROUPS)
   const [services, setServices] = React.useState<ServiceItem[]>(DEFAULT_SERVICES)
 
+  // Load from /api/services database table first, fallback to studio_settings
   React.useEffect(() => {
-    settingsApi.getSettings().then((store) => {
-      if (store.serviceGroups && store.serviceGroups.length > 0) {
-        setServiceGroups(store.serviceGroups)
-      }
-      if (store.services && store.services.length > 0) {
-        setServices(store.services)
-      }
-    }).catch(() => {})
+    apiClient<Array<{ id: string; group_name: string; services: any }>>('/api/services')
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const loadedGroups: string[] = []
+          const loadedServices: ServiceItem[] = []
+          for (const item of data) {
+            if (item.group_name && !loadedGroups.includes(item.group_name)) {
+              loadedGroups.push(item.group_name)
+            }
+            if (Array.isArray(item.services)) {
+              for (const s of item.services) {
+                loadedServices.push({
+                  id: s.id || `srv-${Date.now()}-${Math.random()}`,
+                  groupName: item.group_name,
+                  serviceName: s.serviceName || s.name || '',
+                  quantity: s.quantity || s.qty || 1,
+                  amount: s.amount || s.cost || 0,
+                })
+              }
+            }
+          }
+          if (loadedGroups.length > 0) {
+            setServiceGroups(loadedGroups)
+          }
+          if (loadedServices.length > 0) {
+            setServices(loadedServices)
+          }
+        } else {
+          // If empty, fallback to settings
+          settingsApi.getSettings().then((store) => {
+            if (store.serviceGroups && store.serviceGroups.length > 0) {
+              setServiceGroups(store.serviceGroups)
+            }
+            if (store.services && store.services.length > 0) {
+              setServices(store.services)
+            }
+          }).catch(() => { })
+        }
+      })
+      .catch(() => {
+        settingsApi.getSettings().then((store) => {
+          if (store.serviceGroups && store.serviceGroups.length > 0) {
+            setServiceGroups(store.serviceGroups)
+          }
+          if (store.services && store.services.length > 0) {
+            setServices(store.services)
+          }
+        }).catch(() => { })
+      })
   }, [])
+
+  // Sync to backend /api/services batch table
+  const syncToDatabase = async (currentServices: ServiceItem[], currentGroups: string[]) => {
+    try {
+      const groupsPayload = currentGroups.map((grpName) => {
+        const groupServices = currentServices.filter((s) => s.groupName === grpName)
+        return {
+          group_name: grpName,
+          services: groupServices,
+        }
+      })
+      await apiClient('/api/services/batch', {
+        method: 'PUT',
+        body: JSON.stringify({ groups: groupsPayload }),
+      })
+      await settingsApi.updateSettings({ services: currentServices, serviceGroups: currentGroups })
+      return true
+    } catch {
+      await settingsApi.updateSettings({ services: currentServices, serviceGroups: currentGroups })
+      return false
+    }
+  }
 
   // Manage Service Groups Modal State (matching Image 2)
   const [isManageGroupsOpen, setIsManageGroupsOpen] = React.useState(false)
@@ -113,7 +182,7 @@ export function ServicesSettingsPage() {
     setServiceGroups(editingGroups)
     setIsManageGroupsOpen(false)
     try {
-      await settingsApi.updateSettings({ serviceGroups: editingGroups })
+      await syncToDatabase(services, editingGroups)
       toast.success('Service groups updated successfully')
     } catch {
       toast.error('Failed to save service groups to database')
@@ -122,7 +191,7 @@ export function ServicesSettingsPage() {
 
   const handleSaveAllServices = async () => {
     try {
-      await settingsApi.updateSettings({ services, serviceGroups })
+      await syncToDatabase(services, serviceGroups)
       toast.success('Services saved successfully')
     } catch {
       toast.error('Failed to save services to database')
@@ -142,7 +211,7 @@ export function ServicesSettingsPage() {
   const handleRemoveService = (id: string) => {
     setServices((prev) => {
       const updated = prev.filter((s) => s.id !== id)
-      settingsApi.updateSettings({ services: updated }).catch(() => {})
+      settingsApi.updateSettings({ services: updated }).catch(() => { })
       return updated
     })
     toast.info('Service removed')
@@ -163,7 +232,7 @@ export function ServicesSettingsPage() {
 
     const updated = [...services, newService]
     setServices(updated)
-    settingsApi.updateSettings({ services: updated }).catch(() => {})
+    settingsApi.updateSettings({ services: updated }).catch(() => { })
     setNewRowName('')
     setNewRowQty(1)
     setNewRowAmount(0)

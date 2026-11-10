@@ -1,6 +1,10 @@
 import * as React from 'react'
-import { Chart, Card, CardContent } from '@repo/ui'
+import { Card, CardContent } from '@repo/ui/components/ui/card'
 import type { EChartsOption } from 'echarts'
+
+const Chart = React.lazy(() =>
+  import('@repo/ui/components/charts/chart').then((m) => ({ default: m.Chart }))
+)
 
 interface BillingHeroProps {
   cards: {
@@ -169,7 +173,9 @@ export function BillingHero({
           </div>
 
           <div className="w-full flex-1 min-h-[190px]">
-            <Chart option={chartOption} height={190} />
+            <React.Suspense fallback={<div className="h-[190px] w-full animate-pulse rounded-lg bg-muted/30" />}>
+              <Chart option={chartOption} height={190} />
+            </React.Suspense>
           </div>
         </div>
       </div>

@@ -7,25 +7,30 @@ import {
   IconCheck,
   IconLayersSubtract,
 } from '@tabler/icons-react'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
 import {
-  Button,
-  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+} from '@repo/ui/components/ui/select'
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
+} from '@repo/ui/components/ui/dialog'
+import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-  toast,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/tooltip'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { apiClient } from '@repo/ui/lib/api-client'
 import { useStudioSettings } from '../../hooks/useStudioSettings'
 
 export interface DeliverablePresetItem {
@@ -60,14 +65,60 @@ export function DeliverablesSettingsPage() {
   const [newGroupName, setNewGroupName] = React.useState('')
   const [filterGroup, setFilterGroup] = React.useState<string>('all')
 
+  // Load from /api/deliverables table
   React.useEffect(() => {
-    if (settings?.deliverablesPresets) {
-      setItems(settings.deliverablesPresets)
-    }
-    if (settings?.deliverableGroups) {
-      setGroups(settings.deliverableGroups)
-    }
+    apiClient<Array<{ id: string; group_name: string; deliverables: any }>>('/api/deliverables')
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const loadedGroups: string[] = []
+          const loadedItems: DeliverablePresetItem[] = []
+          for (const grp of data) {
+            if (grp.group_name && !loadedGroups.includes(grp.group_name)) {
+              loadedGroups.push(grp.group_name)
+            }
+            if (Array.isArray(grp.deliverables)) {
+              for (const d of grp.deliverables) {
+                loadedItems.push({
+                  id: d.id || `del-${Date.now()}-${Math.random()}`,
+                  groupName: grp.group_name,
+                  name: typeof d === 'string' ? d : d.name || '',
+                })
+              }
+            }
+          }
+          if (loadedGroups.length > 0) setGroups(loadedGroups)
+          if (loadedItems.length > 0) setItems(loadedItems)
+        } else if (settings?.deliverablesPresets) {
+          setItems(settings.deliverablesPresets)
+          if (settings.deliverableGroups) setGroups(settings.deliverableGroups)
+        }
+      })
+      .catch(() => {
+        if (settings?.deliverablesPresets) setItems(settings.deliverablesPresets)
+        if (settings?.deliverableGroups) setGroups(settings.deliverableGroups)
+      })
   }, [settings?.deliverablesPresets, settings?.deliverableGroups])
+
+  const syncToDatabase = async (currentItems: DeliverablePresetItem[], currentGroups: string[]) => {
+    try {
+      const groupsPayload = currentGroups.map((grpName) => {
+        const delivsInGrp = currentItems.filter((i) => i.groupName === grpName)
+        return {
+          group_name: grpName,
+          deliverables: delivsInGrp,
+        }
+      })
+      await apiClient('/api/deliverables/batch', {
+        method: 'PUT',
+        body: JSON.stringify({ groups: groupsPayload }),
+      })
+      await updateSettings({ deliverablesPresets: currentItems, deliverableGroups: currentGroups })
+      return true
+    } catch {
+      await updateSettings({ deliverablesPresets: currentItems, deliverableGroups: currentGroups })
+      return false
+    }
+  }
 
   const handleUpdate = (id: string, field: keyof DeliverablePresetItem, value: string) => {
     setItems((prev) =>
@@ -85,14 +136,14 @@ export function DeliverablesSettingsPage() {
     setItems((prev) => [...prev, newItem])
   }
 
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = async (id: string) => {
     const updated = items.filter((item) => item.id !== id)
     setItems(updated)
-    updateSettings({ deliverablesPresets: updated })
+    await syncToDatabase(updated, groups)
     toast.success('Deliverable removed')
   }
 
-  const handleAddGroup = () => {
+  const handleAddGroup = async () => {
     if (!newGroupName.trim()) return
     const trimmed = newGroupName.trim()
     if (groups.includes(trimmed)) {
@@ -101,13 +152,13 @@ export function DeliverablesSettingsPage() {
     }
     const updatedGroups = [...groups, trimmed]
     setGroups(updatedGroups)
-    updateSettings({ deliverableGroups: updatedGroups })
     setNewGroupName('')
     setIsGroupModalOpen(false)
+    await syncToDatabase(items, updatedGroups)
     toast.success(`Group "${trimmed}" created`)
   }
 
-  const handleDeleteGroup = (groupToDelete: string) => {
+  const handleDeleteGroup = async (groupToDelete: string) => {
     if (groups.length <= 1) {
       toast.error('At least one group must remain')
       return
@@ -119,14 +170,14 @@ export function DeliverablesSettingsPage() {
       i.groupName === groupToDelete ? { ...i, groupName: fallback } : i
     )
     setItems(updatedItems)
-    updateSettings({ deliverableGroups: updatedGroups, deliverablesPresets: updatedItems })
+    await syncToDatabase(updatedItems, updatedGroups)
     toast.success(`Removed group "${groupToDelete}"`)
   }
 
-  const handleSaveAll = () => {
+  const handleSaveAll = async () => {
     const valid = items.filter((i) => i.name.trim().length > 0)
     setItems(valid)
-    updateSettings({ deliverablesPresets: valid, deliverableGroups: groups })
+    await syncToDatabase(valid, groups)
     toast.success('Deliverables presets saved successfully')
   }
 

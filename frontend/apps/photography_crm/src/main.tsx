@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { TooltipProvider } from '@repo/ui'
+import { TooltipProvider } from '@repo/ui/components/ui/tooltip'
 import { queryClient } from './lib/queryClient'
 import { AppErrorBoundary, initGlobalFrontendErrorListeners } from './components/AppErrorBoundary'
 import App from './App'

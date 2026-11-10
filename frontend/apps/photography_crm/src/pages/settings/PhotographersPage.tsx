@@ -9,26 +9,27 @@ import {
   IconMail,
   IconBriefcase,
 } from '@tabler/icons-react'
+import { Card, CardContent } from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import { Label } from '@repo/ui/components/ui/label'
 import {
-  Card,
-  CardContent,
-  Button,
-  Input,
-  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Badge,
+} from '@repo/ui/components/ui/select'
+import { Badge } from '@repo/ui/components/ui/badge'
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  toast,
-  apiClient,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/dialog'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { apiClient } from '@repo/ui/lib/api-client'
 import type { TeamDesignation, CrewMember } from '../../types/settings'
 import { settingsApi } from '../../api/settingsApi'
 import { PhoneInputField } from '../../components/PhoneInputField'
@@ -37,19 +38,35 @@ export function PhotographersPage() {
   const [designations, setDesignations] = React.useState<TeamDesignation[]>([])
   const [crewMembers, setCrewMembers] = React.useState<CrewMember[]>([])
 
-  React.useEffect(() => {
-    settingsApi.getSettings().then((s) => {
-      if (s.crewMembers) setCrewMembers(s.crewMembers)
-    }).catch(console.error)
+  const loadData = React.useCallback(() => {
+    apiClient<CrewMember[]>('/api/crew')
+      .then((users) => {
+        if (Array.isArray(users)) {
+          setCrewMembers(users)
+        }
+      })
+      .catch(() => {
+        settingsApi.getSettings().then((s) => {
+          if (s.crewMembers) setCrewMembers(s.crewMembers)
+        }).catch(console.error)
+      })
 
     apiClient<TeamDesignation[]>('/api/roles')
       .then((roles) => {
         if (Array.isArray(roles)) {
-          setDesignations(roles)
+          // Never show admin designation; no crew member can be admin
+          const nonAdminRoles = roles.filter(
+            (r) => r.name.toLowerCase() !== 'admin'
+          )
+          setDesignations(nonAdminRoles)
         }
       })
       .catch(console.error)
   }, [])
+
+  React.useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const [isDesignationsDrawerOpen, setIsDesignationsDrawerOpen] = React.useState(false)
   const [newDesignationInput, setNewDesignationInput] = React.useState('')
@@ -59,14 +76,22 @@ export function PhotographersPage() {
   const [countryCode, setCountryCode] = React.useState('+91')
   const [mobileNo, setMobileNo] = React.useState('')
   const [email, setEmail] = React.useState('')
-  const [selectedDesignation, setSelectedDesignation] = React.useState(
-    designations[0]?.name || 'Traditional Photographer'
-  )
+  const [selectedDesignation, setSelectedDesignation] = React.useState('')
   const [note, setNote] = React.useState('')
+
+  React.useEffect(() => {
+    if (!selectedDesignation && designations.length > 0) {
+      setSelectedDesignation(designations[0]?.name || '')
+    }
+  }, [designations, selectedDesignation])
 
   const handleAddDesignation = async () => {
     const name = newDesignationInput.trim()
     if (!name) return
+    if (name.toLowerCase() === 'admin') {
+      toast.error('Cannot create or use admin designation for crew')
+      return
+    }
     try {
       const created = await apiClient<TeamDesignation>('/api/roles', {
         method: 'POST',
@@ -91,7 +116,7 @@ export function PhotographersPage() {
   }
 
   // Crew Member handlers
-  const handleCreateCrewMember = (e: React.FormEvent) => {
+  const handleCreateCrewMember = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!fullName.trim()) {
       toast.error('Full name is required')
@@ -102,32 +127,60 @@ export function PhotographersPage() {
       return
     }
 
-    const newCrew: CrewMember = {
-      id: `crew-${Date.now()}`,
+    const matchedRole = designations.find((d) => d.name === selectedDesignation)
+    const effectiveDesignation = selectedDesignation || designations[0]?.name || 'Photographer'
+
+    const payload = {
       fullName: fullName.trim(),
       countryCode,
       mobileNo: mobileNo.trim(),
       email: email.trim(),
-      designation: selectedDesignation,
+      designation: effectiveDesignation,
+      role_id: matchedRole?.id,
       note: note.trim() || undefined,
     }
 
-    const updated = [newCrew, ...crewMembers]
-    setCrewMembers(updated)
-    settingsApi.updateSettings({ crewMembers: updated }).catch(console.error)
-    setIsAddCrewDrawerOpen(false)
-    setFullName('')
-    setMobileNo('')
-    setEmail('')
-    setNote('')
-    toast.success(`Added crew member ${newCrew.fullName}`)
+    try {
+      const created = await apiClient<CrewMember>('/api/crew', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      setCrewMembers((prev) => [created, ...prev])
+      setIsAddCrewDrawerOpen(false)
+      setFullName('')
+      setMobileNo('')
+      setEmail('')
+      setNote('')
+      toast.success(`Added crew member ${created.fullName}`)
+    } catch {
+      // Fallback to local settings store if API fails
+      const fallbackCrew: CrewMember = {
+        id: `crew-${Date.now()}`,
+        ...payload,
+      }
+      const updated = [fallbackCrew, ...crewMembers]
+      setCrewMembers(updated)
+      settingsApi.updateSettings({ crewMembers: updated }).catch(console.error)
+      setIsAddCrewDrawerOpen(false)
+      setFullName('')
+      setMobileNo('')
+      setEmail('')
+      setNote('')
+      toast.success(`Added crew member ${fallbackCrew.fullName}`)
+    }
   }
 
-  const handleDeleteCrewMember = (id: string) => {
-    const updated = crewMembers.filter((c) => c.id !== id)
-    setCrewMembers(updated)
-    settingsApi.updateSettings({ crewMembers: updated }).catch(console.error)
-    toast.success('Crew member removed')
+  const handleDeleteCrewMember = async (id: string) => {
+    try {
+      await apiClient(`/api/crew/${id}`, { method: 'DELETE' })
+      setCrewMembers((prev) => prev.filter((c) => c.id !== id))
+      toast.success('Crew member removed')
+    } catch {
+      const updated = crewMembers.filter((c) => c.id !== id)
+      setCrewMembers(updated)
+      settingsApi.updateSettings({ crewMembers: updated }).catch(console.error)
+      toast.success('Crew member removed')
+    }
   }
 
   return (

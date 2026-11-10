@@ -3,21 +3,21 @@ import {
   IconArrowLeft,
   IconDeviceFloppy,
 } from '@tabler/icons-react'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import { Label } from '@repo/ui/components/ui/label'
 import {
-  Button,
-  Input,
-  Label,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-  toast,
-} from '@repo/ui'
-import type { Project, ProjectSegment, ProjectType } from '../types/project'
-import { LeadSourceCombobox } from '../components/LeadSourceCombobox'
-import { PhoneInputField } from '../components/PhoneInputField'
-import { ProjectSegmentsEditor } from '../components/ProjectSegmentsEditor'
+} from '@repo/ui/components/ui/card'
+import { toast } from '@repo/ui/components/ui/sonner'
+import type { Project, ProjectSegment, ProjectType } from '../../types/project'
+import { LeadSourceCombobox } from '../../components/LeadSourceCombobox'
+import { PhoneInputField } from '../../components/PhoneInputField'
+import { ProjectSegmentsEditor } from '../../components/ProjectSegmentsEditor'
 
 interface ProjectCreatePageProps {
   initialData?: Partial<Project>

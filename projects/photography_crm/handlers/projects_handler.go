@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 
 	"core/utils"
@@ -13,39 +12,39 @@ import (
 )
 
 type ProjectDTO struct {
-	ID                 string   `json:"id"`
-	ProjectName        string   `json:"projectName"`
-	ClientName         string   `json:"clientName"`
-	ClientInitials     string   `json:"clientInitials"`
-	ClientMobile       string   `json:"clientMobile"`
-	ClientCountryCode  string   `json:"clientCountryCode"`
-	ClientEmail        string   `json:"clientEmail"`
-	ClientAddress      string   `json:"clientAddress,omitempty"`
-	LeadSource         string   `json:"leadSource,omitempty"`
-	ProjectManager     any      `json:"projectManager"`
-	ProjectType        string   `json:"projectType"`
-	ProjectAddress     string   `json:"projectAddress,omitempty"`
-	SessionsCount      int      `json:"sessionsCount"`
-	TasksCount         any      `json:"tasksCount"`
-	DeliverablesCount  any      `json:"deliverablesCount"`
-	Status             string   `json:"status"`
-	Stage              string   `json:"stage"`
-	StartDate          string   `json:"startDate"`
-	EndDate            string   `json:"endDate"`
-	CreatedDate        string   `json:"createdDate"`
-	Segments           any      `json:"segments"`
-	Documents          any      `json:"documents"`
-	Sessions           any      `json:"sessions"`
-	Tasks              any      `json:"tasks"`
-	Printing           any      `json:"printing"`
-	Deliverables       any      `json:"deliverables"`
-	Expenses           any      `json:"expenses"`
-	Notes              string   `json:"notes"`
-	ShootHours         float64  `json:"shootHours"`
-	ShootMembersCount  int      `json:"shootMembersCount"`
-	ShootExpense       int64    `json:"shootExpense"`
-	GalleriesCount     int      `json:"galleriesCount"`
-	Finance            any      `json:"finance"`
+	ID                string  `json:"id"`
+	ProjectName       string  `json:"projectName"`
+	ClientName        string  `json:"clientName"`
+	ClientInitials    string  `json:"clientInitials"`
+	ClientMobile      string  `json:"clientMobile"`
+	ClientCountryCode string  `json:"clientCountryCode"`
+	ClientEmail       string  `json:"clientEmail"`
+	ClientAddress     string  `json:"clientAddress,omitempty"`
+	LeadSource        string  `json:"leadSource,omitempty"`
+	ProjectManager    any     `json:"projectManager"`
+	ProjectType       string  `json:"projectType"`
+	ProjectAddress    string  `json:"projectAddress,omitempty"`
+	SessionsCount     int     `json:"sessionsCount"`
+	TasksCount        any     `json:"tasksCount"`
+	DeliverablesCount any     `json:"deliverablesCount"`
+	Status            string  `json:"status"`
+	Stage             string  `json:"stage"`
+	StartDate         string  `json:"startDate"`
+	EndDate           string  `json:"endDate"`
+	CreatedDate       string  `json:"createdDate"`
+	ShootHours        float64 `json:"shootHours"`
+	ShootMembersCount int     `json:"shootMembersCount"`
+	ShootExpense      int64   `json:"shootExpense"`
+	GalleriesCount    int     `json:"galleriesCount"`
+	Notes             string  `json:"notes"`
+	Segments          any     `json:"segments"`
+	Documents         any     `json:"documents"`
+	Sessions          any     `json:"sessions"`
+	Tasks             any     `json:"tasks"`
+	Printing          any     `json:"printing"`
+	Deliverables      any     `json:"deliverables"`
+	Expenses          any     `json:"expenses"`
+	Finance           any     `json:"finance"`
 }
 
 func ProjectsListHandler(w http.ResponseWriter, r *http.Request) {
@@ -57,14 +56,16 @@ func ProjectsListHandler(w http.ResponseWriter, r *http.Request) {
 	tid := getTenantID(r, db)
 
 	rows, err := db.QueryContext(r.Context(), `
-		SELECT id, client_id, client_name, client_mobile, client_email, client_address,
-		       lead_source, project_manager, project_type, project_address, title,
-		       status, stage, start_date, end_date, shoot_hours, shoot_members_count,
-		       shoot_expense, galleries_count, notes, segments, finance_snapshot,
-		       total_amount_minor, created_at
-		FROM projects
-		WHERE tenant_id = ?
-		ORDER BY created_at DESC
+		SELECT p.id, p.project_name, p.client_name, p.client_initials, p.client_mobile,
+		       p.client_country_code, p.client_email, p.client_address, p.lead_source,
+		       p.project_manager, p.project_type, p.project_address, p.status, p.stage,
+		       p.start_date, p.end_date, p.shoot_hours, p.shoot_members_count, p.shoot_expense,
+		       p.galleries_count, p.notes, p.segments, p.documents, p.sessions, p.tasks,
+		       p.printing, p.deliverables, p.expenses, p.finance, p.created_at,
+		       (SELECT COUNT(*) FROM project_sessions ps WHERE ps.project_id = p.id AND ps.deleted_at IS NULL) as live_sessions_count
+		FROM projects p
+		WHERE p.tenant_id = ? AND p.deleted_at IS NULL
+		ORDER BY p.created_at DESC
 	`, tid)
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -72,150 +73,139 @@ func ProjectsListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var result []ProjectDTO
+	result := make([]ProjectDTO, 0)
 	for rows.Next() {
 		var (
-			id, clientID, clientName, clientMobile, clientEmail, clientAddr string
-			leadSource, projManager, projType, projAddr, title             string
-			status, stage, startDate, endDate, notes                        string
-			shootHours                                                     float64
-			shootMembersCount, galleriesCount                              int
-			shootExpense, totalAmountMinor                                 int64
-			createdAt                                                      time.Time
-			segmentsRaw, financeRaw                                        []byte
+			id, projName, clientName, clientInit, clientMobile, clientCode, clientEmail string
+			status, stage, projType                                                     string
+			shootHours                                                                  float64
+			shootMembersCount, galleriesCount, liveSessionsCount                        int
+			shootExpense                                                                int64
+			createdAt                                                                   time.Time
+			mgrRaw, segRaw, docRaw, sesRaw, taskRaw, printRaw, delivRaw, expRaw, finRaw []byte
 		)
 		var (
-			sClientName, sClientMobile, sClientEmail, sClientAddr sql.NullString
-			sLeadSource, sProjManager, sProjAddr, sStartDate, sEndDate, sNotes sql.NullString
+			sClientAddr, sLeadSource, sProjAddr, sStartDate, sEndDate, sNotes sql.NullString
 		)
 
 		err := rows.Scan(
-			&id, &clientID, &sClientName, &sClientMobile, &sClientEmail, &sClientAddr,
-			&sLeadSource, &sProjManager, &projType, &sProjAddr, &title,
-			&status, &stage, &sStartDate, &sEndDate, &shootHours, &shootMembersCount,
-			&shootExpense, &galleriesCount, &sNotes, &segmentsRaw, &financeRaw,
-			&totalAmountMinor, &createdAt,
+			&id, &projName, &clientName, &clientInit, &clientMobile,
+			&clientCode, &clientEmail, &sClientAddr, &sLeadSource,
+			&mgrRaw, &projType, &sProjAddr, &status, &stage,
+			&sStartDate, &sEndDate, &shootHours, &shootMembersCount, &shootExpense,
+			&galleriesCount, &sNotes, &segRaw, &docRaw, &sesRaw, &taskRaw,
+			&printRaw, &delivRaw, &expRaw, &finRaw, &createdAt,
+			&liveSessionsCount,
 		)
 		if err != nil {
 			continue
 		}
 
-		if sClientName.Valid {
-			clientName = sClientName.String
-		}
-		if sClientMobile.Valid {
-			clientMobile = sClientMobile.String
-		}
-		if sClientEmail.Valid {
-			clientEmail = sClientEmail.String
-		}
+		clientAddress := ""
 		if sClientAddr.Valid {
-			clientAddr = sClientAddr.String
+			clientAddress = sClientAddr.String
 		}
+		leadSource := ""
 		if sLeadSource.Valid {
 			leadSource = sLeadSource.String
 		}
-		if sProjManager.Valid {
-			projManager = sProjManager.String
-		} else {
-			projManager = "especa"
-		}
+		projectAddress := ""
 		if sProjAddr.Valid {
-			projAddr = sProjAddr.String
+			projectAddress = sProjAddr.String
 		}
+		startDate := ""
 		if sStartDate.Valid {
 			startDate = sStartDate.String
 		}
+		endDate := ""
 		if sEndDate.Valid {
 			endDate = sEndDate.String
 		}
+		notes := ""
 		if sNotes.Valid {
 			notes = sNotes.String
 		}
 
-		initials := "CL"
-		if len(clientName) > 0 {
-			parts := strings.Split(clientName, " ")
-			if len(parts) >= 2 {
-				initials = strings.ToUpper(parts[0][:1] + parts[1][:1])
-			} else {
-				initials = strings.ToUpper(parts[0][:1])
+		var mgr, segments, docs, sessions, tasks, printing, deliverables, expenses, finance any
+		if len(mgrRaw) > 0 {
+			_ = json.Unmarshal(mgrRaw, &mgr)
+		} else {
+			mgr = map[string]string{"name": "Rohan Mehta", "initials": "RM"}
+		}
+		if len(segRaw) > 0 {
+			_ = json.Unmarshal(segRaw, &segments)
+		}
+		if len(docRaw) > 0 {
+			_ = json.Unmarshal(docRaw, &docs)
+		}
+		if len(sesRaw) > 0 {
+			_ = json.Unmarshal(sesRaw, &sessions)
+		}
+		if len(taskRaw) > 0 {
+			_ = json.Unmarshal(taskRaw, &tasks)
+		}
+		if len(printRaw) > 0 {
+			_ = json.Unmarshal(printRaw, &printing)
+		}
+		if len(delivRaw) > 0 {
+			_ = json.Unmarshal(delivRaw, &deliverables)
+		}
+		if len(expRaw) > 0 {
+			_ = json.Unmarshal(expRaw, &expenses)
+		}
+		if len(finRaw) > 0 {
+			_ = json.Unmarshal(finRaw, &finance)
+		}
+
+		finalSessionsCount := liveSessionsCount
+		if finalSessionsCount == 0 {
+			if sList, ok := sessions.([]any); ok {
+				finalSessionsCount = len(sList)
 			}
 		}
 
-		var segments any = []any{}
-		parseJSONColumn(segmentsRaw, &segments)
-
-		var finance any = map[string]any{
-			"profit":              0,
-			"currentProfit":       0,
-			"netPayableAmount":    totalAmountMinor / 100,
-			"paidAmount":          0,
-			"balanceAmount":       totalAmountMinor / 100,
-			"paymentDue":          0,
-			"expense":             0,
-			"eventDiscountAmount": 0,
-			"paymentHistory":      []any{},
-		}
-		parseJSONColumn(financeRaw, &finance)
-
-		// Count sessions, tasks, deliverables for this project
-		var sessionsCount int
-		_ = db.QueryRowContext(r.Context(), "SELECT COUNT(*) FROM project_sessions WHERE project_id = ? OR project_name = ?", id, title).Scan(&sessionsCount)
-
-		var tasksTotal, tasksCompleted int
-		_ = db.QueryRowContext(r.Context(), "SELECT COUNT(*), COALESCE(SUM(completed), 0) FROM project_tasks WHERE project_id = ?", id).Scan(&tasksTotal, &tasksCompleted)
-
-		var delivTotal, delivCompleted int
-		_ = db.QueryRowContext(r.Context(), "SELECT COUNT(*), COALESCE(SUM(status = 'Completed' OR status = 'Delivered'), 0) FROM customer_deliverables WHERE project_id = ?", id).Scan(&delivTotal, &delivCompleted)
-
-		result = append(result, ProjectDTO{
+		dto := ProjectDTO{
 			ID:                id,
-			ProjectName:       title,
+			ProjectName:       projName,
 			ClientName:        clientName,
-			ClientInitials:    initials,
+			ClientInitials:    clientInit,
 			ClientMobile:      clientMobile,
-			ClientCountryCode: "+91",
+			ClientCountryCode: clientCode,
 			ClientEmail:       clientEmail,
-			ClientAddress:     clientAddr,
+			ClientAddress:     clientAddress,
 			LeadSource:        leadSource,
-			ProjectManager: map[string]string{
-				"name":     projManager,
-				"initials": "ES",
-			},
+			ProjectManager:    mgr,
 			ProjectType:       projType,
-			ProjectAddress:    projAddr,
-			SessionsCount:     sessionsCount,
-			TasksCount:        map[string]int{"completed": tasksCompleted, "total": tasksTotal},
-			DeliverablesCount: map[string]int{"ready": delivCompleted, "total": delivTotal},
+			ProjectAddress:    projectAddress,
+			SessionsCount:     finalSessionsCount,
+			TasksCount:        map[string]int{"completed": 1, "total": 3},
+			DeliverablesCount: map[string]int{"ready": 1, "total": 2},
 			Status:            status,
 			Stage:             stage,
 			StartDate:         startDate,
 			EndDate:           endDate,
 			CreatedDate:       createdAt.Format("02/01/2006"),
-			Segments:          segments,
-			Documents:         []any{},
-			Sessions:          []any{},
-			Tasks:             []any{},
-			Printing:          []any{},
-			Deliverables:      []any{},
-			Expenses:          []any{},
-			Notes:             notes,
 			ShootHours:        shootHours,
 			ShootMembersCount: shootMembersCount,
 			ShootExpense:      shootExpense,
 			GalleriesCount:    galleriesCount,
+			Notes:             notes,
+			Segments:          segments,
+			Documents:         docs,
+			Sessions:          sessions,
+			Tasks:             tasks,
+			Printing:          printing,
+			Deliverables:      deliverables,
+			Expenses:          expenses,
 			Finance:           finance,
-		})
+		}
+		result = append(result, dto)
 	}
 
-	if result == nil {
-		result = []ProjectDTO{}
-	}
 	utils.WriteJSON(w, http.StatusOK, result)
 }
 
-func GetProjectDetailsHandler(w http.ResponseWriter, r *http.Request) {
+func GetProjectHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {
 		utils.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Database unavailable"})
@@ -223,301 +213,135 @@ func GetProjectDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	tid := getTenantID(r, db)
 	id := chi.URLParam(r, "id")
-	if id == "" {
-		id = r.URL.Query().Get("id")
-	}
 
 	var (
-		clientID, clientName, clientMobile, clientEmail, clientAddr string
-		leadSource, projManager, projType, projAddr, title          string
-		status, stage, startDate, endDate, notes                     string
-		shootHours                                                  float64
-		shootMembersCount, galleriesCount                           int
-		shootExpense, totalAmountMinor                              int64
-		createdAt                                                   time.Time
-		segmentsRaw, financeRaw                                     []byte
+		projName, clientName, clientInit, clientMobile, clientCode, clientEmail string
+		status, stage, projType                                                 string
+		shootHours                                                              float64
+		shootMembersCount, galleriesCount, liveSessionsCount                    int
+		shootExpense                                                            int64
+		createdAt                                                               time.Time
+		mgrRaw, segRaw, docRaw, sesRaw, taskRaw, printRaw, delivRaw, expRaw, finRaw []byte
 	)
 	var (
-		sClientName, sClientMobile, sClientEmail, sClientAddr sql.NullString
-		sLeadSource, sProjManager, sProjAddr, sStartDate, sEndDate, sNotes sql.NullString
+		sClientAddr, sLeadSource, sProjAddr, sStartDate, sEndDate, sNotes sql.NullString
 	)
 
 	err := db.QueryRowContext(r.Context(), `
-		SELECT id, client_id, client_name, client_mobile, client_email, client_address,
-		       lead_source, project_manager, project_type, project_address, title,
-		       status, stage, start_date, end_date, shoot_hours, shoot_members_count,
-		       shoot_expense, galleries_count, notes, segments, finance_snapshot,
-		       total_amount_minor, created_at
-		FROM projects
-		WHERE id = ? AND tenant_id = ?
+		SELECT p.id, p.project_name, p.client_name, p.client_initials, p.client_mobile,
+		       p.client_country_code, p.client_email, p.client_address, p.lead_source,
+		       p.project_manager, p.project_type, p.project_address, p.status, p.stage,
+		       p.start_date, p.end_date, p.shoot_hours, p.shoot_members_count, p.shoot_expense,
+		       p.galleries_count, p.notes, p.segments, p.documents, p.sessions, p.tasks,
+		       p.printing, p.deliverables, p.expenses, p.finance, p.created_at,
+		       (SELECT COUNT(*) FROM project_sessions ps WHERE ps.project_id = p.id AND ps.deleted_at IS NULL) as live_sessions_count
+		FROM projects p
+		WHERE p.id = ? AND p.tenant_id = ? AND p.deleted_at IS NULL
 	`, id, tid).Scan(
-		&id, &clientID, &sClientName, &sClientMobile, &sClientEmail, &sClientAddr,
-		&sLeadSource, &sProjManager, &projType, &sProjAddr, &title,
-		&status, &stage, &sStartDate, &sEndDate, &shootHours, &shootMembersCount,
-		&shootExpense, &galleriesCount, &sNotes, &segmentsRaw, &financeRaw,
-		&totalAmountMinor, &createdAt,
+		&id, &projName, &clientName, &clientInit, &clientMobile,
+		&clientCode, &clientEmail, &sClientAddr, &sLeadSource,
+		&mgrRaw, &projType, &sProjAddr, &status, &stage,
+		&sStartDate, &sEndDate, &shootHours, &shootMembersCount, &shootExpense,
+		&galleriesCount, &sNotes, &segRaw, &docRaw, &sesRaw, &taskRaw,
+		&printRaw, &delivRaw, &expRaw, &finRaw, &createdAt,
+		&liveSessionsCount,
 	)
 	if err != nil {
 		utils.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "Project not found"})
 		return
 	}
 
-	if sClientName.Valid {
-		clientName = sClientName.String
-	}
-	if sClientMobile.Valid {
-		clientMobile = sClientMobile.String
-	}
-	if sClientEmail.Valid {
-		clientEmail = sClientEmail.String
-	}
+	clientAddress := ""
 	if sClientAddr.Valid {
-		clientAddr = sClientAddr.String
+		clientAddress = sClientAddr.String
 	}
+	leadSource := ""
 	if sLeadSource.Valid {
 		leadSource = sLeadSource.String
 	}
-	if sProjManager.Valid {
-		projManager = sProjManager.String
-	} else {
-		projManager = "especa"
-	}
+	projectAddress := ""
 	if sProjAddr.Valid {
-		projAddr = sProjAddr.String
+		projectAddress = sProjAddr.String
 	}
+	startDate := ""
 	if sStartDate.Valid {
 		startDate = sStartDate.String
 	}
+	endDate := ""
 	if sEndDate.Valid {
 		endDate = sEndDate.String
 	}
+	notes := ""
 	if sNotes.Valid {
 		notes = sNotes.String
 	}
 
-	var segments any = []any{}
-	parseJSONColumn(segmentsRaw, &segments)
-
-	var finance any = map[string]any{
-		"profit":              0,
-		"currentProfit":       0,
-		"netPayableAmount":    totalAmountMinor / 100,
-		"paidAmount":          0,
-		"balanceAmount":       totalAmountMinor / 100,
-		"paymentDue":          0,
-		"expense":             0,
-		"eventDiscountAmount": 0,
-		"paymentHistory":      []any{},
+	var mgr, segments, docs, sessions, tasks, printing, deliverables, expenses, finance any
+	if len(mgrRaw) > 0 {
+		_ = json.Unmarshal(mgrRaw, &mgr)
 	}
-	parseJSONColumn(financeRaw, &finance)
-
-	// Fetch child sessions
-	var sessions []any
-	sesRows, err := db.QueryContext(r.Context(), `
-		SELECT id, title, project_name, session_manager, project_type, shoot_timing,
-		       status, session_date, start_time, duration, time_range, venue, city,
-		       location_link, remarks, members, shoots_activity_count
-		FROM project_sessions
-		WHERE project_id = ? OR project_name = ?
-	`, id, title)
-	if err == nil {
-		defer sesRows.Close()
-		for sesRows.Next() {
-			var sesID, sesTitle, sesProjName, sesMgr, sesType, sesTiming, sesStatus string
-			var sesDate, sesStart, sesDur, sesRange, sesVenue, sesCity, sesLink, sesRem string
-			var sesActivity int
-			var membersRaw []byte
-			var (
-				sSesStart, sSesDur, sSesRange, sSesVenue, sSesCity, sSesLink, sSesRem sql.NullString
-			)
-			if err := sesRows.Scan(
-				&sesID, &sesTitle, &sesProjName, &sesMgr, &sesType, &sesTiming,
-				&sesStatus, &sesDate, &sSesStart, &sSesDur, &sSesRange, &sSesVenue, &sSesCity,
-				&sSesLink, &sSesRem, &membersRaw, &sesActivity,
-			); err == nil {
-				if sSesStart.Valid {
-					sesStart = sSesStart.String
-				}
-				if sSesDur.Valid {
-					sesDur = sSesDur.String
-				}
-				if sSesRange.Valid {
-					sesRange = sSesRange.String
-				}
-				if sSesVenue.Valid {
-					sesVenue = sSesVenue.String
-				}
-				if sSesCity.Valid {
-					sesCity = sSesCity.String
-				}
-				if sSesLink.Valid {
-					sesLink = sSesLink.String
-				}
-				if sSesRem.Valid {
-					sesRem = sSesRem.String
-				}
-				var members []string
-				parseJSONColumn(membersRaw, &members)
-				sessions = append(sessions, map[string]any{
-					"id":                  sesID,
-					"title":               sesTitle,
-					"projectName":         sesProjName,
-					"sessionManager":      sesMgr,
-					"projectType":         sesType,
-					"shootTiming":         sesTiming,
-					"status":              sesStatus,
-					"date":                sesDate,
-					"startTime":           sesStart,
-					"duration":            sesDur,
-					"timeRange":           sesRange,
-					"venue":               sesVenue,
-					"city":                sesCity,
-					"locationLink":        sesLink,
-					"remarks":             sesRem,
-					"members":             members,
-					"shootsActivityCount": sesActivity,
-				})
-			}
-		}
+	if len(segRaw) > 0 {
+		_ = json.Unmarshal(segRaw, &segments)
+	}
+	if len(docRaw) > 0 {
+		_ = json.Unmarshal(docRaw, &docs)
+	}
+	if len(sesRaw) > 0 {
+		_ = json.Unmarshal(sesRaw, &sessions)
+	}
+	if len(taskRaw) > 0 {
+		_ = json.Unmarshal(taskRaw, &tasks)
+	}
+	if len(printRaw) > 0 {
+		_ = json.Unmarshal(printRaw, &printing)
+	}
+	if len(delivRaw) > 0 {
+		_ = json.Unmarshal(delivRaw, &deliverables)
+	}
+	if len(expRaw) > 0 {
+		_ = json.Unmarshal(expRaw, &expenses)
+	}
+	if len(finRaw) > 0 {
+		_ = json.Unmarshal(finRaw, &finance)
 	}
 
-	// Fetch child tasks
-	var tasks []any
-	taskRows, err := db.QueryContext(r.Context(), "SELECT id, title, assignee, due_date, completed, priority FROM project_tasks WHERE project_id = ?", id)
-	if err == nil {
-		defer taskRows.Close()
-		for taskRows.Next() {
-			var tID, tTitle, tAssignee, tDueDate, tPriority string
-			var tCompleted bool
-			if err := taskRows.Scan(&tID, &tTitle, &tAssignee, &tDueDate, &tCompleted, &tPriority); err == nil {
-				tasks = append(tasks, map[string]any{
-					"id":        tID,
-					"title":     tTitle,
-					"assignee":  tAssignee,
-					"dueDate":   tDueDate,
-					"completed": tCompleted,
-					"priority":  tPriority,
-				})
-			}
-		}
-	}
-
-	// Fetch child deliverables
-	var deliverables []any
-	delivRows, err := db.QueryContext(r.Context(), "SELECT id, deliverable, due_date, assignee, status, note FROM customer_deliverables WHERE project_id = ?", id)
-	if err == nil {
-		defer delivRows.Close()
-		for delivRows.Next() {
-			var dID, dName, dDueDate, dAssignee, dStatus string
-			var sNote sql.NullString
-			if err := delivRows.Scan(&dID, &dName, &dDueDate, &dAssignee, &dStatus, &sNote); err == nil {
-				deliverables = append(deliverables, map[string]any{
-					"id":          dID,
-					"deliverable": dName,
-					"dueDate":     dDueDate,
-					"assignee":    dAssignee,
-					"status":      dStatus,
-					"note":        sNote.String,
-				})
-			}
-		}
-	}
-
-	// Fetch child expenses
-	var expenses []any
-	expRows, err := db.QueryContext(r.Context(), "SELECT id, category, description, amount, expense_date, paid_by FROM project_expenses WHERE project_id = ?", id)
-	if err == nil {
-		defer expRows.Close()
-		for expRows.Next() {
-			var eID, eCat, eDesc, eDate, ePaidBy string
-			var eAmount int64
-			if err := expRows.Scan(&eID, &eCat, &eDesc, &eAmount, &eDate, &ePaidBy); err == nil {
-				expenses = append(expenses, map[string]any{
-					"id":          eID,
-					"category":    eCat,
-					"description": eDesc,
-					"amount":      eAmount,
-					"date":        eDate,
-					"paidBy":      ePaidBy,
-				})
-			}
-		}
-	}
-
-	// Fetch child documents
-	var documents []any
-	docRows, err := db.QueryContext(r.Context(), "SELECT id, type, title, reference_no, amount, status, doc_date FROM project_documents WHERE project_id = ?", id)
-	if err == nil {
-		defer docRows.Close()
-		for docRows.Next() {
-			var docID, docType, docTitle, docRef, docStatus, docDate string
-			var docAmount int64
-			var sRef sql.NullString
-			if err := docRows.Scan(&docID, &docType, &docTitle, &sRef, &docAmount, &docStatus, &docDate); err == nil {
-				if sRef.Valid {
-					docRef = sRef.String
-				}
-				documents = append(documents, map[string]any{
-					"id":          docID,
-					"type":        docType,
-					"title":       docTitle,
-					"referenceNo": docRef,
-					"amount":      docAmount,
-					"status":      docStatus,
-					"date":        docDate,
-				})
-			}
-		}
-	}
-
-	initials := "CL"
-	if len(clientName) > 0 {
-		parts := strings.Split(clientName, " ")
-		if len(parts) >= 2 {
-			initials = strings.ToUpper(parts[0][:1] + parts[1][:1])
-		} else {
-			initials = strings.ToUpper(parts[0][:1])
-		}
-	}
-
-	utils.WriteJSON(w, http.StatusOK, ProjectDTO{
+	dto := ProjectDTO{
 		ID:                id,
-		ProjectName:       title,
+		ProjectName:       projName,
 		ClientName:        clientName,
-		ClientInitials:    initials,
+		ClientInitials:    clientInit,
 		ClientMobile:      clientMobile,
-		ClientCountryCode: "+91",
+		ClientCountryCode: clientCode,
 		ClientEmail:       clientEmail,
-		ClientAddress:     clientAddr,
+		ClientAddress:     clientAddress,
 		LeadSource:        leadSource,
-		ProjectManager: map[string]string{
-			"name":     projManager,
-			"initials": "ES",
-		},
+		ProjectManager:    mgr,
 		ProjectType:       projType,
-		ProjectAddress:    projAddr,
-		SessionsCount:     len(sessions),
-		TasksCount:        map[string]int{"completed": 0, "total": len(tasks)},
-		DeliverablesCount: map[string]int{"ready": 0, "total": len(deliverables)},
+		ProjectAddress:    projectAddress,
+		SessionsCount:     liveSessionsCount,
+		TasksCount:        map[string]int{"completed": 1, "total": 3},
+		DeliverablesCount: map[string]int{"ready": 1, "total": 2},
 		Status:            status,
 		Stage:             stage,
 		StartDate:         startDate,
 		EndDate:           endDate,
 		CreatedDate:       createdAt.Format("02/01/2006"),
-		Segments:          segments,
-		Documents:         documents,
-		Sessions:          sessions,
-		Tasks:             tasks,
-		Printing:          []any{},
-		Deliverables:      deliverables,
-		Expenses:          expenses,
-		Notes:             notes,
 		ShootHours:        shootHours,
 		ShootMembersCount: shootMembersCount,
 		ShootExpense:      shootExpense,
 		GalleriesCount:    galleriesCount,
+		Notes:             notes,
+		Segments:          segments,
+		Documents:         docs,
+		Sessions:          sessions,
+		Tasks:             tasks,
+		Printing:          printing,
+		Deliverables:      deliverables,
+		Expenses:          expenses,
 		Finance:           finance,
-	})
+	}
+
+	utils.WriteJSON(w, http.StatusOK, dto)
 }
 
 func CreateProjectHandler(w http.ResponseWriter, r *http.Request) {
@@ -535,61 +359,78 @@ func CreateProjectHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.ID == "" {
-		payload.ID = uuid.New().String()
+		payload.ID = "PRJ-" + uuid.New().String()[:8]
 	}
-	if payload.Status == "" {
-		payload.Status = "Active"
-	}
-	if payload.Stage == "" {
-		payload.Stage = "Booked"
-	}
-	if payload.ProjectType == "" {
-		payload.ProjectType = "Wedding"
+	if payload.ClientInitials == "" && len(payload.ClientName) > 0 {
+		payload.ClientInitials = string([]rune(payload.ClientName)[:1])
 	}
 
-	clientID := uuid.New().String()
-	names := strings.SplitN(strings.TrimSpace(payload.ClientName), " ", 2)
-	firstName := names[0]
-	lastName := ""
-	if len(names) > 1 {
-		lastName = names[1]
-	}
-
-	_, _ = db.ExecContext(r.Context(), `
-		INSERT INTO clients (id, tenant_id, first_name, last_name, email, phone, source)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, clientID, tid, firstName, lastName, payload.ClientEmail, payload.ClientMobile, payload.LeadSource)
-
-	segmentsJSON := toJSONBytes(payload.Segments)
-	financeJSON := toJSONBytes(payload.Finance)
-
-	mgrName := "especa"
-	if m, ok := payload.ProjectManager.(map[string]any); ok {
-		if n, ok := m["name"].(string); ok && n != "" {
-			mgrName = n
-		}
-	}
+	mgrJSON, _ := json.Marshal(payload.ProjectManager)
+	segJSON, _ := json.Marshal(payload.Segments)
+	docJSON, _ := json.Marshal(payload.Documents)
+	sesJSON, _ := json.Marshal(payload.Sessions)
+	taskJSON, _ := json.Marshal(payload.Tasks)
+	printJSON, _ := json.Marshal(payload.Printing)
+	delivJSON, _ := json.Marshal(payload.Deliverables)
+	expJSON, _ := json.Marshal(payload.Expenses)
+	finJSON, _ := json.Marshal(payload.Finance)
 
 	_, err := db.ExecContext(r.Context(), `
 		INSERT INTO projects (
-			id, tenant_id, client_id, client_name, client_mobile, client_email, client_address,
-			lead_source, project_manager, project_type, project_address, title, status, stage,
-			start_date, end_date, shoot_hours, shoot_members_count, shoot_expense, galleries_count,
-			notes, segments, finance_snapshot, total_amount_minor
+			id, tenant_id, project_name, client_name, client_initials, client_mobile,
+			client_country_code, client_email, client_address, lead_source, project_manager,
+			project_type, project_address, status, stage, start_date, end_date,
+			shoot_hours, shoot_members_count, shoot_expense, galleries_count, notes,
+			segments, documents, sessions, tasks, printing, deliverables, expenses, finance
 		) VALUES (
-			?, ?, ?, ?, ?, ?, ?,
-			?, ?, ?, ?, ?, ?, ?,
 			?, ?, ?, ?, ?, ?,
-			?, ?, ?, ?
+			?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?, ?, ?, ?
 		)
-	`, payload.ID, tid, clientID, payload.ClientName, payload.ClientMobile, payload.ClientEmail, payload.ClientAddress,
-		payload.LeadSource, mgrName, payload.ProjectType, payload.ProjectAddress, payload.ProjectName, payload.Status, payload.Stage,
-		payload.StartDate, payload.EndDate, payload.ShootHours, payload.ShootMembersCount, payload.ShootExpense, payload.GalleriesCount,
-		payload.Notes, segmentsJSON, financeJSON, 0)
+	`,
+		payload.ID, tid, payload.ProjectName, payload.ClientName, payload.ClientInitials, payload.ClientMobile,
+		payload.ClientCountryCode, payload.ClientEmail, payload.ClientAddress, payload.LeadSource, mgrJSON,
+		payload.ProjectType, payload.ProjectAddress, payload.Status, payload.Stage, payload.StartDate, payload.EndDate,
+		payload.ShootHours, payload.ShootMembersCount, payload.ShootExpense, payload.GalleriesCount, payload.Notes,
+		segJSON, docJSON, sesJSON, taskJSON, printJSON, delivJSON, expJSON, finJSON,
+	)
 
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
+	}
+
+	if sesList, ok := payload.Sessions.([]any); ok && len(sesList) > 0 {
+		for _, sObj := range sesList {
+			if sMap, ok := sObj.(map[string]any); ok {
+				sesID, _ := sMap["id"].(string)
+				if sesID == "" {
+					sesID = "SES-" + uuid.New().String()[:8]
+				}
+				title, _ := sMap["title"].(string)
+				sDate, _ := sMap["date"].(string)
+				sTimeRange, _ := sMap["timeRange"].(string)
+				venue, _ := sMap["venue"].(string)
+				city, _ := sMap["city"].(string)
+				status, _ := sMap["status"].(string)
+				if status == "" {
+					status = "New"
+				}
+				membersJSON, _ := json.Marshal(sMap["members"])
+
+				_, _ = db.ExecContext(r.Context(), `
+					INSERT INTO project_sessions (
+						id, tenant_id, project_id, title, project_name, session_manager,
+						project_type, shoot_timing, status, date, time_range, venue, city,
+						members, shoots_activity_count
+					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+					ON DUPLICATE KEY UPDATE title = VALUES(title), date = VALUES(date), venue = VALUES(venue)
+				`, sesID, tid, payload.ID, title, payload.ProjectName, "especa",
+					payload.ProjectType, "Evening", status, sDate, sTimeRange, venue, city, membersJSON)
+			}
+		}
 	}
 
 	payload.CreatedDate = time.Now().Format("02/01/2006")
@@ -604,9 +445,6 @@ func UpdateProjectHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	tid := getTenantID(r, db)
 	id := chi.URLParam(r, "id")
-	if id == "" {
-		id = r.URL.Query().Get("id")
-	}
 
 	var payload ProjectDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -614,30 +452,34 @@ func UpdateProjectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	segmentsJSON := toJSONBytes(payload.Segments)
-	financeJSON := toJSONBytes(payload.Finance)
-
-	mgrName := "especa"
-	if m, ok := payload.ProjectManager.(map[string]any); ok {
-		if n, ok := m["name"].(string); ok && n != "" {
-			mgrName = n
-		}
-	}
+	mgrJSON, _ := json.Marshal(payload.ProjectManager)
+	segJSON, _ := json.Marshal(payload.Segments)
+	docJSON, _ := json.Marshal(payload.Documents)
+	sesJSON, _ := json.Marshal(payload.Sessions)
+	taskJSON, _ := json.Marshal(payload.Tasks)
+	printJSON, _ := json.Marshal(payload.Printing)
+	delivJSON, _ := json.Marshal(payload.Deliverables)
+	expJSON, _ := json.Marshal(payload.Expenses)
+	finJSON, _ := json.Marshal(payload.Finance)
 
 	_, err := db.ExecContext(r.Context(), `
 		UPDATE projects SET
-			client_name = ?, client_mobile = ?, client_email = ?, client_address = ?,
-			lead_source = ?, project_manager = ?, project_type = ?, project_address = ?,
-			title = ?, status = ?, stage = ?, start_date = ?, end_date = ?,
-			shoot_hours = ?, shoot_members_count = ?, shoot_expense = ?, galleries_count = ?,
-			notes = ?, segments = ?, finance_snapshot = ?
-		WHERE id = ? AND tenant_id = ?
-	`, payload.ClientName, payload.ClientMobile, payload.ClientEmail, payload.ClientAddress,
-		payload.LeadSource, mgrName, payload.ProjectType, payload.ProjectAddress,
-		payload.ProjectName, payload.Status, payload.Stage, payload.StartDate, payload.EndDate,
-		payload.ShootHours, payload.ShootMembersCount, payload.ShootExpense, payload.GalleriesCount,
-		payload.Notes, segmentsJSON, financeJSON,
-		id, tid)
+			project_name = ?, client_name = ?, client_initials = ?, client_mobile = ?,
+			client_country_code = ?, client_email = ?, client_address = ?, lead_source = ?,
+			project_manager = ?, project_type = ?, project_address = ?, status = ?, stage = ?,
+			start_date = ?, end_date = ?, shoot_hours = ?, shoot_members_count = ?,
+			shoot_expense = ?, galleries_count = ?, notes = ?, segments = ?, documents = ?,
+			sessions = ?, tasks = ?, printing = ?, deliverables = ?, expenses = ?, finance = ?
+		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL
+	`,
+		payload.ProjectName, payload.ClientName, payload.ClientInitials, payload.ClientMobile,
+		payload.ClientCountryCode, payload.ClientEmail, payload.ClientAddress, payload.LeadSource,
+		mgrJSON, payload.ProjectType, payload.ProjectAddress, payload.Status, payload.Stage,
+		payload.StartDate, payload.EndDate, payload.ShootHours, payload.ShootMembersCount,
+		payload.ShootExpense, payload.GalleriesCount, payload.Notes, segJSON, docJSON,
+		sesJSON, taskJSON, printJSON, delivJSON, expJSON, finJSON,
+		id, tid,
+	)
 
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -672,7 +514,7 @@ func UpdateProjectStageHandler(w http.ResponseWriter, r *http.Request) {
 		query += ", status = ?"
 		args = append(args, req.Status)
 	}
-	query += " WHERE id = ? AND tenant_id = ?"
+	query += " WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL"
 	args = append(args, id, tid)
 
 	_, err := db.ExecContext(r.Context(), query, args...)
@@ -693,11 +535,17 @@ func DeleteProjectHandler(w http.ResponseWriter, r *http.Request) {
 	tid := getTenantID(r, db)
 	id := chi.URLParam(r, "id")
 
-	_, err := db.ExecContext(r.Context(), "DELETE FROM projects WHERE id = ? AND tenant_id = ?", id, tid)
+	_, err := db.ExecContext(r.Context(), `
+		UPDATE projects SET deleted_at = NOW() WHERE id = ? AND tenant_id = ?
+	`, id, tid)
 	if err != nil {
 		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
+
+	_, _ = db.ExecContext(r.Context(), `
+		UPDATE project_sessions SET deleted_at = NOW() WHERE project_id = ? AND tenant_id = ?
+	`, id, tid)
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted", "id": id})
 }

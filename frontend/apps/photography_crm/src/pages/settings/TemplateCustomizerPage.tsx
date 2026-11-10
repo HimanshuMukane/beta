@@ -7,11 +7,11 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  Button,
-  Input,
-  Label,
-  toast,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import { Label } from '@repo/ui/components/ui/label'
+import { toast } from '@repo/ui/components/ui/sonner'
 
 interface TemplateCustomizerProps {
   title: string

@@ -8,6 +8,34 @@ import (
 	"github.com/google/uuid"
 )
 
+func parseJSONColumn(data any, target any) {
+	if data == nil {
+		return
+	}
+	switch v := data.(type) {
+	case []byte:
+		if len(v) > 0 {
+			_ = json.Unmarshal(v, target)
+		}
+	case string:
+		if len(v) > 0 {
+			_ = json.Unmarshal([]byte(v), target)
+		}
+	}
+}
+
+func toJSONBytes(data any) []byte {
+	if data == nil {
+		return []byte("[]")
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		return []byte("[]")
+	}
+	return b
+}
+
+
 func StudioSettingsGetHandler(w http.ResponseWriter, r *http.Request) {
 	db := utils.DBFromContext(r.Context(), nil)
 	if db == nil {

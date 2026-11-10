@@ -6,16 +6,17 @@ import {
   IconTrash,
   IconUserCheck,
 } from '@tabler/icons-react'
+import { Badge } from '@repo/ui/components/ui/badge'
 import {
-  Badge,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  Button,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/dropdown-menu'
+import { Button } from '@repo/ui/components/ui/button'
+import { cn } from '@repo/ui/lib/utils'
 import type { Order, OrderStage } from '../types/order'
+import { useWorkflows } from '../hooks/useWorkflows'
 
 interface OrderKanbanViewProps {
   orders: Order[]
@@ -66,8 +67,24 @@ export function OrderKanbanView({
   onDeleteOrder,
   onStageChange,
 }: OrderKanbanViewProps) {
+  const { workflows } = useWorkflows('order')
   const [draggedOrderId, setDraggedOrderId] = React.useState<string | null>(null)
-  const [dragOverColumn, setDragOverColumn] = React.useState<OrderStage | null>(null)
+  const [dragOverColumn, setDragOverColumn] = React.useState<string | null>(null)
+
+  const kanbanColumns = React.useMemo(() => {
+    if (workflows && workflows.length > 0) {
+      return workflows.map((w) => ({
+        id: w.stage as OrderStage,
+        title: w.stage,
+        color: w.color_code,
+      }))
+    }
+    return STAGE_COLUMNS.map((s) => ({
+      id: s.id,
+      title: s.title,
+      color: '#3b82f6',
+    }))
+  }, [workflows])
 
   const handleDragStart = (e: React.DragEvent, orderId: string) => {
     e.dataTransfer.setData('text/plain', orderId)
@@ -80,7 +97,7 @@ export function OrderKanbanView({
     setDragOverColumn(null)
   }
 
-  const handleDragOver = (e: React.DragEvent, stage: OrderStage) => {
+  const handleDragOver = (e: React.DragEvent, stage: string) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     if (dragOverColumn !== stage) {
@@ -88,11 +105,11 @@ export function OrderKanbanView({
     }
   }
 
-  const handleDrop = (e: React.DragEvent, stage: OrderStage) => {
+  const handleDrop = (e: React.DragEvent, stage: string) => {
     e.preventDefault()
     const orderId = e.dataTransfer.getData('text/plain') || draggedOrderId
     if (orderId) {
-      onStageChange(orderId, stage)
+      onStageChange(orderId, stage as OrderStage)
     }
     setDraggedOrderId(null)
     setDragOverColumn(null)
@@ -100,7 +117,7 @@ export function OrderKanbanView({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-6">
-      {STAGE_COLUMNS.map((col) => {
+      {kanbanColumns.map((col) => {
         const columnOrders = orders.filter((o) => o.stage === col.id)
         const totalStageAmount = columnOrders.reduce((sum, o) => sum + o.totalAmount, 0)
         const isTarget = dragOverColumn === col.id
@@ -111,10 +128,9 @@ export function OrderKanbanView({
             onDragOver={(e) => handleDragOver(e, col.id)}
             onDragLeave={() => setDragOverColumn(null)}
             onDrop={(e) => handleDrop(e, col.id)}
+            style={{ borderTopColor: col.color }}
             className={cn(
-              'flex flex-col rounded-xl border border-border/80 bg-muted/20 p-3 min-h-[520px] transition-colors',
-              col.accentBorder,
-              'border-t-4',
+              'flex flex-col rounded-xl border border-border/80 bg-muted/20 p-3 min-h-[520px] transition-colors border-t-4',
               isTarget && 'bg-primary/5 border-primary/40 ring-2 ring-primary/20'
             )}
           >
@@ -125,10 +141,12 @@ export function OrderKanbanView({
                   {col.title}
                 </span>
                 <span
-                  className={cn(
-                    'inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold border',
-                    col.colorBadge
-                  )}
+                  style={{
+                    backgroundColor: `${col.color}20`,
+                    borderColor: `${col.color}40`,
+                    color: col.color,
+                  }}
+                  className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold border"
                 >
                   {columnOrders.length}
                 </span>

@@ -9,11 +9,12 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  Button,
-  Input,
-  Label,
-  toast,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
+import { Label } from '@repo/ui/components/ui/label'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { apiClient } from '@repo/ui/lib/api-client'
 import type { SequenceIdSettings, SequenceConfig } from '../../types/settings'
 import { settingsApi } from '../../api/settingsApi'
 
@@ -32,9 +33,38 @@ export function SequenceIdPage() {
   })
 
   React.useEffect(() => {
+    // Connect to sequence_id API table
+    apiClient<any>('/api/sequence-id')
+      .then((seqData) => {
+        if (seqData && seqData.leads) {
+          setSettings((prev) => ({
+            ...prev,
+            leads: seqData.leads || prev.leads,
+            projects: seqData.projects || prev.projects,
+            invoice: seqData.invoice || prev.invoice,
+            orders: seqData.orders || prev.orders,
+            expense: seqData.expense || prev.expense,
+            cancellation: seqData.cancellation || prev.cancellation,
+            client: seqData.client || prev.client,
+          }))
+        }
+      })
+      .catch(() => {
+        settingsApi.getSettings().then((s) => {
+          if (s.sequenceSettings && Object.keys(s.sequenceSettings).length > 0) {
+            setSettings(s.sequenceSettings)
+          }
+        }).catch(console.error)
+      })
+
+    // Also load visibility settings
     settingsApi.getSettings().then((s) => {
-      if (s.sequenceSettings && Object.keys(s.sequenceSettings).length > 0) {
-        setSettings(s.sequenceSettings)
+      if (s.sequenceSettings) {
+        setSettings((prev) => ({
+          ...prev,
+          showClientTaxNo: s.sequenceSettings.showClientTaxNo ?? prev.showClientTaxNo,
+          studioTaxNo: s.sequenceSettings.studioTaxNo || prev.studioTaxNo,
+        }))
       }
     }).catch(console.error)
   }, [])
@@ -53,10 +83,28 @@ export function SequenceIdPage() {
     }))
   }
 
-  const handleSave = () => {
-    settingsApi.updateSettings({ sequenceSettings: settings }).then(() => {
+  const handleSave = async () => {
+    try {
+      // Save to sequence_id table endpoint
+      await apiClient('/api/sequence-id', {
+        method: 'POST',
+        body: JSON.stringify({
+          leads: settings.leads,
+          projects: settings.projects,
+          invoice: settings.invoice,
+          orders: settings.orders,
+          expense: settings.expense,
+          cancellation: settings.cancellation,
+          client: settings.client,
+        }),
+      })
+
+      // Also sync full settings
+      await settingsApi.updateSettings({ sequenceSettings: settings })
       toast.success('Sequence & Visibility settings saved successfully')
-    }).catch((err) => toast.error(err.message || 'Failed to save settings'))
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save settings')
+    }
   }
 
   return (
@@ -90,22 +138,20 @@ export function SequenceIdPage() {
           <button
             type="button"
             onClick={() => setActiveTab('sequence')}
-            className={`px-6 py-2 text-xs font-bold rounded-lg transition ${
-              activeTab === 'sequence'
+            className={`px-6 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'sequence'
                 ? 'bg-background text-foreground shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'
-            }`}
+              }`}
           >
             Sequence ID
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('visibility')}
-            className={`px-6 py-2 text-xs font-bold rounded-lg transition ${
-              activeTab === 'visibility'
+            className={`px-6 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'visibility'
                 ? 'bg-background text-foreground shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'
-            }`}
+              }`}
           >
             Visibility
           </button>
@@ -192,14 +238,12 @@ export function SequenceIdPage() {
                   onClick={() =>
                     setSettings((prev) => ({ ...prev, showClientTaxNo: !prev.showClientTaxNo }))
                   }
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                    settings.showClientTaxNo ? 'bg-emerald-600' : 'bg-muted'
-                  }`}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${settings.showClientTaxNo ? 'bg-emerald-600' : 'bg-muted'
+                    }`}
                 >
                   <span
-                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                      settings.showClientTaxNo ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${settings.showClientTaxNo ? 'translate-x-5' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>

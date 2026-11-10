@@ -8,16 +8,17 @@ import {
   IconEye,
   IconChecklist,
 } from '@tabler/icons-react'
+import { Badge } from '@repo/ui/components/ui/badge'
+import { Button } from '@repo/ui/components/ui/button'
 import {
-  Badge,
-  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/dropdown-menu'
+import { cn } from '@repo/ui/lib/utils'
 import type { Project, ProjectStage } from '../types/project'
+import { useWorkflows } from '../hooks/useWorkflows'
 
 interface ProjectKanbanViewProps {
   projects: Project[]
@@ -52,8 +53,24 @@ export function ProjectKanbanView({
   onStageChange,
   onAddNewProject,
 }: ProjectKanbanViewProps) {
+  const { workflows } = useWorkflows('project')
   const [draggedProjectId, setDraggedProjectId] = React.useState<string | null>(null)
-  const [dragOverColumn, setDragOverColumn] = React.useState<ProjectStage | null>(null)
+  const [dragOverColumn, setDragOverColumn] = React.useState<string | null>(null)
+
+  const kanbanColumns = React.useMemo(() => {
+    if (workflows && workflows.length > 0) {
+      return workflows.map((w) => ({
+        id: w.stage as ProjectStage,
+        title: w.stage,
+        color: w.color_code,
+      }))
+    }
+    return PROJECT_STAGES.map((s) => ({
+      id: s.id,
+      title: s.title,
+      color: '#3b82f6',
+    }))
+  }, [workflows])
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData('text/plain', id)
@@ -61,7 +78,7 @@ export function ProjectKanbanView({
     setDraggedProjectId(id)
   }
 
-  const handleDragOver = (e: React.DragEvent, colId: ProjectStage) => {
+  const handleDragOver = (e: React.DragEvent, colId: string) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     if (dragOverColumn !== colId) {
@@ -73,11 +90,11 @@ export function ProjectKanbanView({
     setDragOverColumn(null)
   }
 
-  const handleDrop = (e: React.DragEvent, targetStage: ProjectStage) => {
+  const handleDrop = (e: React.DragEvent, targetStage: string) => {
     e.preventDefault()
     const projectId = e.dataTransfer.getData('text/plain') || draggedProjectId
     if (projectId) {
-      onStageChange(projectId, targetStage)
+      onStageChange(projectId, targetStage as ProjectStage)
     }
     setDraggedProjectId(null)
     setDragOverColumn(null)
@@ -90,7 +107,7 @@ export function ProjectKanbanView({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3.5 items-start overflow-x-auto pb-4">
-      {PROJECT_STAGES.map((col) => {
+      {kanbanColumns.map((col) => {
         const stageProjects = projects.filter((p) => p.stage === col.id)
         const isTarget = dragOverColumn === col.id
 
@@ -100,9 +117,9 @@ export function ProjectKanbanView({
             onDragOver={(e) => handleDragOver(e, col.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, col.id)}
+            style={{ borderTopColor: col.color }}
             className={cn(
               'flex flex-col rounded-xl border bg-muted/20 border-t-4 transition-all duration-150 min-h-[480px]',
-              col.accentBorder,
               isTarget && 'bg-primary/5 ring-2 ring-primary/40'
             )}
           >
@@ -110,7 +127,10 @@ export function ProjectKanbanView({
             <div className="flex items-center justify-between p-3 border-b bg-card/60 rounded-t-lg">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="font-semibold text-xs text-foreground truncate">{col.title}</span>
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground tabular-nums">
+                <span
+                  style={{ backgroundColor: `${col.color}25`, color: col.color }}
+                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums"
+                >
                   {stageProjects.length}
                 </span>
               </div>

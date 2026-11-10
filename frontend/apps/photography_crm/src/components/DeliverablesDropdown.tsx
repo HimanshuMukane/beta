@@ -10,10 +10,10 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Input,
-  Checkbox,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/popover'
+import { Input } from '@repo/ui/components/ui/input'
+import { Checkbox } from '@repo/ui/components/ui/checkbox'
+import { cn } from '@repo/ui/lib/utils'
 import { useStudioSettings } from '../hooks/useStudioSettings'
 
 const DEFAULT_FALLBACK_DELIVERABLES = [

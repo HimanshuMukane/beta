@@ -8,9 +8,9 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Input,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/popover'
+import { Input } from '@repo/ui/components/ui/input'
+import { cn } from '@repo/ui/lib/utils'
 import type { LeadSource } from '../types/lead'
 
 export const DETAILED_LEAD_SOURCES = [

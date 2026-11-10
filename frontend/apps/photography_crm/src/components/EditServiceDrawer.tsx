@@ -6,18 +6,17 @@ import {
   IconInfoCircle,
   IconClock,
 } from '@tabler/icons-react'
+import { Sheet, SheetContent } from '@repo/ui/components/ui/sheet'
+import { Button } from '@repo/ui/components/ui/button'
+import { Input } from '@repo/ui/components/ui/input'
 import {
-  Sheet,
-  SheetContent,
-  Button,
-  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  cn,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/select'
+import { cn } from '@repo/ui/lib/utils'
 import type { ServiceItem } from '../types/lead'
 
 interface EditServiceDrawerProps {

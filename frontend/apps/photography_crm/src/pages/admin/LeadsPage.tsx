@@ -1,23 +1,19 @@
 import * as React from 'react'
+import { Card, CardContent } from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { Badge } from '@repo/ui/components/ui/badge'
+import { Checkbox } from '@repo/ui/components/ui/checkbox'
 import {
-  Card,
-  CardContent,
-  Button,
-  Badge,
-  Checkbox,
   DataTable,
-  Sheet,
-  SheetContent,
-  toast,
-  cn,
-} from '@repo/ui'
+  type DataTableFeatures,
+  type DataTableFilterConfig,
+  type DataTableBulkAction,
+  type DataTableRowAction,
+} from '@repo/ui/components/data-table'
+import { Sheet, SheetContent } from '@repo/ui/components/ui/sheet'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { cn } from '@repo/ui/lib/utils'
 import { createColumnHelper } from '@tanstack/react-table'
-import type {
-  DataTableFeatures,
-  DataTableFilterConfig,
-  DataTableBulkAction,
-  DataTableRowAction,
-} from '@repo/ui'
 import {
   IconPlus,
   IconTable,
@@ -40,8 +36,9 @@ import type {
   PipelineStage,
   PrimaryPerspective,
   FollowupSubFilter,
-} from '../types/lead'
-import { LeadKanbanView } from '../components/LeadKanbanView'
+} from '../../types/lead'
+import { LeadKanbanView } from '../../components/LeadKanbanView'
+import { useWorkflows, type WorkflowItem } from '../../hooks/useWorkflows'
 
 interface LeadsPageProps {
   leads: Lead[]
@@ -62,6 +59,33 @@ export function LeadsPage({
   onStageChange,
   onConvertToProject,
 }: LeadsPageProps) {
+  const { workflows } = useWorkflows('lead')
+
+  // Stages grouped by pipeline
+  const pipelineStagesMap = React.useMemo(() => {
+    const map: Record<string, WorkflowItem[]> = {
+      Contacted: [],
+      Qualified: [],
+      Converted: [],
+      Followups: [],
+    }
+    ;(workflows || []).forEach((w) => {
+      const p = w.pipeline
+      if (!map[p]) map[p] = []
+      map[p].push(w)
+    })
+    return map
+  }, [workflows])
+
+  // Color lookup helper for stages
+  const stageColorMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    ;(workflows || []).forEach((w) => {
+      map.set(w.stage.toLowerCase(), w.color_code)
+    })
+    return map
+  }, [workflows])
+
   // View mode: Table vs Kanban
   const [viewMode, setViewMode] = React.useState<'table' | 'kanban'>('table')
 
@@ -299,17 +323,21 @@ export function LeadsPage({
           cell: (info) => {
             const row = info.row.original
             const stage = row.leadStage
-            const getStageVariant = () => {
-              if (stage === 'Booked') return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
-              if (stage === 'Lost Lead') return 'bg-destructive/15 text-destructive border-destructive/30'
-              if (stage === 'Ready to Book' || stage === 'Negotiation')
-                return 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30'
-              if (stage === 'Scheduled' || stage === 'Contacted')
-                return 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
-              return 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30'
-            }
+            const color = stageColorMap.get(stage.toLowerCase())
             return (
-              <Badge variant="outline" className={cn('text-[11px] font-medium whitespace-nowrap', getStageVariant())}>
+              <Badge
+                variant="outline"
+                className="text-[11px] font-medium whitespace-nowrap"
+                style={
+                  color
+                    ? {
+                        backgroundColor: `${color}20`,
+                        borderColor: `${color}60`,
+                        color: color,
+                      }
+                    : undefined
+                }
+              >
                 {stage}
               </Badge>
             )
@@ -651,9 +679,11 @@ export function LeadsPage({
           <>
             {[
               { id: 'all', label: 'All Contacted' },
-              { id: 'Contacted', label: 'Contacted' },
-              { id: 'Scheduled', label: 'Scheduled' },
-              { id: 'Untouched', label: 'Untouched' },
+              ...(pipelineStagesMap.Contacted || []).map((w) => ({
+                id: w.stage,
+                label: w.stage,
+                color: w.color_code,
+              })),
             ].map((sub) => (
               <button
                 key={sub.id}
@@ -677,9 +707,11 @@ export function LeadsPage({
           <>
             {[
               { id: 'all', label: 'All Qualified' },
-              { id: 'Negotiation', label: 'Negotiation' },
-              { id: 'Ready to Book', label: 'Ready to Book' },
-              { id: 'Interested', label: 'Interested' },
+              ...(pipelineStagesMap.Qualified || []).map((w) => ({
+                id: w.stage,
+                label: w.stage,
+                color: w.color_code,
+              })),
             ].map((sub) => (
               <button
                 key={sub.id}
@@ -703,8 +735,11 @@ export function LeadsPage({
           <>
             {[
               { id: 'all', label: 'All Converted' },
-              { id: 'Booked', label: 'Booked' },
-              { id: 'Lost Lead', label: 'Lost Lead' },
+              ...(pipelineStagesMap.Converted || []).map((w) => ({
+                id: w.stage,
+                label: w.stage,
+                color: w.color_code,
+              })),
             ].map((sub) => (
               <button
                 key={sub.id}
@@ -727,11 +762,24 @@ export function LeadsPage({
         {activePerspective === 'followups' && (
           <>
             {[
-              { id: 'all_followup', label: 'All Followup' },
-              { id: 'my_followup', label: 'My Followup' },
-              { id: 'due_followup', label: 'Due Followup', icon: IconAlertTriangle },
-              { id: 'today_followup', label: 'Today Followup', icon: IconClock },
-              { id: 'upcoming_followup', label: 'Upcoming Followup' },
+              { id: 'all_followup', label: 'All Followup', icon: undefined },
+              ...(pipelineStagesMap.Followups && pipelineStagesMap.Followups.length > 0
+                ? pipelineStagesMap.Followups.filter((w) => w.stage !== 'All Followup').map((w) => ({
+                    id: w.stage.toLowerCase().replace(/\s+/g, '_'),
+                    label: w.stage,
+                    icon:
+                      w.stage.toLowerCase().includes('due')
+                        ? IconAlertTriangle
+                        : w.stage.toLowerCase().includes('today')
+                        ? IconClock
+                        : undefined,
+                  }))
+                : [
+                    { id: 'my_followup', label: 'My Followup', icon: undefined },
+                    { id: 'due_followup', label: 'Due Followup', icon: IconAlertTriangle },
+                    { id: 'today_followup', label: 'Today Followup', icon: IconClock },
+                    { id: 'upcoming_followup', label: 'Upcoming Followup', icon: undefined },
+                  ]),
             ].map((sub) => {
               const SubIcon = sub.icon
               return (

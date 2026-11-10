@@ -1,16 +1,14 @@
 import * as React from 'react'
+import { Button } from '@repo/ui/components/ui/button'
+import { Badge } from '@repo/ui/components/ui/badge'
 import {
-  Button,
-  Badge,
   DataTable,
-  cn,
-  toast,
-} from '@repo/ui'
+  type DataTableFeatures,
+  type DataTableFilterConfig,
+} from '@repo/ui/components/data-table'
+import { toast } from '@repo/ui/components/ui/sonner'
+import { cn } from '@repo/ui/lib/utils'
 import { createColumnHelper } from '@tanstack/react-table'
-import type {
-  DataTableFeatures,
-  DataTableFilterConfig,
-} from '@repo/ui'
 import {
   IconDownload,
   IconPlus,
@@ -24,14 +22,14 @@ import type {
   BillingExpense,
   BillingCancelled,
   BillingRefunded,
-} from '../types/billing'
-import { billingApi } from '../api/crmApi'
-import { BillingHero } from '../components/BillingHero'
-import { BillingDateRangePicker, type DateRange } from '../components/BillingDateRangePicker'
-import { AddPaymentModal } from '../components/AddPaymentModal'
-import { AddInvoiceModal } from '../components/AddInvoiceModal'
-import { AddExpenseModal } from '../components/AddExpenseModal'
-import { AddRefundModal } from '../components/AddRefundModal'
+} from '../../types/billing'
+import { billingApi } from '../../api/crmApi'
+import { BillingHero } from '../../components/BillingHero'
+import { BillingDateRangePicker, type DateRange } from '../../components/BillingDateRangePicker'
+import { AddPaymentModal } from '../../components/AddPaymentModal'
+import { AddInvoiceModal } from '../../components/AddInvoiceModal'
+import { AddExpenseModal } from '../../components/AddExpenseModal'
+import { AddRefundModal } from '../../components/AddRefundModal'
 
 // Column Helpers for each table
 const paymentColHelper = createColumnHelper<DataTableFeatures, BillingPayment>()

@@ -1,4 +1,4 @@
-import { apiClient } from '@repo/ui'
+import { apiClient } from '@repo/ui/lib/api-client'
 import type { Lead, PipelineStage, LeadStage } from '../types/lead'
 import type { Project, ProjectStage, ProjectStatus } from '../types/project'
 import type { ProjectSession, SessionStatus } from '../types/session'

@@ -20,7 +20,6 @@ export interface AuthContextType {
   refreshUser: () => Promise<void>
 }
 
-import { useLocation } from "react-router-dom"
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
@@ -54,16 +53,15 @@ export function AuthProvider({
     }
   }, [onUnauthenticated])
 
-  const location = useLocation()
-
   useEffect(() => {
-    if (location.pathname === "/signin" || location.pathname === "/signup") {
+    const currentPath = typeof window !== "undefined" ? window.location.pathname : ""
+    if (currentPath === "/signin" || currentPath === "/signup") {
       setLoading(false)
       return
     }
 
     refreshUser()
-  }, [location.pathname, refreshUser])
+  }, [refreshUser])
 
   const login = async (email: string, password: string) => {
     setError(null)

@@ -4,10 +4,10 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  Button,
-  Badge,
-  toast,
-} from '@repo/ui'
+} from '@repo/ui/components/ui/card'
+import { Button } from '@repo/ui/components/ui/button'
+import { Badge } from '@repo/ui/components/ui/badge'
+import { toast } from '@repo/ui/components/ui/sonner'
 import {
   IconCalendarEvent,
   IconClock,
