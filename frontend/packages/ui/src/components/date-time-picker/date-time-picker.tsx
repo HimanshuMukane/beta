@@ -1,6 +1,6 @@
 import * as React from "react"
 import { format } from "date-fns"
-import { IconCalendar, IconClock } from "@tabler/icons-react"
+import { IconCalendar, IconClock } from "../../icons/tabler-icons"
 import { Calendar } from "../ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Button } from "../ui/button"

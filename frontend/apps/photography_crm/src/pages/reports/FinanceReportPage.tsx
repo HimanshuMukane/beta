@@ -14,7 +14,7 @@ import {
   IconWallet,
   IconFileSpreadsheet,
   IconArrowUpRight,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 
 export function FinanceReportPage() {
   const expenseCategories = [

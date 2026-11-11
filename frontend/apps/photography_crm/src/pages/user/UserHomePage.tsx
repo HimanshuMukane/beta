@@ -9,7 +9,7 @@ import {
   IconClock,
   IconArrowRight,
   IconMapPin,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@repo/ui/hooks/use-auth'
 import type { ProjectSession } from '../../types/session'

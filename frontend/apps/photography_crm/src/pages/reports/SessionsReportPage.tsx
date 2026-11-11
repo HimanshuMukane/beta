@@ -15,7 +15,7 @@ import {
   IconFileSpreadsheet,
   IconCheck,
   IconStarFilled,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 
 export function SessionsReportPage() {
   const shootTypeBreakdown = [

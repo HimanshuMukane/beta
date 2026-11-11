@@ -1,7 +1,7 @@
 import React from 'react'
 import { ErrorBoundary as ReactErrorBoundary, FallbackProps } from 'react-error-boundary'
 import { Button } from '@repo/ui/components/ui/button'
-import { IconAlertTriangle, IconRotate } from '@tabler/icons-react'
+import { IconAlertTriangle, IconRotate } from "@repo/ui/icons/tabler-icons"
 
 // Deduplication cache to prevent flooding logs with the same error
 const recentErrors = new Set<string>()

@@ -5,7 +5,7 @@ import {
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import {
   Popover,
   PopoverContent,

@@ -21,7 +21,7 @@ import { cn } from '@repo/ui/lib/utils'
 import {
   IconCheck,
   IconPlus,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import {
   ProductionTaskDrawer,
   type TaskDetailData,

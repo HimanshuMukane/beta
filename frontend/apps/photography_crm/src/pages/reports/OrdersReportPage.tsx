@@ -15,7 +15,7 @@ import {
   IconFileSpreadsheet,
   IconClock,
   IconCurrencyRupee,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 
 export function OrdersReportPage() {
 

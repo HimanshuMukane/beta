@@ -15,7 +15,7 @@ import {
   IconArrowUpRight,
   IconClock,
   IconPercentage,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 
 export function LeadsReportPage() {
 

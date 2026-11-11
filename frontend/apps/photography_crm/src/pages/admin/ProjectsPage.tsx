@@ -23,7 +23,7 @@ import {
   IconChecklist,
   IconPhoto,
   IconBriefcase,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import type { Project, ProjectStage, ProjectStatus } from '../../types/project'
 import { ProjectKanbanView } from '../../components/ProjectKanbanView'
 import { useWorkflows } from '../../hooks/useWorkflows'

@@ -6,7 +6,7 @@ import {
   IconArrowLeft,
   IconTrendingUp,
   IconCopy,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import { Card } from '@repo/ui/components/ui/card'
 import { Button } from '@repo/ui/components/ui/button'
 import { Input } from '@repo/ui/components/ui/input'

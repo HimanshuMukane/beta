@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select'
-import { IconCalendar, IconTrash, IconGripVertical } from '@tabler/icons-react'
+import { IconCalendar, IconTrash, IconGripVertical } from "@repo/ui/icons/tabler-icons"
 import type { ProjectSegment } from '../types/project'
 import { PROJECT_TYPES } from '../lib/formatters'
 

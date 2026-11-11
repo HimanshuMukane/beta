@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { IconMoon, IconSun } from "@tabler/icons-react"
+import { IconMoon, IconSun } from "../icons/tabler-icons"
 import { Button } from "./ui/button"
 
 export function ModeToggle() {

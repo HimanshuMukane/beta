@@ -3,7 +3,7 @@ import {
   IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
-} from "@tabler/icons-react"
+} from "../../icons/tabler-icons"
 import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
 
 import { cn } from "@repo/ui/lib/utils"

@@ -13,7 +13,7 @@
     "vite-plugin-compression2": "^2.5.4"
   },
   "dependencies": {
-    "@tabler/icons-react": "^3.50.0",
+    "@tabler/icons": "^3.51.0",
     "@tailwindcss/vite": "4.3.5",
     "@tanstack/react-table": "^9.3.1",
     "tailwindcss": "4.3.5",

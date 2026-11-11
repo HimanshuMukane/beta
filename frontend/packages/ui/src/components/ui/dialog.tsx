@@ -1,6 +1,6 @@
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { IconX } from "@tabler/icons-react"
+import { IconX } from "../../icons/tabler-icons"
 
 import { cn } from "@repo/ui/lib/utils"
 

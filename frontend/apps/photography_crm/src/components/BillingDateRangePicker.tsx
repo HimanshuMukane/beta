@@ -7,7 +7,7 @@ import {
   IconChevronsRight,
   IconX,
   IconCheck,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import {
   format,
   subDays,

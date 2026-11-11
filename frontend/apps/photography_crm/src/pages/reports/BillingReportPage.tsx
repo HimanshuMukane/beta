@@ -27,7 +27,7 @@ import {
   IconClockHour4,
   IconAlertCircle,
   IconPrinter,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 
 export function BillingReportPage() {
   const [dateRange, setDateRange] = React.useState('this-year')

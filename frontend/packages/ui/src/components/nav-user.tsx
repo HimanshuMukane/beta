@@ -7,7 +7,7 @@ import {
   IconCreditCard,
   IconLogout,
   IconSparkles,
-} from "@tabler/icons-react"
+} from "../icons/tabler-icons"
 
 import {
   Avatar,

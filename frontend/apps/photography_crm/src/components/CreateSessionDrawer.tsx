@@ -32,7 +32,7 @@ import {
   IconSparkles,
   IconUserCheck,
   IconArrowUpRight,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import type {
   ProjectSession,
   ProjectType,

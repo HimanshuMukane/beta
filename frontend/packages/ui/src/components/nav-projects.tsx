@@ -4,7 +4,7 @@ import {
   IconShare3,
   IconDots,
   IconTrash,
-} from "@tabler/icons-react"
+} from "../icons/tabler-icons"
 
 import {
   DropdownMenu,

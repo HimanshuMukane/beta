@@ -5,7 +5,7 @@ import { Input } from '@repo/ui/components/ui/input'
 import { Label } from '@repo/ui/components/ui/label'
 import { SplitAuthLayout } from '@repo/ui/components/split-auth-layout'
 import { toast } from '@repo/ui/components/ui/sonner'
-import { IconCamera, IconLock, IconMail, IconUser, IconArrowRight } from '@tabler/icons-react'
+import { IconCamera, IconLock, IconMail, IconUser, IconArrowRight } from "@repo/ui/icons/tabler-icons"
 import { useAuth } from '@repo/ui/hooks/use-auth'
 
 export default function SignupPage() {

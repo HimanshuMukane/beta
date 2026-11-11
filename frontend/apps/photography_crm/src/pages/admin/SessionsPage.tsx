@@ -23,7 +23,7 @@ import {
   IconTrash,
   IconExternalLink,
   IconUsers,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import type { ProjectSession, SessionStatus } from '../../types/session'
 import { PROJECT_TYPES } from '../../types/session'
 import { CreateSessionDrawer } from '../../components/CreateSessionDrawer'

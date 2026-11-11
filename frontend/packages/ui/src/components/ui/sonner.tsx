@@ -4,7 +4,7 @@ import {
   IconLoader2,
   IconCircleX,
   IconAlertTriangle,
-} from "@tabler/icons-react"
+} from "../../icons/tabler-icons"
 import { useTheme } from "next-themes"
 import { Toaster as Sonner } from "sonner"
 

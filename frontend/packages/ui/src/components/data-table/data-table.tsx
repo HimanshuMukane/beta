@@ -39,7 +39,7 @@ import {
   IconArchive,
   IconTrash,
   IconDots,
-} from "@tabler/icons-react"
+} from "../../icons/tabler-icons"
 
 import {
   Table,

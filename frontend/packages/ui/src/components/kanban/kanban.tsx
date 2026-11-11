@@ -57,7 +57,7 @@ import {
   IconPaperclip,
   IconMessageCircle,
   IconUser,
-} from '@tabler/icons-react';
+} from "../../icons/tabler-icons";
 import { cn } from '@repo/ui/lib/utils';
 import { toast } from 'sonner';
 

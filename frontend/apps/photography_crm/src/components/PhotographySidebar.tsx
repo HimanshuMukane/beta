@@ -26,7 +26,7 @@ import {
   IconGitFork,
   IconLogout,
   IconUser,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import {
   Sidebar,
   SidebarContent,

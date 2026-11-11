@@ -13,7 +13,7 @@ import {
   IconBlockquote,
   IconArrowBackUp,
   IconArrowForwardUp,
-} from "@tabler/icons-react"
+} from "../../icons/tabler-icons"
 import { Button } from "../ui/button"
 import { cn } from "@repo/ui/lib/utils"
 

@@ -25,7 +25,7 @@ import {
   IconTrendingUp,
   IconBriefcase,
   IconCash,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 
 export function MasterReportPage() {
   const [searchTerm, setSearchTerm] = React.useState('')

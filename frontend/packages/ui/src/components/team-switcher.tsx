@@ -1,5 +1,5 @@
 import * as React from "react"
-import { IconSelector, IconPlus } from "@tabler/icons-react"
+import { IconSelector, IconPlus } from "../icons/tabler-icons"
 
 import {
   DropdownMenu,

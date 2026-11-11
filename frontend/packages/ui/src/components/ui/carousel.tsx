@@ -4,7 +4,7 @@ import * as React from "react"
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from "embla-carousel-react"
-import { IconArrowLeft, IconArrowRight } from "@tabler/icons-react"
+import { IconArrowLeft, IconArrowRight } from "../../icons/tabler-icons"
 
 import { cn } from "@repo/ui/lib/utils"
 import { Button } from "@repo/ui/components/ui/button"

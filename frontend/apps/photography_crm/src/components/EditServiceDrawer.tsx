@@ -5,7 +5,7 @@ import {
   IconCheck,
   IconInfoCircle,
   IconClock,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import { Sheet, SheetContent } from '@repo/ui/components/ui/sheet'
 import { Button } from '@repo/ui/components/ui/button'
 import { Input } from '@repo/ui/components/ui/input'

@@ -10,7 +10,7 @@ import {
   IconChartPie,
   IconAdjustments,
   IconTerminal2,
-} from "@tabler/icons-react"
+} from "../icons/tabler-icons"
 
 import { NavMain } from "@repo/ui/components/nav-main"
 import { NavProjects } from "@repo/ui/components/nav-projects"

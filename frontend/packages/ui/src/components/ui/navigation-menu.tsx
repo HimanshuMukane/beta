@@ -1,7 +1,7 @@
 import * as React from "react"
 import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
 import { cva } from "class-variance-authority"
-import { IconChevronDown } from "@tabler/icons-react"
+import { IconChevronDown } from "../../icons/tabler-icons"
 
 import { cn } from "@repo/ui/lib/utils"
 

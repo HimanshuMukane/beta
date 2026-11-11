@@ -13,7 +13,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import {
   IconDownload,
   IconPlus,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import { isWithinInterval, parse } from 'date-fns'
 
 import type {
@@ -25,8 +25,11 @@ import type {
   BillingRefunded,
 } from '../../types/billing'
 import { billingApi } from '../../api/crmApi'
-import { BillingHero } from '../../components/BillingHero'
 import { BillingDateRangePicker, type DateRange } from '../../components/BillingDateRangePicker'
+
+const BillingHero = React.lazy(() =>
+  import('../../components/BillingHero').then((m) => ({ default: m.BillingHero }))
+)
 
 const AddPaymentModal = React.lazy(() =>
   import('../../components/AddPaymentModal').then((m) => ({ default: m.AddPaymentModal }))
@@ -879,25 +882,27 @@ export function BillingsPage() {
   return (
     <div className="space-y-6">
       {/* Top Hero Section: Cards on left + Chart on right + Date Range selector */}
-      <BillingHero
-        cards={heroConfig.cards}
-        chartTitle={heroConfig.chartTitle}
-        chartData={heroConfig.chartData}
-        chartColor={heroConfig.chartColor}
-        dateRangeFilterNode={
-          <BillingDateRangePicker
-            labelPrefix={datePickerPrefix}
-            dateRange={dateRange}
-            onChange={setDateRange}
-            onClear={() =>
-              setDateRange({
-                startDate: new Date(2000, 0, 1),
-                endDate: new Date(2026, 11, 31),
-              })
-            }
-          />
-        }
-      />
+      <React.Suspense fallback={<div className="h-48 w-full animate-pulse rounded-xl bg-muted/20" />}>
+        <BillingHero
+          cards={heroConfig.cards}
+          chartTitle={heroConfig.chartTitle}
+          chartData={heroConfig.chartData}
+          chartColor={heroConfig.chartColor}
+          dateRangeFilterNode={
+            <BillingDateRangePicker
+              labelPrefix={datePickerPrefix}
+              dateRange={dateRange}
+              onChange={setDateRange}
+              onClear={() =>
+                setDateRange({
+                  startDate: new Date(2000, 0, 1),
+                  endDate: new Date(2026, 11, 31),
+                })
+              }
+            />
+          }
+        />
+      </React.Suspense>
 
       {/* Tabs Navigation (Payments, Invoice, Expense, Cancelled, Refunded) */}
       <div className="flex items-center justify-between border-b pb-1">

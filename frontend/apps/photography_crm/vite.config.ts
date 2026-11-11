@@ -47,8 +47,8 @@ export default defineConfig({
           if (id.includes('node_modules/@radix-ui')) {
             return 'vendor-radix';
           }
-          if (id.includes('node_modules/@tabler/icons-react')) {
-            return 'vendor-icons';
+          if (id.includes('packages/ui/src/icons')) {
+            return 'ui-icons';
           }
           if (id.includes('node_modules/@tanstack')) {
             return 'vendor-tanstack';

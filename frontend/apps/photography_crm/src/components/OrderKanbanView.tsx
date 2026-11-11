@@ -5,7 +5,7 @@ import {
   IconEdit,
   IconTrash,
   IconUserCheck,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import { Badge } from '@repo/ui/components/ui/badge'
 import {
   DropdownMenu,

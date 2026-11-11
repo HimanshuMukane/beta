@@ -18,7 +18,7 @@ import {
   IconSearch,
   IconCheck,
   IconUsers,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import { useAuth } from '@repo/ui/hooks/use-auth'
 import type { Project, CustomerDeliverable } from '../../types/project'
 import { AddDeliverableModal } from '../../components/AddDeliverableModal'

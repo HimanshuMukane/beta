@@ -12,7 +12,7 @@ import {
   IconUserCheck,
   IconFileSpreadsheet,
   IconStarFilled,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 
 export function AccountAnalyticsPage() {
   const topAccounts = [

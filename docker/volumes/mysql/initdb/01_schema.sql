@@ -4,12 +4,18 @@ USE `photography_crm_db`;
 CREATE TABLE IF NOT EXISTS `workflows` (
     `id` VARCHAR(36) NOT NULL PRIMARY KEY,
     `tenant_id` VARCHAR(36) NOT NULL,
-    `name` VARCHAR(100) NOT NULL,
+    `name` VARCHAR(100) DEFAULT '',
+    `workflow_type` VARCHAR(50) DEFAULT 'lead',
+    `pipeline` VARCHAR(100) DEFAULT '',
+    `stage` VARCHAR(100) DEFAULT '',
+    `color_code` VARCHAR(50) DEFAULT '#10b981',
+    `order_index` INT DEFAULT 0,
     `is_default` BOOLEAN NOT NULL DEFAULT FALSE,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     `deleted_at` DATETIME(6) DEFAULT NULL,
-    INDEX `idx_workflows_tenant` (`tenant_id`)
+    INDEX `idx_workflows_tenant` (`tenant_id`),
+    INDEX `idx_workflows_tenant_type` (`tenant_id`, `workflow_type`)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `stages` (

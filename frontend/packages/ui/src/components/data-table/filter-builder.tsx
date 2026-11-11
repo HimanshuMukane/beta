@@ -6,7 +6,7 @@ import {
   IconCheck,
   IconTag,
   IconCornerDownRight,
-} from "@tabler/icons-react"
+} from "../../icons/tabler-icons"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import {

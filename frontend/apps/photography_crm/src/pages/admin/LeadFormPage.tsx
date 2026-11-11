@@ -3,7 +3,7 @@ import {
   IconArrowLeft,
   IconDeviceFloppy,
   IconEdit,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import { Button } from '@repo/ui/components/ui/button'
 import { Input } from '@repo/ui/components/ui/input'
 import { Label } from '@repo/ui/components/ui/label'

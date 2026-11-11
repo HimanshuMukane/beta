@@ -6,7 +6,7 @@ import {
   IconBriefcase,
   IconFolderPlus,
   IconDeviceFloppy,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import {
   Card,
   CardContent,

@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"net/http"
+	"os"
 	"strings"
 
 	"core/utils"
@@ -46,10 +47,28 @@ func CSRFProtection(next http.Handler) http.Handler {
 		switch r.Method {
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
 			// Origin / Referer validation if present
-			origin := r.Header.Get("Origin")
+			var origin string = r.Header.Get("Origin")
 			if origin != "" {
-				host := r.Host
-				if !strings.Contains(origin, host) && !strings.Contains(origin, "localhost") && !strings.Contains(origin, "127.0.0.1") && !strings.HasSuffix(origin, ".especa.com") {
+				var host string = r.Host
+				var forwardedHost string = r.Header.Get("X-Forwarded-Host")
+				var isAllowed bool = false
+
+				if strings.Contains(origin, host) ||
+					(forwardedHost != "" && strings.Contains(origin, forwardedHost)) ||
+					strings.Contains(origin, "localhost") ||
+					strings.Contains(origin, "127.0.0.1") ||
+					strings.HasSuffix(origin, ".especa.com") {
+					isAllowed = true
+				}
+
+				if !isAllowed {
+					var appEnvironment string = os.Getenv("APP_ENV")
+					if appEnvironment == "development" {
+						isAllowed = true
+					}
+				}
+
+				if !isAllowed {
 					utils.WriteError(w, http.StatusForbidden, "Cross-origin request forbidden")
 					return
 				}

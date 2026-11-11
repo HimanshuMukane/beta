@@ -7,7 +7,7 @@ import {
   IconPlus,
   IconEye,
   IconChecklist,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import { Badge } from '@repo/ui/components/ui/badge'
 import { Button } from '@repo/ui/components/ui/button'
 import {

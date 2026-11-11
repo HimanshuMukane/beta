@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
-import { IconSearch } from "@tabler/icons-react"
+import { IconSearch } from "../../icons/tabler-icons"
 import { Dialog, DialogContent } from "../ui/dialog"
 
 export interface CommandItemType {

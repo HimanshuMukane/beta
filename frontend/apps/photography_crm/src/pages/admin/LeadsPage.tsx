@@ -29,7 +29,7 @@ import {
   IconAlertTriangle,
   IconClock,
   IconFolderPlus,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import type {
   Lead,
   LeadSource,

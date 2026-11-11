@@ -3,7 +3,7 @@
 import * as React from "react"
 import * as SheetPrimitive from "@radix-ui/react-dialog"
 import { cva, type VariantProps } from "class-variance-authority"
-import { IconX } from "@tabler/icons-react"
+import { IconX } from "../../icons/tabler-icons"
 
 import { cn } from "@repo/ui/lib/utils"
 

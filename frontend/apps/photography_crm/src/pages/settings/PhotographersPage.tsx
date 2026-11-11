@@ -8,7 +8,7 @@ import {
   IconPhone,
   IconMail,
   IconBriefcase,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import { Card, CardContent } from '@repo/ui/components/ui/card'
 import { Button } from '@repo/ui/components/ui/button'
 import { Input } from '@repo/ui/components/ui/input'

@@ -21,7 +21,7 @@ import {
   IconUsers,
   IconCheck,
   IconRotateClockwise2,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import { useAuth } from '@repo/ui/hooks/use-auth'
 import type { ProjectSession, SessionStatus } from '../../types/session'
 import { PROJECT_TYPES } from '../../types/session'

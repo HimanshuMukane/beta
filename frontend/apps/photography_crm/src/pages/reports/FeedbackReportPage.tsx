@@ -14,7 +14,7 @@ import {
   IconMoodSmile,
   IconThumbUp,
   IconFileSpreadsheet,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 
 export function FeedbackReportPage() {
   const reviews = [

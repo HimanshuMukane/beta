@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { IconChevronRight, IconDots } from "@tabler/icons-react"
+import { IconChevronRight, IconDots } from "../../icons/tabler-icons"
 
 import { cn } from "@repo/ui/lib/utils"
 

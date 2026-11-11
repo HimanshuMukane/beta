@@ -27,7 +27,7 @@ import {
   IconChevronRight,
   IconSearch,
   IconListCheck,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import type { Project } from '../../types/project'
 import {
   ProductionTaskDrawer,

@@ -26,7 +26,7 @@ import {
   IconCheck,
   IconCalendar,
   IconUser,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 
 export interface TaskDetailData {
   taskId: string

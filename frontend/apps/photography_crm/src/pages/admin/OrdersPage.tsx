@@ -26,7 +26,7 @@ import {
   IconEdit,
   IconTrash,
   IconEye,
-} from '@tabler/icons-react'
+} from "@repo/ui/icons/tabler-icons"
 import type { Order, OrderStage, OrderPaymentStatus } from '../../types/order'
 import { OrderKanbanView } from '../../components/OrderKanbanView'
 import { useWorkflows } from '../../hooks/useWorkflows'

@@ -7,7 +7,7 @@ import {
   Popover as AriaPopover,
   type Key,
 } from "react-aria-components"
-import { IconChevronDown, IconCheck, IconX } from "@tabler/icons-react"
+import { IconChevronDown, IconCheck, IconX } from "../../icons/tabler-icons"
 import { cn } from "@repo/ui/lib/utils"
 
 export interface ComboboxOption {
