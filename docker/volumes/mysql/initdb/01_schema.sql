@@ -304,6 +304,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `last_name` VARCHAR(100) NOT NULL,
     `email` VARCHAR(255) NOT NULL UNIQUE,
     `phone` VARCHAR(50) DEFAULT NULL,
+    `country_code` VARCHAR(10) NOT NULL DEFAULT '+91',
+    `note` TEXT DEFAULT NULL,
     `password_hash` VARCHAR(255) NOT NULL DEFAULT '',
     `auth_provider_id` VARCHAR(255) DEFAULT NULL,
     `role_id` VARCHAR(36) DEFAULT NULL,
@@ -471,6 +473,83 @@ CREATE TABLE IF NOT EXISTS `media_files` (
     INDEX `idx_media_files_tenant_owner` (`tenant_id`, `owner_type`, `owner_id`),
     CONSTRAINT `fk_media_files_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `project_tasks` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `project_id` VARCHAR(36) NOT NULL,
+    `task_name` VARCHAR(255) NOT NULL,
+    `category_name` VARCHAR(100) NOT NULL DEFAULT 'General',
+    `phase` VARCHAR(50) NOT NULL DEFAULT 'Pre-production',
+    `status` VARCHAR(50) NOT NULL DEFAULT 'Pending',
+    `priority` VARCHAR(50) NOT NULL DEFAULT 'Medium',
+    `due_date` VARCHAR(50) DEFAULT NULL,
+    `assignee` VARCHAR(100) NOT NULL DEFAULT '',
+    `notes` TEXT DEFAULT NULL,
+    `checklist` JSON DEFAULT NULL,
+    `order_index` INT NOT NULL DEFAULT 0,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL,
+    INDEX `idx_project_tasks_tenant` (`tenant_id`),
+    INDEX `idx_project_tasks_tenant_project` (`tenant_id`, `project_id`),
+    INDEX `idx_project_tasks_tenant_phase` (`tenant_id`, `phase`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `project_deliverables` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `project_id` VARCHAR(36) NOT NULL,
+    `deliverable` VARCHAR(255) NOT NULL,
+    `due_date` VARCHAR(50) DEFAULT NULL,
+    `assignee` VARCHAR(100) NOT NULL DEFAULT '',
+    `status` VARCHAR(50) NOT NULL DEFAULT 'New',
+    `note` TEXT DEFAULT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL,
+    INDEX `idx_project_deliv_tenant` (`tenant_id`),
+    INDEX `idx_project_deliv_tenant_project` (`tenant_id`, `project_id`),
+    INDEX `idx_project_deliv_tenant_status` (`tenant_id`, `status`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `project_expenses` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `project_id` VARCHAR(36) NOT NULL,
+    `session_name` VARCHAR(255) NOT NULL DEFAULT '',
+    `paid_by` VARCHAR(100) NOT NULL DEFAULT '',
+    `category` VARCHAR(100) NOT NULL DEFAULT 'Other',
+    `amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    `description` TEXT DEFAULT NULL,
+    `expense_date` VARCHAR(50) DEFAULT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL,
+    INDEX `idx_project_expenses_tenant` (`tenant_id`),
+    INDEX `idx_project_expenses_tenant_project` (`tenant_id`, `project_id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `project_printing_orders` (
+    `id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `tenant_id` VARCHAR(36) NOT NULL,
+    `project_id` VARCHAR(36) NOT NULL,
+    `lab_name` VARCHAR(255) NOT NULL DEFAULT '',
+    `galleries_name` VARCHAR(255) NOT NULL DEFAULT '',
+    `order_name` VARCHAR(255) NOT NULL DEFAULT '',
+    `order_type` VARCHAR(100) NOT NULL DEFAULT '',
+    `associate` VARCHAR(100) NOT NULL DEFAULT '',
+    `status` VARCHAR(50) NOT NULL DEFAULT 'Draft',
+    `cost` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) DEFAULT NULL,
+    INDEX `idx_project_printing_tenant` (`tenant_id`),
+    INDEX `idx_project_printing_tenant_project` (`tenant_id`, `project_id`),
+    INDEX `idx_project_printing_tenant_status` (`tenant_id`, `status`)
+) ENGINE=InnoDB;
+
+
 
 CREATE TABLE IF NOT EXISTS `audit_logs` (
     `id` VARCHAR(36) NOT NULL PRIMARY KEY,

@@ -143,12 +143,19 @@ export function ProjectEditPage({
   // Sub-items states
   const [documents] = React.useState<ProjectDocument[]>(project.documents || [])
   const [sessions, setSessions] = React.useState<ProjectSession[]>(project.sessions || [])
-  const [printing] = React.useState<ProjectPrintingItem[]>(project.printing || [])
+  const [printing, setPrinting] = React.useState<ProjectPrintingItem[]>(project.printing || [])
   const [deliverables, setDeliverables] = React.useState<CustomerDeliverable[]>(
     project.deliverables || []
   )
   const [expenses, setExpenses] = React.useState<ProjectExpenseItem[]>(project.expenses || [])
   const [notes, setNotes] = React.useState<string>(project.notes || '')
+
+  const handleDeletePrinting = (id: string) => {
+    const updated = printing.filter((p) => p.id !== id)
+    setPrinting(updated)
+    onUpdate({ ...project, printing: updated })
+    toast.success('Printing order deleted')
+  }
 
   // Insights Sub-tab
   const [insightSubTab, setInsightSubTab] = React.useState<'Overview' | 'Finance' | 'Payment History'>(
@@ -939,12 +946,13 @@ export function ProjectEditPage({
                     <th className="px-4 py-3">ORDER TYPE</th>
                     <th className="px-4 py-3">ASSOCIATE</th>
                     <th className="px-4 py-3">STATUS</th>
+                    <th className="px-4 py-3 text-right">ACTION</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {printing.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-16 text-center">
+                      <td colSpan={8} className="px-4 py-16 text-center">
                         <div className="flex flex-col items-center justify-center">
                           <IconInbox className="h-10 w-10 text-muted-foreground/40 mb-2" />
                           <span className="text-xs font-medium text-muted-foreground">No Data</span>
@@ -964,6 +972,17 @@ export function ProjectEditPage({
                           <Badge variant="outline" className="text-[10px]">
                             {prn.status}
                           </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeletePrinting(prn.id)}
+                            title="Delete"
+                          >
+                            <IconTrash className="h-3.5 w-3.5" />
+                          </Button>
                         </td>
                       </tr>
                     ))

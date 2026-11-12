@@ -58,6 +58,62 @@ func RegisterBackendRoutes(
 			projectRouter.Put("/{id}", handlers.UpdateProjectHandler)
 			projectRouter.Patch("/{id}/stage", handlers.UpdateProjectStageHandler)
 			projectRouter.Delete("/{id}", handlers.DeleteProjectHandler)
+
+			projectRouter.Get("/{id}/tasks", handlers.ProjectTasksListHandler)
+			projectRouter.Post("/{id}/tasks", handlers.CreateProjectTaskHandler)
+
+			projectRouter.Get("/{id}/deliverables", handlers.ProjectDeliverablesListHandler)
+			projectRouter.Post("/{id}/deliverables", handlers.CreateProjectDeliverableHandler)
+			projectRouter.Patch("/{projectId}/deliverables/{id}/status", handlers.UpdateProjectDeliverableStatusHandler)
+
+			projectRouter.Get("/{projectId}/expenses", handlers.ProjectExpensesListHandler)
+			projectRouter.Post("/{projectId}/expenses", handlers.CreateProjectExpenseHandler)
+			projectRouter.Put("/{projectId}/expenses/{id}", handlers.UpdateProjectExpenseHandler)
+			projectRouter.Delete("/{projectId}/expenses/{id}", handlers.DeleteProjectExpenseHandler)
+
+			projectRouter.Get("/{projectId}/printing", handlers.ProjectPrintingListHandler)
+			projectRouter.Post("/{projectId}/printing", handlers.CreateProjectPrintingHandler)
+			projectRouter.Patch("/{projectId}/printing/{id}/status", handlers.UpdateProjectPrintingStatusHandler)
+			projectRouter.Delete("/{projectId}/printing/{id}", handlers.DeleteProjectPrintingHandler)
+		})
+
+		apiRouter.Route("/api/tasks", func(tasksRouter chi.Router) {
+			tasksRouter.Get("/", handlers.ProjectTasksListHandler)
+			tasksRouter.Get("/{id}", handlers.GetTaskHandler)
+			tasksRouter.Put("/{id}", handlers.UpdateTaskHandler)
+			tasksRouter.Patch("/{id}/status", handlers.UpdateTaskStatusHandler)
+			tasksRouter.Delete("/{id}", handlers.DeleteTaskHandler)
+		})
+
+		apiRouter.Route("/api/project-deliverables", func(delivRouter chi.Router) {
+			delivRouter.Get("/", handlers.ProjectDeliverablesListHandler)
+			delivRouter.Get("/{id}", handlers.GetProjectDeliverableHandler)
+			delivRouter.Put("/{id}", handlers.UpdateProjectDeliverableHandler)
+			delivRouter.Patch("/{id}/status", handlers.UpdateProjectDeliverableStatusHandler)
+			delivRouter.Delete("/{id}", handlers.DeleteProjectDeliverableHandler)
+		})
+
+		apiRouter.Route("/api/project-expenses", func(expenseRouter chi.Router) {
+			expenseRouter.Get("/", handlers.ProjectExpensesListHandler)
+			expenseRouter.Put("/{id}", handlers.UpdateProjectExpenseHandler)
+			expenseRouter.Delete("/{id}", handlers.DeleteProjectExpenseHandler)
+		})
+
+		apiRouter.Route("/api/printing", func(printingRouter chi.Router) {
+			printingRouter.Get("/", handlers.ProjectPrintingListHandler)
+			printingRouter.Patch("/{id}/status", handlers.UpdateProjectPrintingStatusHandler)
+			printingRouter.Delete("/{id}", handlers.DeleteProjectPrintingHandler)
+		})
+
+		apiRouter.Route("/api/reports", func(reportsRouter chi.Router) {
+			reportsRouter.Get("/billing", handlers.ReportBillingHandler)
+			reportsRouter.Get("/leads", handlers.ReportLeadsHandler)
+			reportsRouter.Get("/orders", handlers.ReportOrdersHandler)
+			reportsRouter.Get("/sessions", handlers.ReportSessionsHandler)
+			reportsRouter.Get("/finance", handlers.ReportFinanceHandler)
+			reportsRouter.Get("/feedback", handlers.ReportFeedbackHandler)
+			reportsRouter.Get("/master-report", handlers.ReportMasterReportHandler)
+			reportsRouter.Get("/account-analytics", handlers.ReportAccountAnalyticsHandler)
 		})
 
 		apiRouter.Route("/api/sessions", func(sessionRouter chi.Router) {
@@ -118,6 +174,8 @@ func RegisterBackendRoutes(
 		apiRouter.Route("/api/crew", func(crewRouter chi.Router) {
 			crewRouter.Get("/", handlers.CrewMembersListHandler)
 			crewRouter.Post("/", handlers.CreateCrewMemberHandler)
+			crewRouter.Get("/{id}", handlers.GetCrewMemberHandler)
+			crewRouter.Put("/{id}", handlers.UpdateCrewMemberHandler)
 			crewRouter.Delete("/{id}", handlers.DeleteCrewMemberHandler)
 		})
 
