@@ -97,9 +97,22 @@ func LeadsListHandler(responseWriter http.ResponseWriter, request *http.Request)
 		return
 	}
 
-	var rows *sql.Rows
-	var queryErr error
-	rows, queryErr = database.QueryContext(request.Context(), `
+	var pipelineFilter string = strings.TrimSpace(request.URL.Query().Get("pipeline"))
+	if pipelineFilter == "" {
+		pipelineFilter = strings.TrimSpace(request.URL.Query().Get("leadPipeline"))
+	}
+	var stageFilter string = strings.TrimSpace(request.URL.Query().Get("stage"))
+	if stageFilter == "" {
+		stageFilter = strings.TrimSpace(request.URL.Query().Get("pipelineStage"))
+	}
+	if stageFilter == "" {
+		stageFilter = strings.TrimSpace(request.URL.Query().Get("leadStage"))
+	}
+	var projectTypeFilter string = strings.TrimSpace(request.URL.Query().Get("projectType"))
+	var searchFilter string = strings.TrimSpace(request.URL.Query().Get("search"))
+	var assigneeFilter string = strings.TrimSpace(request.URL.Query().Get("assignee"))
+
+	var querySql string = `
 		SELECT id, name, mobile_no, country_code, email, address, lead_source, generate,
 		       assignee_name, assignee_initials, lead_pipeline, pipeline_stage, lead_stage,
 		       quote_amount, followup_date, project_type, quote_type, project_start_date,
@@ -108,8 +121,36 @@ func LeadsListHandler(responseWriter http.ResponseWriter, request *http.Request)
 		       quotation_template, discount_amount, tax_amount, created_at
 		FROM leads
 		WHERE tenant_id = ? AND deleted_at IS NULL
-		ORDER BY created_at DESC
-	`, tenantID)
+	`
+	var queryParams []interface{}
+	queryParams = append(queryParams, tenantID)
+
+	if pipelineFilter != "" && !strings.EqualFold(pipelineFilter, "all") {
+		querySql += " AND lead_pipeline = ?"
+		queryParams = append(queryParams, pipelineFilter)
+	}
+	if stageFilter != "" && !strings.EqualFold(stageFilter, "all") {
+		querySql += " AND (pipeline_stage = ? OR lead_stage = ?)"
+		queryParams = append(queryParams, stageFilter, stageFilter)
+	}
+	if projectTypeFilter != "" && !strings.EqualFold(projectTypeFilter, "all") {
+		querySql += " AND project_type = ?"
+		queryParams = append(queryParams, projectTypeFilter)
+	}
+	if assigneeFilter != "" && !strings.EqualFold(assigneeFilter, "all") {
+		querySql += " AND assignee_name = ?"
+		queryParams = append(queryParams, assigneeFilter)
+	}
+	if searchFilter != "" {
+		querySql += " AND (name LIKE ? OR mobile_no LIKE ? OR email LIKE ? OR project_name LIKE ?)"
+		var wildcard string = "%" + searchFilter + "%"
+		queryParams = append(queryParams, wildcard, wildcard, wildcard, wildcard)
+	}
+	querySql += " ORDER BY created_at DESC"
+
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), querySql, queryParams...)
 	if queryErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list leads", queryErr)
 		return

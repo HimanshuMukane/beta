@@ -33,8 +33,8 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: '@', replacement: path.resolve(import.meta.dirname, './src') },
-      { find: /^@repo\/ui\/(.*)$/, replacement: path.resolve(import.meta.dirname, '../../packages/ui/src/$1') },
-      { find: '@repo/ui', replacement: path.resolve(import.meta.dirname, '../../packages/ui/src/index.ts') },
+      { find: /^@repo\/ui\/(.*)$/, replacement: path.resolve(import.meta.dirname, '../../ui/src/$1') },
+      { find: '@repo/ui', replacement: path.resolve(import.meta.dirname, '../../ui/src/index.ts') },
     ],
   },
   build: {
@@ -47,7 +47,7 @@ export default defineConfig({
           if (id.includes('node_modules/@radix-ui')) {
             return 'vendor-radix';
           }
-          if (id.includes('packages/ui/src/icons')) {
+          if (id.includes('ui/src/icons')) {
             return 'ui-icons';
           }
           if (id.includes('node_modules/@tanstack')) {

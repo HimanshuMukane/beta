@@ -266,14 +266,30 @@ func ReportLeadsHandler(responseWriter http.ResponseWriter, request *http.Reques
 	queryParams = append(queryParams, tenantID)
 
 	if startYear != "" {
-		querySql += " AND YEAR(created_at) >= ?"
-		var parsedStartYear, _ = strconv.Atoi(startYear)
-		queryParams = append(queryParams, parsedStartYear)
+		var parsedStartYear int
+		parsedStartYear, _ = strconv.Atoi(startYear)
+		if startMonth != "" {
+			var parsedStartMonth int
+			parsedStartMonth, _ = strconv.Atoi(startMonth)
+			querySql += " AND (YEAR(created_at) > ? OR (YEAR(created_at) = ? AND MONTH(created_at) >= ?))"
+			queryParams = append(queryParams, parsedStartYear, parsedStartYear, parsedStartMonth)
+		} else {
+			querySql += " AND YEAR(created_at) >= ?"
+			queryParams = append(queryParams, parsedStartYear)
+		}
 	}
 	if endYear != "" {
-		querySql += " AND YEAR(created_at) <= ?"
-		var parsedEndYear, _ = strconv.Atoi(endYear)
-		queryParams = append(queryParams, parsedEndYear)
+		var parsedEndYear int
+		parsedEndYear, _ = strconv.Atoi(endYear)
+		if endMonth != "" {
+			var parsedEndMonth int
+			parsedEndMonth, _ = strconv.Atoi(endMonth)
+			querySql += " AND (YEAR(created_at) < ? OR (YEAR(created_at) = ? AND MONTH(created_at) <= ?))"
+			queryParams = append(queryParams, parsedEndYear, parsedEndYear, parsedEndMonth)
+		} else {
+			querySql += " AND YEAR(created_at) <= ?"
+			queryParams = append(queryParams, parsedEndYear)
+		}
 	}
 
 	querySql += " GROUP BY lead_stage"

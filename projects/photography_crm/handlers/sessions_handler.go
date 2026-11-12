@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"core/utils"
 	"github.com/go-chi/chi/v5"
@@ -59,11 +60,19 @@ func SessionsListHandler(responseWriter http.ResponseWriter, request *http.Reque
 	if !hasTenantID {
 		return
 	}
-	var projectIDFilter string = request.URL.Query().Get("projectId")
+	var projectIDFilter string = strings.TrimSpace(request.URL.Query().Get("projectId"))
+	var tabFilter string = strings.ToLower(strings.TrimSpace(request.URL.Query().Get("tab")))
+	var projectTypeFilter string = strings.TrimSpace(request.URL.Query().Get("projectType"))
+	if projectTypeFilter == "" {
+		projectTypeFilter = strings.TrimSpace(request.URL.Query().Get("type"))
+	}
+	var statusFilter string = strings.TrimSpace(request.URL.Query().Get("status"))
+	var searchFilter string = strings.TrimSpace(request.URL.Query().Get("search"))
+	var sortFilter string = strings.ToLower(strings.TrimSpace(request.URL.Query().Get("sort")))
 
 	var query string = `
 		SELECT s.id, COALESCE(s.project_id, ''), s.title, COALESCE(p.project_name, s.project_name, ''),
-		       s.session_manager, s.project_type, s.shoot_timing, s.status, s.date,
+		       s.session_manager, s.project_type, s.shoot_timing, s.status, COALESCE(s.session_date, ''),
 		       s.start_time, s.duration, s.time_range, s.venue, s.city, s.location_link,
 		       s.remarks, s.members, s.shoots_activity_count
 		FROM project_sessions s
@@ -75,7 +84,34 @@ func SessionsListHandler(responseWriter http.ResponseWriter, request *http.Reque
 		query += " AND s.project_id = ?"
 		queryArguments = append(queryArguments, projectIDFilter)
 	}
-	query += " ORDER BY s.date ASC"
+	if tabFilter == "upcoming" {
+		query += " AND s.session_date >= DATE_FORMAT(NOW(), '%Y-%m-%d')"
+	} else if tabFilter == "past" {
+		query += " AND s.session_date != '' AND s.session_date < DATE_FORMAT(NOW(), '%Y-%m-%d')"
+	} else if tabFilter == "tbd" {
+		query += " AND (s.session_date = '' OR s.session_date IS NULL OR s.status = 'TBD')"
+	}
+	if projectTypeFilter != "" && !strings.EqualFold(projectTypeFilter, "all") {
+		query += " AND s.project_type = ?"
+		queryArguments = append(queryArguments, projectTypeFilter)
+	}
+	if statusFilter != "" && !strings.EqualFold(statusFilter, "all") {
+		query += " AND s.status = ?"
+		queryArguments = append(queryArguments, statusFilter)
+	}
+	if searchFilter != "" {
+		query += " AND (s.title LIKE ? OR s.venue LIKE ? OR s.city LIKE ? OR p.project_name LIKE ?)"
+		var searchWildcard string = "%" + searchFilter + "%"
+		queryArguments = append(queryArguments, searchWildcard, searchWildcard, searchWildcard, searchWildcard)
+	}
+
+	if sortFilter == "date_desc" {
+		query += " ORDER BY s.session_date DESC"
+	} else if sortFilter == "recently_created" {
+		query += " ORDER BY s.created_at DESC"
+	} else {
+		query += " ORDER BY s.session_date ASC"
+	}
 
 	var rows *sql.Rows
 	var queryErr error
@@ -221,7 +257,7 @@ func CreateSessionHandler(responseWriter http.ResponseWriter, request *http.Requ
 	_, insertErr = database.ExecContext(request.Context(), `
 		INSERT INTO project_sessions (
 			id, tenant_id, project_id, title, project_name, session_manager,
-			project_type, shoot_timing, status, date, start_time, duration,
+			project_type, shoot_timing, status, session_date, start_time, duration,
 			time_range, venue, city, location_link, remarks, members, shoots_activity_count
 		) VALUES (
 			?, ?, ?, ?, ?, ?,
@@ -283,7 +319,7 @@ func UpdateSessionHandler(responseWriter http.ResponseWriter, request *http.Requ
 	_, updateErr = database.ExecContext(request.Context(), `
 		UPDATE project_sessions SET
 			project_id = ?, title = ?, project_name = ?, session_manager = ?,
-			project_type = ?, shoot_timing = ?, status = ?, date = ?, start_time = ?,
+			project_type = ?, shoot_timing = ?, status = ?, session_date = ?, start_time = ?,
 			duration = ?, time_range = ?, venue = ?, city = ?, location_link = ?,
 			remarks = ?, members = ?, shoots_activity_count = ?
 		WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL

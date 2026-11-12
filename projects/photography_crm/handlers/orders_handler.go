@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"core/utils"
@@ -70,9 +71,18 @@ func OrdersListHandler(responseWriter http.ResponseWriter, request *http.Request
 		return
 	}
 
-	var rows *sql.Rows
-	var queryErr error
-	rows, queryErr = database.QueryContext(request.Context(), `
+	var stageFilter string = strings.TrimSpace(request.URL.Query().Get("stage"))
+	var statusFilter string = strings.TrimSpace(request.URL.Query().Get("status"))
+	if statusFilter == "" {
+		statusFilter = strings.TrimSpace(request.URL.Query().Get("paymentStatus"))
+	}
+	var orderTypeFilter string = strings.TrimSpace(request.URL.Query().Get("orderType"))
+	if orderTypeFilter == "" {
+		orderTypeFilter = strings.TrimSpace(request.URL.Query().Get("type"))
+	}
+	var searchFilter string = strings.TrimSpace(request.URL.Query().Get("search"))
+
+	var querySql string = `
 		SELECT id, order_number, client_name, mobile_no, country_code, email, address,
 		       lead_source, reference_no, order_date, order_type, stage, assignee,
 		       COALESCE(related_project_id, ''), notes, discount, tax_percent, tax_amount,
@@ -80,8 +90,32 @@ func OrdersListHandler(responseWriter http.ResponseWriter, request *http.Request
 		       items, expenses, payments, created_at
 		FROM orders
 		WHERE tenant_id = ? AND deleted_at IS NULL
-		ORDER BY created_at DESC
-	`, tenantID)
+	`
+	var queryParams []interface{}
+	queryParams = append(queryParams, tenantID)
+
+	if stageFilter != "" && !strings.EqualFold(stageFilter, "all") {
+		querySql += " AND stage = ?"
+		queryParams = append(queryParams, stageFilter)
+	}
+	if statusFilter != "" && !strings.EqualFold(statusFilter, "all") {
+		querySql += " AND payment_status = ?"
+		queryParams = append(queryParams, statusFilter)
+	}
+	if orderTypeFilter != "" && !strings.EqualFold(orderTypeFilter, "all") {
+		querySql += " AND order_type = ?"
+		queryParams = append(queryParams, orderTypeFilter)
+	}
+	if searchFilter != "" {
+		querySql += " AND (order_number LIKE ? OR client_name LIKE ? OR mobile_no LIKE ? OR email LIKE ?)"
+		var wildcard string = "%" + searchFilter + "%"
+		queryParams = append(queryParams, wildcard, wildcard, wildcard, wildcard)
+	}
+	querySql += " ORDER BY created_at DESC"
+
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), querySql, queryParams...)
 	if queryErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list orders", queryErr)
 		return

@@ -16,7 +16,7 @@ import {
 import { toast } from '@repo/ui/components/ui/sonner'
 import type { Project, ProjectSegment, ProjectType } from '../../types/project'
 import { LeadSourceCombobox } from '../../components/LeadSourceCombobox'
-import { PhoneInputField } from '../../components/PhoneInputField'
+import { PhoneInputField } from '@repo/ui/components/common/PhoneInputField'
 import { ProjectSegmentsEditor } from '../../components/ProjectSegmentsEditor'
 
 interface ProjectCreatePageProps {

@@ -108,15 +108,42 @@ func BillingPaymentsListHandler(responseWriter http.ResponseWriter, request *htt
 		return
 	}
 
-	var rows *sql.Rows
-	var queryErr error
-	rows, queryErr = database.QueryContext(request.Context(), `
+	var statusFilter string = strings.TrimSpace(request.URL.Query().Get("status"))
+	var startDateFilter string = strings.TrimSpace(request.URL.Query().Get("startDate"))
+	var endDateFilter string = strings.TrimSpace(request.URL.Query().Get("endDate"))
+	var searchFilter string = strings.TrimSpace(request.URL.Query().Get("search"))
+
+	var querySql string = `
 		SELECT id, payment_date, client_name, client_avatar, client_initials,
 		       payment_type, payment_amount, payment_status, project_name, download_url, created_at
 		FROM billing_payments
 		WHERE tenant_id = ?
-		ORDER BY created_at DESC
-	`, tenantID)
+	`
+	var queryParams []interface{}
+	queryParams = append(queryParams, tenantID)
+
+	if statusFilter != "" && !strings.EqualFold(statusFilter, "all") {
+		querySql += " AND payment_status = ?"
+		queryParams = append(queryParams, statusFilter)
+	}
+	if startDateFilter != "" {
+		querySql += " AND payment_date >= ?"
+		queryParams = append(queryParams, startDateFilter)
+	}
+	if endDateFilter != "" {
+		querySql += " AND payment_date <= ?"
+		queryParams = append(queryParams, endDateFilter)
+	}
+	if searchFilter != "" {
+		querySql += " AND (client_name LIKE ? OR project_name LIKE ?)"
+		var wildcard string = "%" + searchFilter + "%"
+		queryParams = append(queryParams, wildcard, wildcard)
+	}
+	querySql += " ORDER BY created_at DESC"
+
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), querySql, queryParams...)
 	if queryErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list payments", queryErr)
 		return
@@ -248,16 +275,43 @@ func BillingInvoicesListHandler(responseWriter http.ResponseWriter, request *htt
 		return
 	}
 
-	var rows *sql.Rows
-	var queryErr error
-	rows, queryErr = database.QueryContext(request.Context(), `
+	var statusFilter string = strings.TrimSpace(request.URL.Query().Get("status"))
+	var startDateFilter string = strings.TrimSpace(request.URL.Query().Get("startDate"))
+	var endDateFilter string = strings.TrimSpace(request.URL.Query().Get("endDate"))
+	var searchFilter string = strings.TrimSpace(request.URL.Query().Get("search"))
+
+	var querySql string = `
 		SELECT id, invoice_name, client_name, client_avatar, client_initials,
 		       projects_name, total_amount, paid_amount, pending_amount,
 		       payment_status, invoice_date, download_url
 		FROM billing_invoices
 		WHERE tenant_id = ?
-		ORDER BY created_at DESC
-	`, tenantID)
+	`
+	var queryParams []interface{}
+	queryParams = append(queryParams, tenantID)
+
+	if statusFilter != "" && !strings.EqualFold(statusFilter, "all") {
+		querySql += " AND payment_status = ?"
+		queryParams = append(queryParams, statusFilter)
+	}
+	if startDateFilter != "" {
+		querySql += " AND invoice_date >= ?"
+		queryParams = append(queryParams, startDateFilter)
+	}
+	if endDateFilter != "" {
+		querySql += " AND invoice_date <= ?"
+		queryParams = append(queryParams, endDateFilter)
+	}
+	if searchFilter != "" {
+		querySql += " AND (client_name LIKE ? OR invoice_name LIKE ? OR projects_name LIKE ?)"
+		var wildcard string = "%" + searchFilter + "%"
+		queryParams = append(queryParams, wildcard, wildcard, wildcard)
+	}
+	querySql += " ORDER BY created_at DESC"
+
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), querySql, queryParams...)
 	if queryErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list invoices", queryErr)
 		return
@@ -401,14 +455,41 @@ func BillingExpensesListHandler(responseWriter http.ResponseWriter, request *htt
 		return
 	}
 
-	var rows *sql.Rows
-	var queryErr error
-	rows, queryErr = database.QueryContext(request.Context(), `
+	var typeFilter string = strings.TrimSpace(request.URL.Query().Get("type"))
+	var startDateFilter string = strings.TrimSpace(request.URL.Query().Get("startDate"))
+	var endDateFilter string = strings.TrimSpace(request.URL.Query().Get("endDate"))
+	var searchFilter string = strings.TrimSpace(request.URL.Query().Get("search"))
+
+	var querySql string = `
 		SELECT id, expense_name, expense_date, amount, expense_type, vendor_or_client, payment_method
 		FROM billing_expenses
 		WHERE tenant_id = ?
-		ORDER BY created_at DESC
-	`, tenantID)
+	`
+	var queryParams []interface{}
+	queryParams = append(queryParams, tenantID)
+
+	if typeFilter != "" && !strings.EqualFold(typeFilter, "all") {
+		querySql += " AND expense_type = ?"
+		queryParams = append(queryParams, typeFilter)
+	}
+	if startDateFilter != "" {
+		querySql += " AND expense_date >= ?"
+		queryParams = append(queryParams, startDateFilter)
+	}
+	if endDateFilter != "" {
+		querySql += " AND expense_date <= ?"
+		queryParams = append(queryParams, endDateFilter)
+	}
+	if searchFilter != "" {
+		querySql += " AND (expense_name LIKE ? OR vendor_or_client LIKE ?)"
+		var wildcard string = "%" + searchFilter + "%"
+		queryParams = append(queryParams, wildcard, wildcard)
+	}
+	querySql += " ORDER BY created_at DESC"
+
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), querySql, queryParams...)
 	if queryErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list expenses", queryErr)
 		return
@@ -524,15 +605,37 @@ func BillingCancelledListHandler(responseWriter http.ResponseWriter, request *ht
 		return
 	}
 
-	var rows *sql.Rows
-	var queryErr error
-	rows, queryErr = database.QueryContext(request.Context(), `
+	var searchFilter string = strings.TrimSpace(request.URL.Query().Get("search"))
+	var startDateFilter string = strings.TrimSpace(request.URL.Query().Get("startDate"))
+	var endDateFilter string = strings.TrimSpace(request.URL.Query().Get("endDate"))
+
+	var querySql string = `
 		SELECT id, action, cancellation_date, payment_date, payment_type, client_name,
 		       client_avatar, client_initials, projects_name, payment_amount, reason
 		FROM billing_cancellations
 		WHERE tenant_id = ?
-		ORDER BY created_at DESC
-	`, tenantID)
+	`
+	var queryParams []interface{}
+	queryParams = append(queryParams, tenantID)
+
+	if startDateFilter != "" {
+		querySql += " AND cancellation_date >= ?"
+		queryParams = append(queryParams, startDateFilter)
+	}
+	if endDateFilter != "" {
+		querySql += " AND cancellation_date <= ?"
+		queryParams = append(queryParams, endDateFilter)
+	}
+	if searchFilter != "" {
+		querySql += " AND (client_name LIKE ? OR projects_name LIKE ? OR reason LIKE ?)"
+		var wildcard string = "%" + searchFilter + "%"
+		queryParams = append(queryParams, wildcard, wildcard, wildcard)
+	}
+	querySql += " ORDER BY created_at DESC"
+
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), querySql, queryParams...)
 	if queryErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list cancellations", queryErr)
 		return
@@ -603,15 +706,42 @@ func BillingRefundsListHandler(responseWriter http.ResponseWriter, request *http
 		return
 	}
 
-	var rows *sql.Rows
-	var queryErr error
-	rows, queryErr = database.QueryContext(request.Context(), `
+	var statusFilter string = strings.TrimSpace(request.URL.Query().Get("status"))
+	var searchFilter string = strings.TrimSpace(request.URL.Query().Get("search"))
+	var startDateFilter string = strings.TrimSpace(request.URL.Query().Get("startDate"))
+	var endDateFilter string = strings.TrimSpace(request.URL.Query().Get("endDate"))
+
+	var querySql string = `
 		SELECT id, invoice_name, refund_date, client_name, client_avatar, client_initials,
 		       projects_name, payment_amount, cancellation_charges, refund_amount, note, status
 		FROM billing_refunds
 		WHERE tenant_id = ?
-		ORDER BY created_at DESC
-	`, tenantID)
+	`
+	var queryParams []interface{}
+	queryParams = append(queryParams, tenantID)
+
+	if statusFilter != "" && !strings.EqualFold(statusFilter, "all") {
+		querySql += " AND status = ?"
+		queryParams = append(queryParams, statusFilter)
+	}
+	if startDateFilter != "" {
+		querySql += " AND refund_date >= ?"
+		queryParams = append(queryParams, startDateFilter)
+	}
+	if endDateFilter != "" {
+		querySql += " AND refund_date <= ?"
+		queryParams = append(queryParams, endDateFilter)
+	}
+	if searchFilter != "" {
+		querySql += " AND (client_name LIKE ? OR invoice_name LIKE ? OR projects_name LIKE ?)"
+		var wildcard string = "%" + searchFilter + "%"
+		queryParams = append(queryParams, wildcard, wildcard, wildcard)
+	}
+	querySql += " ORDER BY created_at DESC"
+
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), querySql, queryParams...)
 	if queryErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to list refunds", queryErr)
 		return

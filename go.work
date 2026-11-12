@@ -3,6 +3,8 @@ go 1.26.6
 use (
 	./cmd/runner
 	./projects/core
+	./projects/especa
 	./projects/photography_crm
+	./projects/resto_pos
 	./tests
 )

@@ -56,6 +56,13 @@ func ProjectExpensesListHandler(responseWriter http.ResponseWriter, request *htt
 		projectID = request.URL.Query().Get("projectId")
 	}
 
+	var sessionFilter string = strings.TrimSpace(request.URL.Query().Get("session"))
+	if sessionFilter == "" {
+		sessionFilter = strings.TrimSpace(request.URL.Query().Get("sessionName"))
+	}
+	var categoryFilter string = strings.TrimSpace(request.URL.Query().Get("category"))
+	var paidByFilter string = strings.TrimSpace(request.URL.Query().Get("paidBy"))
+
 	var querySql string = `
 		SELECT id, project_id, session_name, paid_by, category, amount, COALESCE(description, ''), COALESCE(expense_date, ''), created_at, updated_at
 		FROM project_expenses
@@ -67,6 +74,18 @@ func ProjectExpensesListHandler(responseWriter http.ResponseWriter, request *htt
 	if projectID != "" {
 		querySql += " AND project_id = ?"
 		queryParams = append(queryParams, projectID)
+	}
+	if sessionFilter != "" && !strings.EqualFold(sessionFilter, "all") {
+		querySql += " AND session_name = ?"
+		queryParams = append(queryParams, sessionFilter)
+	}
+	if categoryFilter != "" && !strings.EqualFold(categoryFilter, "all") {
+		querySql += " AND category = ?"
+		queryParams = append(queryParams, categoryFilter)
+	}
+	if paidByFilter != "" && !strings.EqualFold(paidByFilter, "all") {
+		querySql += " AND paid_by = ?"
+		queryParams = append(queryParams, paidByFilter)
 	}
 
 	querySql += " ORDER BY created_at DESC"

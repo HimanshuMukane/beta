@@ -183,9 +183,15 @@ func ProjectsListHandler(responseWriter http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	var rows *sql.Rows
-	var queryErr error
-	rows, queryErr = database.QueryContext(request.Context(), `
+	var statusFilter string = strings.TrimSpace(request.URL.Query().Get("status"))
+	var stageFilter string = strings.TrimSpace(request.URL.Query().Get("stage"))
+	var projectTypeFilter string = strings.TrimSpace(request.URL.Query().Get("projectType"))
+	if projectTypeFilter == "" {
+		projectTypeFilter = strings.TrimSpace(request.URL.Query().Get("type"))
+	}
+	var searchFilter string = strings.TrimSpace(request.URL.Query().Get("search"))
+
+	var querySql string = `
 		SELECT p.id, p.project_name, p.client_name, p.client_initials, p.client_mobile,
 		       p.client_country_code, p.client_email, p.client_address, p.lead_source,
 		       p.project_manager, p.project_type, p.project_address, p.status, p.stage,
@@ -194,8 +200,32 @@ func ProjectsListHandler(responseWriter http.ResponseWriter, request *http.Reque
 		       (SELECT COUNT(*) FROM project_sessions ps WHERE ps.project_id = p.id AND ps.deleted_at IS NULL) as live_sessions_count
 		FROM projects p
 		WHERE p.tenant_id = ? AND p.deleted_at IS NULL
-		ORDER BY p.created_at DESC
-	`, tenantID)
+	`
+	var queryParams []interface{}
+	queryParams = append(queryParams, tenantID)
+
+	if statusFilter != "" && !strings.EqualFold(statusFilter, "all") {
+		querySql += " AND p.status = ?"
+		queryParams = append(queryParams, statusFilter)
+	}
+	if stageFilter != "" && !strings.EqualFold(stageFilter, "all") {
+		querySql += " AND p.stage = ?"
+		queryParams = append(queryParams, stageFilter)
+	}
+	if projectTypeFilter != "" && !strings.EqualFold(projectTypeFilter, "all") {
+		querySql += " AND p.project_type = ?"
+		queryParams = append(queryParams, projectTypeFilter)
+	}
+	if searchFilter != "" {
+		querySql += " AND (p.project_name LIKE ? OR p.client_name LIKE ? OR p.client_email LIKE ? OR p.client_mobile LIKE ?)"
+		var wildcard string = "%" + searchFilter + "%"
+		queryParams = append(queryParams, wildcard, wildcard, wildcard, wildcard)
+	}
+	querySql += " ORDER BY p.created_at DESC"
+
+	var rows *sql.Rows
+	var queryErr error
+	rows, queryErr = database.QueryContext(request.Context(), querySql, queryParams...)
 	if queryErr != nil {
 		utils.WriteAppError(responseWriter, request, http.StatusInternalServerError, "Failed to load projects", queryErr)
 		return

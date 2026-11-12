@@ -31,7 +31,7 @@ import {
 import { toast } from '@repo/ui/components/ui/sonner'
 import { apiClient } from '@repo/ui/lib/api-client'
 import type { TeamDesignation, CrewMember } from '../../types/settings'
-import { PhoneInputField } from '../../components/PhoneInputField'
+import { PhoneInputField } from '@repo/ui/components/common/PhoneInputField'
 
 export function PhotographersPage() {
   const [designations, setDesignations] = React.useState<TeamDesignation[]>([])

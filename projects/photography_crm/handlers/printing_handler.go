@@ -62,6 +62,13 @@ func ProjectPrintingListHandler(responseWriter http.ResponseWriter, request *htt
 		projectID = request.URL.Query().Get("projectId")
 	}
 
+	var orderTypeFilter string = strings.TrimSpace(request.URL.Query().Get("orderType"))
+	if orderTypeFilter == "" {
+		orderTypeFilter = strings.TrimSpace(request.URL.Query().Get("type"))
+	}
+	var statusFilter string = strings.TrimSpace(request.URL.Query().Get("status"))
+	var labNameFilter string = strings.TrimSpace(request.URL.Query().Get("labName"))
+
 	var querySql string = `
 		SELECT id, project_id, lab_name, galleries_name, order_name, order_type, associate, status, cost, created_at, updated_at
 		FROM project_printing_orders
@@ -73,6 +80,18 @@ func ProjectPrintingListHandler(responseWriter http.ResponseWriter, request *htt
 	if projectID != "" {
 		querySql += " AND project_id = ?"
 		queryParams = append(queryParams, projectID)
+	}
+	if orderTypeFilter != "" && !strings.EqualFold(orderTypeFilter, "all") {
+		querySql += " AND order_type = ?"
+		queryParams = append(queryParams, orderTypeFilter)
+	}
+	if statusFilter != "" && !strings.EqualFold(statusFilter, "all") {
+		querySql += " AND status = ?"
+		queryParams = append(queryParams, statusFilter)
+	}
+	if labNameFilter != "" {
+		querySql += " AND lab_name LIKE ?"
+		queryParams = append(queryParams, "%"+labNameFilter+"%")
 	}
 
 	querySql += " ORDER BY created_at DESC"

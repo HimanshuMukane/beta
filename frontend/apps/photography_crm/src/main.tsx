@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip'
 import { queryClient } from './lib/queryClient'
-import { AppErrorBoundary, initGlobalFrontendErrorListeners } from './components/AppErrorBoundary'
+import { AppErrorBoundary, initGlobalFrontendErrorListeners } from '@repo/ui/components/common/AppErrorBoundary'
 import App from './App'
 import '@repo/ui/globals.css'
 

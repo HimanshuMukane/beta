@@ -41,7 +41,7 @@ import type {
   OrderPaymentRecord,
 } from '../../types/order'
 import { LeadSourceCombobox } from '../../components/LeadSourceCombobox'
-import { PhoneInputField } from '../../components/PhoneInputField'
+import { PhoneInputField } from '@repo/ui/components/common/PhoneInputField'
 import type { LeadSource } from '../../types/lead'
 import { useOrderPresets } from '../../hooks/useOrderPresets'
 

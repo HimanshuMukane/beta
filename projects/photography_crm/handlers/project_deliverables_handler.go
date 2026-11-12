@@ -77,9 +77,14 @@ func ProjectDeliverablesListHandler(responseWriter http.ResponseWriter, request 
 		queryArguments = append(queryArguments, projectID)
 	}
 	var statusFilter string = strings.TrimSpace(request.URL.Query().Get("status"))
-	if statusFilter != "" {
+	if statusFilter != "" && !strings.EqualFold(statusFilter, "all") {
 		query += " AND status = ?"
 		queryArguments = append(queryArguments, statusFilter)
+	}
+	var assigneeFilter string = strings.TrimSpace(request.URL.Query().Get("assignee"))
+	if assigneeFilter != "" && !strings.EqualFold(assigneeFilter, "all") {
+		query += " AND assignee = ?"
+		queryArguments = append(queryArguments, assigneeFilter)
 	}
 
 	query += " ORDER BY created_at ASC"

@@ -157,14 +157,29 @@ func ProjectTasksListHandler(responseWriter http.ResponseWriter, request *http.R
 		queryArguments = append(queryArguments, projectID)
 	}
 	var phaseFilter string = strings.TrimSpace(request.URL.Query().Get("phase"))
-	if phaseFilter != "" {
+	if phaseFilter != "" && !strings.EqualFold(phaseFilter, "all") {
 		query += " AND phase = ?"
 		queryArguments = append(queryArguments, phaseFilter)
 	}
 	var statusFilter string = strings.TrimSpace(request.URL.Query().Get("status"))
-	if statusFilter != "" {
+	if statusFilter != "" && !strings.EqualFold(statusFilter, "all") {
 		query += " AND status = ?"
 		queryArguments = append(queryArguments, statusFilter)
+	}
+	var priorityFilter string = strings.TrimSpace(request.URL.Query().Get("priority"))
+	if priorityFilter != "" && !strings.EqualFold(priorityFilter, "all") {
+		query += " AND priority = ?"
+		queryArguments = append(queryArguments, priorityFilter)
+	}
+	var assigneeFilter string = strings.TrimSpace(request.URL.Query().Get("assignee"))
+	if assigneeFilter != "" && !strings.EqualFold(assigneeFilter, "all") {
+		query += " AND assignee = ?"
+		queryArguments = append(queryArguments, assigneeFilter)
+	}
+	var categoryFilter string = strings.TrimSpace(request.URL.Query().Get("category"))
+	if categoryFilter != "" && !strings.EqualFold(categoryFilter, "all") {
+		query += " AND category_name = ?"
+		queryArguments = append(queryArguments, categoryFilter)
 	}
 
 	query += " ORDER BY order_index ASC, created_at ASC"
