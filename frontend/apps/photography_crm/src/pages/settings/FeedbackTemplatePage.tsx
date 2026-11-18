@@ -4,6 +4,7 @@ import {
   IconTrash,
   IconEdit,
   IconDeviceFloppy,
+  IconLoader2,
   IconStarFilled,
   IconCheck,
   IconMessageHeart,
@@ -33,6 +34,7 @@ import {
   TooltipContent,
 } from '@repo/ui/components/ui/tooltip'
 import { toast } from '@repo/ui/components/ui/sonner'
+import { useStudioSettings } from '../../hooks/useStudioSettings'
 
 export type QuestionType = 'rating' | 'textarea'
 
@@ -80,8 +82,22 @@ const INITIAL_QUESTIONS: FeedbackQuestion[] = [
 ]
 
 export function FeedbackTemplatePage() {
+  const { settings, updateSettingsAsync, isUpdating } = useStudioSettings()
+
   const [templateName, setTemplateName] = React.useState('Birthday Shoot Feedback')
   const [questions, setQuestions] = React.useState<FeedbackQuestion[]>(INITIAL_QUESTIONS)
+
+  // Synchronize state with persisted settings
+  React.useEffect(() => {
+    if (settings?.feedbackTemplate) {
+      if (settings.feedbackTemplate.templateName) {
+        setTemplateName(settings.feedbackTemplate.templateName)
+      }
+      if (settings.feedbackTemplate.questions && settings.feedbackTemplate.questions.length > 0) {
+        setQuestions(settings.feedbackTemplate.questions)
+      }
+    }
+  }, [settings?.feedbackTemplate])
 
   // Question editing modal
   const [editingQuestion, setEditingQuestion] = React.useState<FeedbackQuestion | null>(null)
@@ -135,8 +151,18 @@ export function FeedbackTemplatePage() {
     toast.success('Question removed')
   }
 
-  const handleSaveAll = () => {
-    toast.success(`Feedback template "${templateName}" saved`)
+  const handleSaveAll = async () => {
+    try {
+      await updateSettingsAsync({
+        feedbackTemplate: {
+          templateName,
+          questions,
+        },
+      })
+      toast.success(`Feedback template "${templateName}" saved`)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save feedback template')
+    }
   }
 
   return (
@@ -160,10 +186,15 @@ export function FeedbackTemplatePage() {
         <Button
           type="button"
           onClick={handleSaveAll}
+          disabled={isUpdating}
           className="h-8 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground shadow-xs"
         >
-          <IconDeviceFloppy className="h-3.5 w-3.5" />
-          Save
+          {isUpdating ? (
+            <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <IconDeviceFloppy className="h-3.5 w-3.5" />
+          )}
+          {isUpdating ? 'Saving...' : 'Save Template'}
         </Button>
       </div>
 

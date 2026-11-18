@@ -27,12 +27,14 @@ import {
   IconChevronRight,
   IconSearch,
   IconListCheck,
+  IconLoader2,
 } from "@repo/ui/icons/tabler-icons"
 import type { Project } from '../../types/project'
 import {
   ProductionTaskDrawer,
   type TaskDetailData,
 } from '../../components/ProductionTaskDrawer'
+import { tasksApi, type TaskItem } from '../../api/tasksApi'
 
 export interface ProductionCategory {
   name: string
@@ -170,11 +172,15 @@ const POST_PRODUCTION_CATEGORIES: ProductionCategory[] = [
 
 interface UserTasksPageProps {
   projects: Project[]
+  tasks?: TaskItem[]
+  onTaskChange?: () => void
   onUpdateProject?: (project: Project) => void
 }
 
 export function UserTasksPage({
   projects,
+  tasks = [],
+  onTaskChange,
 }: UserTasksPageProps) {
   const [activeTab, setActiveTab] = React.useState<'pre' | 'post'>('pre')
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -182,6 +188,7 @@ export function UserTasksPage({
 
   // Completed task tracker: `${projectId}-${taskName}` -> boolean
   const [completedTasks, setCompletedTasks] = React.useState<Record<string, boolean>>({})
+  const [taskItemMap, setTaskItemMap] = React.useState<Record<string, TaskItem>>({})
 
   // Drawer task details state
   const [drawerOpen, setDrawerOpen] = React.useState(false)
@@ -196,6 +203,44 @@ export function UserTasksPage({
   const [addTaskModalOpen, setAddTaskModalOpen] = React.useState(false)
   const [targetCategory, setTargetCategory] = React.useState<string>('')
   const [newTaskName, setNewTaskName] = React.useState('')
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+  // Synchronize persisted tasks from backend
+  React.useEffect(() => {
+    if (!tasks || tasks.length === 0) return
+
+    const newCompleted: Record<string, boolean> = {}
+    const newMap: Record<string, TaskItem> = {}
+
+    tasks.forEach((t) => {
+      const key = `${t.projectId}::${t.taskName}`
+      newCompleted[key] = t.status === 'Completed'
+      newMap[key] = t
+    })
+
+    setCompletedTasks((prev) => ({ ...prev, ...newCompleted }))
+    setTaskItemMap((prev) => ({ ...prev, ...newMap }))
+
+    // Add any backend custom categories/tasks that aren't in preset
+    const preCats = [...PRE_PRODUCTION_CATEGORIES]
+    const postCats = [...POST_PRODUCTION_CATEGORIES]
+
+    tasks.forEach((t) => {
+      const isPre = (t.phase || '').toLowerCase().includes('pre')
+      const targetList = isPre ? preCats : postCats
+      let cat = targetList.find((c) => c.name.toLowerCase() === (t.categoryName || '').toLowerCase())
+      if (!cat && t.categoryName) {
+        cat = { name: t.categoryName, tasks: [] }
+        targetList.push(cat)
+      }
+      if (cat && !cat.tasks.includes(t.taskName)) {
+        cat.tasks.push(t.taskName)
+      }
+    })
+
+    setPreCategories(preCats)
+    setPostCategories(postCats)
+  }, [tasks])
 
   const activeCategories = activeTab === 'pre' ? preCategories : postCategories
 
@@ -203,64 +248,158 @@ export function UserTasksPage({
     setCollapsedMonths((prev) => ({ ...prev, [monthKey]: !prev[monthKey] }))
   }
 
-  const handleToggleTaskStatus = (projId: string, taskName: string, e: React.MouseEvent) => {
+  const handleToggleTaskStatus = async (projId: string, taskName: string, e: React.MouseEvent) => {
     e.stopPropagation()
     const key = `${projId}::${taskName}`
     const nextState = !completedTasks[key]
+    const nextStatus = nextState ? 'Completed' : 'Pending'
+
     setCompletedTasks((prev) => ({ ...prev, [key]: nextState }))
-    toast.success(`Task "${taskName}" marked as ${nextState ? 'Completed' : 'Pending'}`)
+
+    const existingTask = taskItemMap[key]
+    try {
+      if (existingTask?.id) {
+        await tasksApi.updateStatus(existingTask.id, nextStatus)
+      } else {
+        const created = await tasksApi.create({
+          projectId: projId,
+          taskName,
+          categoryName: activeTab === 'pre' ? 'Pre-production' : 'Post-production',
+          phase: activeTab === 'pre' ? 'Pre-production' : 'Post-production',
+          status: nextStatus,
+        })
+        setTaskItemMap((prev) => ({ ...prev, [key]: created }))
+      }
+      onTaskChange?.()
+      toast.success(`Task "${taskName}" marked as ${nextStatus}`)
+    } catch {
+      // Revert on error
+      setCompletedTasks((prev) => ({ ...prev, [key]: !nextState }))
+      toast.error(`Failed to update status for "${taskName}"`)
+    }
   }
 
   const handleOpenTaskDrawer = (proj: Project, taskName: string) => {
     setActiveProjectId(proj.id)
+    const key = `${proj.id}::${taskName}`
+    const existingTask = taskItemMap[key]
+
+    const phaseVal = (existingTask?.phase?.toLowerCase().includes('post') ? 'Post-production' : 'Pre-production') as 'Pre-production' | 'Post-production'
+    const priorityVal = (existingTask?.priority === 'High' || existingTask?.priority === 'Low' || existingTask?.priority === 'Medium'
+      ? existingTask.priority
+      : 'Medium') as 'High' | 'Low' | 'Medium'
+
     setSelectedTaskDetail({
-      taskId: `${proj.id}-${taskName}`,
+      taskId: existingTask?.id || `${proj.id}-${taskName}`,
       taskName,
-      categoryName: activeTab === 'pre' ? 'Pre-production' : 'Post-production',
-      phase: activeTab === 'pre' ? 'Pre-production' : 'Post-production',
-      status: completedTasks[`${proj.id}::${taskName}`] ? 'Completed' : 'Pending',
-      priority: 'Medium',
-      dueDate: proj.startDate || '2026-11-20',
-      assignee: proj.projectManager?.name || 'Rohan Mehta',
-      notes: `Task for project: ${proj.projectName}. Complete and verify workflow checklist before shoot milestones.`,
-      checklist: [
-        { id: '1', text: 'Review project requirements', done: false },
-        { id: '2', text: 'Confirm schedule & gear', done: false },
-      ],
+      categoryName: existingTask?.categoryName || (activeTab === 'pre' ? 'Pre-production' : 'Post-production'),
+      phase: existingTask?.phase ? phaseVal : (activeTab === 'pre' ? 'Pre-production' : 'Post-production'),
+      status: completedTasks[key] ? 'Completed' : 'Pending',
+      priority: priorityVal,
+      dueDate: existingTask?.dueDate || proj.startDate || '2026-11-20',
+      assignee: existingTask?.assignee || proj.projectManager?.name || 'Rohan Mehta',
+      notes: existingTask?.notes || `Task for project: ${proj.projectName}. Complete and verify workflow checklist before shoot milestones.`,
+      checklist: existingTask?.checklist && existingTask.checklist.length > 0
+        ? existingTask.checklist
+        : [
+          { id: '1', text: 'Review project requirements', done: false },
+          { id: '2', text: 'Confirm schedule & gear', done: false },
+        ],
     })
     setDrawerOpen(true)
   }
 
-  const handleSaveDrawerTask = (updated: TaskDetailData) => {
-    if (activeProjectId && updated.taskName) {
-      const key = `${activeProjectId}::${updated.taskName}`
-      setCompletedTasks((prev) => ({
-        ...prev,
-        [key]: updated.status === 'Completed',
-      }))
+  const handleSaveDrawerTask = async (updated: TaskDetailData) => {
+    if (!activeProjectId || !updated.taskName) {
+      setDrawerOpen(false)
+      return
+    }
+
+    const key = `${activeProjectId}::${updated.taskName}`
+    const isDone = updated.status === 'Completed'
+    setCompletedTasks((prev) => ({ ...prev, [key]: isDone }))
+
+    const existingTask = taskItemMap[key]
+    try {
+      if (existingTask?.id) {
+        const saved = await tasksApi.update(existingTask.id, {
+          projectId: activeProjectId,
+          taskName: updated.taskName,
+          categoryName: updated.categoryName,
+          phase: updated.phase,
+          status: updated.status,
+          priority: updated.priority,
+          dueDate: updated.dueDate,
+          assignee: updated.assignee,
+          notes: updated.notes,
+          checklist: updated.checklist,
+        })
+        setTaskItemMap((prev) => ({ ...prev, [key]: saved }))
+      } else {
+        const created = await tasksApi.create({
+          projectId: activeProjectId,
+          taskName: updated.taskName,
+          categoryName: updated.categoryName,
+          phase: updated.phase,
+          status: updated.status,
+          priority: updated.priority,
+          dueDate: updated.dueDate,
+          assignee: updated.assignee,
+          notes: updated.notes,
+          checklist: updated.checklist,
+        })
+        setTaskItemMap((prev) => ({ ...prev, [key]: created }))
+      }
+      onTaskChange?.()
+      toast.success('Task details updated & saved')
+    } catch {
+      toast.error('Failed to save task to backend')
     }
     setDrawerOpen(false)
-    toast.success('Task details updated')
   }
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     if (!newTaskName.trim() || !targetCategory) {
       toast.error('Please specify both a task name and target group')
       return
     }
 
-    const updater = activeTab === 'pre' ? setPreCategories : setPostCategories
-    updater((prev) =>
-      prev.map((cat) =>
-        cat.name === targetCategory
-          ? { ...cat, tasks: [...cat.tasks, newTaskName.trim()] }
-          : cat
-      )
-    )
+    const taskTitle = newTaskName.trim()
+    const targetGroup = targetCategory
+    setIsSubmitting(true)
 
-    toast.success(`Added task "${newTaskName.trim()}" to ${targetCategory}`)
-    setNewTaskName('')
-    setAddTaskModalOpen(false)
+    try {
+      // Also persist for each active project if available, or create for first project
+      if (projects.length > 0) {
+        const primaryProj = projects[0]
+        const created = await tasksApi.create({
+          projectId: primaryProj.id,
+          taskName: taskTitle,
+          categoryName: targetGroup,
+          phase: activeTab === 'pre' ? 'Pre-production' : 'Post-production',
+          status: 'Pending',
+        })
+        setTaskItemMap((prev) => ({ ...prev, [`${primaryProj.id}::${taskTitle}`]: created }))
+      }
+
+      const updater = activeTab === 'pre' ? setPreCategories : setPostCategories
+      updater((prev) =>
+        prev.map((cat) =>
+          cat.name === targetGroup
+            ? { ...cat, tasks: [...cat.tasks, taskTitle] }
+            : cat
+        )
+      )
+
+      onTaskChange?.()
+      toast.success(`Added task "${taskTitle}" to ${targetGroup}`)
+      setNewTaskName('')
+      setAddTaskModalOpen(false)
+    } catch {
+      toast.error('Failed to create task')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // Filter projects by search
@@ -571,9 +710,11 @@ export function UserTasksPage({
             <Button
               size="sm"
               onClick={handleAddTask}
-              className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={isSubmitting}
+              className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
             >
-              Add Task
+              {isSubmitting && <IconLoader2 className="h-3.5 w-3.5 animate-spin" />}
+              {isSubmitting ? 'Adding...' : 'Add Task'}
             </Button>
           </DialogFooter>
         </DialogContent>

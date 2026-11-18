@@ -87,6 +87,7 @@ func RegisterBackendRoutes(
 
 		apiRouter.Route("/api/project-deliverables", func(delivRouter chi.Router) {
 			delivRouter.Get("/", handlers.ProjectDeliverablesListHandler)
+			delivRouter.Post("/", handlers.CreateProjectDeliverableHandler)
 			delivRouter.Get("/{id}", handlers.GetProjectDeliverableHandler)
 			delivRouter.Put("/{id}", handlers.UpdateProjectDeliverableHandler)
 			delivRouter.Patch("/{id}/status", handlers.UpdateProjectDeliverableStatusHandler)
@@ -205,6 +206,10 @@ func RegisterBackendRoutes(
 			packagesRouter.Post("/", handlers.CreatePackageHandler)
 			packagesRouter.Put("/{id}", handlers.UpdatePackageHandler)
 			packagesRouter.Delete("/{id}", handlers.DeletePackageHandler)
+		})
+
+		apiRouter.Route("/api/communication", func(commRouter chi.Router) {
+			commRouter.Post("/send-email", handlers.SendEmailHandler)
 		})
 	})
 }

@@ -18,12 +18,14 @@ import {
   IconSearch,
   IconCheck,
   IconUsers,
+  IconPlus,
 } from "@repo/ui/icons/tabler-icons"
 import { useAuth } from '@repo/ui/hooks/use-auth'
 import type { Project, CustomerDeliverable } from '../../types/project'
+import type { ProjectDeliverableItem } from '../../api/tasksApi'
 import { AddDeliverableModal } from '../../components/AddDeliverableModal'
 
-interface DeliverableRowItem {
+export interface DeliverableRowItem {
   projectId: string
   projectName: string
   projectDates: string
@@ -40,6 +42,9 @@ interface DeliverableRowItem {
 
 interface UserDeliverablesPageProps {
   projects: Project[]
+  deliverables?: ProjectDeliverableItem[]
+  onStatusChange?: (item: DeliverableRowItem, newStatus: CustomerDeliverable['status']) => void
+  onAddDeliverable?: (payload: { projectId: string; deliverable: string; dueDate?: string; assignee?: string; status?: string; note?: string }) => void
   onUpdateProject?: (project: Project) => void
 }
 
@@ -47,6 +52,9 @@ type TabType = 'Upcoming' | 'TBD' | 'Overdue' | 'Delivered'
 
 export function UserDeliverablesPage({
   projects,
+  deliverables,
+  onStatusChange,
+  onAddDeliverable,
   onUpdateProject,
 }: UserDeliverablesPageProps) {
   const { user } = useAuth()
@@ -67,9 +75,53 @@ export function UserDeliverablesPage({
     return (userName && aName.includes(userName)) || (userEmail && aName.includes(userEmail))
   }
 
-  // Flatten deliverables across projects into items
+  // Map project ID to Project for fast lookups
+  const projectMap = React.useMemo(() => {
+    const map = new Map<string, Project>()
+    projects.forEach((p) => map.set(p.id, p))
+    return map
+  }, [projects])
+
+  // Flatten deliverables: prioritize normalized deliverables API if provided, fallback to project.deliverables
   const allDeliverables = React.useMemo(() => {
     const list: DeliverableRowItem[] = []
+
+    if (deliverables && deliverables.length > 0) {
+      // Calculate progress per project from the normalized list
+      const projStats = new Map<string, { ready: number; total: number }>()
+      deliverables.forEach((d) => {
+        const current = projStats.get(d.projectId) || { ready: 0, total: 0 }
+        current.total += 1
+        if (d.status === 'Completed' || d.status === 'Delivered') {
+          current.ready += 1
+        }
+        projStats.set(d.projectId, current)
+      })
+
+      deliverables.forEach((del) => {
+        const p = projectMap.get(del.projectId)
+        const stats = projStats.get(del.projectId) || { ready: 0, total: 1 }
+        const pct = stats.total > 0 ? Math.round((stats.ready / stats.total) * 100) : 0
+
+        list.push({
+          projectId: del.projectId,
+          projectName: p ? p.projectName : 'Direct Deliverable',
+          projectDates: p
+            ? `${p.startDate ? p.startDate.slice(5) : '08-11'} - ${p.endDate ? p.endDate.slice(5) : '11-11'}`
+            : 'Scheduled',
+          clientInitials: p?.clientInitials || (p?.projectName ? p.projectName.slice(0, 2).toUpperCase() : 'DL'),
+          deliverableId: del.id,
+          deliverableName: del.deliverable,
+          assignee: del.assignee || 'Unassigned',
+          dueDate: del.dueDate || '2026-12-01',
+          status: del.status || 'New',
+          readyCount: stats.ready,
+          totalCount: stats.total,
+          progressPct: pct,
+        })
+      })
+      return list
+    }
 
     projects.forEach((p) => {
       const pDels = p.deliverables && p.deliverables.length > 0
@@ -114,7 +166,7 @@ export function UserDeliverablesPage({
     })
 
     return list
-  }, [projects])
+  }, [projects, deliverables, projectMap])
 
   // Filter deliverables
   const filteredDeliverables = React.useMemo(() => {
@@ -180,6 +232,11 @@ export function UserDeliverablesPage({
   }, [filteredDeliverables])
 
   const handleStatusChange = (item: DeliverableRowItem, newStatus: CustomerDeliverable['status']) => {
+    if (onStatusChange) {
+      onStatusChange(item, newStatus)
+      return
+    }
+
     const targetProj = projects.find((p) => p.id === item.projectId)
     if (!targetProj || !onUpdateProject) return
 
@@ -365,6 +422,20 @@ export function UserDeliverablesPage({
               </SelectItem>
             </SelectContent>
           </Select>
+
+          {projects.length > 0 && (
+            <Button
+              size="sm"
+              onClick={() => {
+                setTargetProjectForAdd(projects[0])
+                setAddModalOpen(true)
+              }}
+              className="h-9 rounded-full text-xs gap-1.5 px-3.5 bg-primary text-primary-foreground shadow-2xs font-semibold"
+            >
+              <IconPlus className="h-3.5 w-3.5" />
+              <span>Add Deliverable</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -526,7 +597,16 @@ export function UserDeliverablesPage({
             if (!op) setTargetProjectForAdd(null)
           }}
           onAdd={(newDel) => {
-            if (targetProjectForAdd && onUpdateProject) {
+            if (onAddDeliverable && targetProjectForAdd) {
+              onAddDeliverable({
+                projectId: targetProjectForAdd.id,
+                deliverable: newDel.deliverable,
+                dueDate: newDel.dueDate,
+                assignee: newDel.assignee,
+                status: newDel.status,
+                note: newDel.note,
+              })
+            } else if (targetProjectForAdd && onUpdateProject) {
               const updated = [...(targetProjectForAdd.deliverables || []), newDel]
               onUpdateProject({ ...targetProjectForAdd, deliverables: updated })
               toast.success(`Deliverable added to ${targetProjectForAdd.projectName}`)

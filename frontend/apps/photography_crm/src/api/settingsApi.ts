@@ -39,6 +39,15 @@ export interface StudioSettingsStore {
     templateName: string
     questions: FeedbackQuestion[]
   }
+  templateCustomizers?: Record<
+    string,
+    {
+      headerTitle: string
+      termsText: string
+      accentColor: string
+      footerNote: string
+    }
+  >
 }
 
 export const settingsApi = {
@@ -66,6 +75,7 @@ export const settingsApi = {
           templateName: '',
           questions: [],
         },
+        templateCustomizers: data.template_customizers || {},
       }
     } catch {
       return {
@@ -82,6 +92,7 @@ export const settingsApi = {
         workflowStages: [],
         contractTemplate: { contractName: '', mySignatureRequired: true, variableValues: {} },
         feedbackTemplate: { templateName: '', questions: [] },
+        templateCustomizers: {},
       }
     }
   },
@@ -103,6 +114,7 @@ export const settingsApi = {
     if (updates.workflowStages !== undefined) payload.workflow_stages = updates.workflowStages
     if (updates.contractTemplate !== undefined) payload.contract_template = updates.contractTemplate
     if (updates.feedbackTemplate !== undefined) payload.feedback_template = updates.feedbackTemplate
+    if (updates.templateCustomizers !== undefined) payload.template_customizers = updates.templateCustomizers
 
     await apiClient('/api/settings', {
       method: 'POST',

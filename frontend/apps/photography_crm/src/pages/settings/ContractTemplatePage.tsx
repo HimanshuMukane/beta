@@ -1,6 +1,7 @@
 import * as React from 'react'
 import {
   IconDeviceFloppy,
+  IconLoader2,
   IconBold,
   IconItalic,
   IconAlignLeft,
@@ -35,6 +36,7 @@ import {
 } from '@repo/ui/components/ui/tooltip'
 import { toast } from '@repo/ui/components/ui/sonner'
 import { cn } from '@repo/ui/lib/utils'
+import { useStudioSettings } from '../../hooks/useStudioSettings'
 
 interface MergeVariable {
   key: string
@@ -58,6 +60,8 @@ const AVAILABLE_VARIABLES: MergeVariable[] = [
 ]
 
 export function ContractTemplatePage() {
+  const { settings, updateSettingsAsync, isUpdating } = useStudioSettings()
+
   const [contractName, setContractName] = React.useState('Birthday Contract')
   const [mySignatureRequired, setMySignatureRequired] = React.useState(true)
 
@@ -69,6 +73,24 @@ export function ContractTemplatePage() {
     })
     return initial
   })
+
+  // Synchronize state with persisted settings
+  React.useEffect(() => {
+    if (settings?.contractTemplate) {
+      if (settings.contractTemplate.contractName) {
+        setContractName(settings.contractTemplate.contractName)
+      }
+      if (settings.contractTemplate.mySignatureRequired !== undefined) {
+        setMySignatureRequired(settings.contractTemplate.mySignatureRequired)
+      }
+      if (settings.contractTemplate.variableValues && Object.keys(settings.contractTemplate.variableValues).length > 0) {
+        setVariableValues((prev) => ({
+          ...prev,
+          ...settings.contractTemplate.variableValues,
+        }))
+      }
+    }
+  }, [settings?.contractTemplate])
 
   const [activeEditingKey, setActiveEditingKey] = React.useState<string | null>(null)
   const [tempValue, setTempValue] = React.useState('')
@@ -86,8 +108,19 @@ export function ContractTemplatePage() {
     toast.success('Field updated in preview')
   }
 
-  const handleSaveContract = () => {
-    toast.success(`Contract template "${contractName}" saved successfully`)
+  const handleSaveContract = async () => {
+    try {
+      await updateSettingsAsync({
+        contractTemplate: {
+          contractName,
+          mySignatureRequired,
+          variableValues,
+        },
+      })
+      toast.success(`Contract template "${contractName}" saved successfully`)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save contract template')
+    }
   }
 
   const renderDynamicPill = (vKey: string, fallbackLabel: string) => {
@@ -162,10 +195,15 @@ export function ContractTemplatePage() {
         <Button
           type="button"
           onClick={handleSaveContract}
+          disabled={isUpdating}
           className="h-8 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground self-start sm:self-auto shadow-xs"
         >
-          <IconDeviceFloppy className="h-3.5 w-3.5" />
-          Save Contract
+          {isUpdating ? (
+            <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <IconDeviceFloppy className="h-3.5 w-3.5" />
+          )}
+          {isUpdating ? 'Saving...' : 'Save Contract'}
         </Button>
       </div>
 

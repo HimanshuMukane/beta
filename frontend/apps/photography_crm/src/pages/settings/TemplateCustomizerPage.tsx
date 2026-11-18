@@ -1,6 +1,7 @@
 import * as React from 'react'
 import {
   IconDeviceFloppy,
+  IconLoader2,
 } from "@repo/ui/icons/tabler-icons"
 import {
   Card,
@@ -12,6 +13,7 @@ import { Button } from '@repo/ui/components/ui/button'
 import { Input } from '@repo/ui/components/ui/input'
 import { Label } from '@repo/ui/components/ui/label'
 import { toast } from '@repo/ui/components/ui/sonner'
+import { useStudioSettings } from '../../hooks/useStudioSettings'
 
 interface TemplateCustomizerProps {
   title: string
@@ -24,6 +26,8 @@ export function TemplateCustomizerPage({
   subtitle,
   type,
 }: TemplateCustomizerProps) {
+  const { settings, updateSettingsAsync, isUpdating } = useStudioSettings()
+
   const [headerTitle, setHeaderTitle] = React.useState(`${title} - especa Studios`)
   const [termsText, setTermsText] = React.useState(
     '1. 50% advance upon contract signing.\n2. Delivery of color graded soft copies in 14 business days.\n3. Raw video footage retains copyrights by studio.'
@@ -31,8 +35,35 @@ export function TemplateCustomizerPage({
   const [accentColor, setAccentColor] = React.useState('#059669') // Emerald
   const [footerNote, setFooterNote] = React.useState('Thank you for choosing our visual artistry.')
 
-  const handleSave = () => {
-    toast.success(`${title} design & layout saved`)
+  // Populate from persisted settings when available
+  React.useEffect(() => {
+    const customizerData = settings?.templateCustomizers?.[type]
+    if (customizerData) {
+      if (customizerData.headerTitle !== undefined) setHeaderTitle(customizerData.headerTitle)
+      if (customizerData.termsText !== undefined) setTermsText(customizerData.termsText)
+      if (customizerData.accentColor !== undefined) setAccentColor(customizerData.accentColor)
+      if (customizerData.footerNote !== undefined) setFooterNote(customizerData.footerNote)
+    }
+  }, [settings?.templateCustomizers, type])
+
+  const handleSave = async () => {
+    try {
+      const currentTemplates = settings?.templateCustomizers || {}
+      await updateSettingsAsync({
+        templateCustomizers: {
+          ...currentTemplates,
+          [type]: {
+            headerTitle,
+            termsText,
+            accentColor,
+            footerNote,
+          },
+        },
+      })
+      toast.success(`${title} design & layout saved`)
+    } catch (err: any) {
+      toast.error(err?.message || `Failed to save ${title} template`)
+    }
   }
 
   return (
@@ -45,10 +76,15 @@ export function TemplateCustomizerPage({
         <Button
           type="button"
           onClick={handleSave}
+          disabled={isUpdating}
           className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-8 gap-1.5 shadow-xs"
         >
-          <IconDeviceFloppy className="h-3.5 w-3.5" />
-          Save Template
+          {isUpdating ? (
+            <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <IconDeviceFloppy className="h-3.5 w-3.5" />
+          )}
+          {isUpdating ? 'Saving...' : 'Save Template'}
         </Button>
       </div>
 

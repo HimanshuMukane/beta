@@ -23,7 +23,7 @@ import type { Order, OrderStage } from './types/order'
 import type { SettingsTab } from './types/settings'
 import { PhotographySidebar, type ReportCategory } from './components/PhotographySidebar'
 import { UserSidebar, type UserRouteKey } from './components/UserSidebar'
-import { leadsApi, projectsApi, sessionsApi, ordersApi } from './api/crmApi'
+import { leadsApi, projectsApi, sessionsApi, ordersApi, tasksApi, projectDeliverablesApi } from './api/crmApi'
 
 // Lazy Load User Portal Pages
 const UserHomePage = lazy(() =>
@@ -367,6 +367,8 @@ function UserTasksPageContainer({
 }: {
   onUpdateProject: (p: Project) => void
 }) {
+  const queryClient = useQueryClient()
+
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
     queryFn: ({ signal }) => projectsApi.list(undefined, signal),
@@ -374,7 +376,20 @@ function UserTasksPageContainer({
     gcTime: 5 * 60_000,
   })
 
-  return <UserTasksPage projects={projects} onUpdateProject={onUpdateProject} />
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: () => tasksApi.list(),
+    staleTime: 30_000,
+  })
+
+  return (
+    <UserTasksPage
+      projects={projects}
+      tasks={tasks}
+      onTaskChange={() => queryClient.invalidateQueries({ queryKey: ['tasks'] })}
+      onUpdateProject={onUpdateProject}
+    />
+  )
 }
 
 function UserDeliverablesPageContainer({
@@ -382,6 +397,8 @@ function UserDeliverablesPageContainer({
 }: {
   onUpdateProject: (p: Project) => void
 }) {
+  const queryClient = useQueryClient()
+
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
     queryFn: ({ signal }) => projectsApi.list(undefined, signal),
@@ -389,7 +406,53 @@ function UserDeliverablesPageContainer({
     gcTime: 5 * 60_000,
   })
 
-  return <UserDeliverablesPage projects={projects} onUpdateProject={onUpdateProject} />
+  const { data: deliverables = [] } = useQuery({
+    queryKey: ['project-deliverables'],
+    queryFn: () => projectDeliverablesApi.list(),
+    staleTime: 30_000,
+  })
+
+  const handleStatusChange = async (
+    item: { deliverableId: string; projectId: string; deliverableName: string },
+    newStatus: string
+  ) => {
+    try {
+      await projectDeliverablesApi.updateStatus(item.deliverableId, newStatus)
+      await queryClient.invalidateQueries({ queryKey: ['project-deliverables'] })
+      await queryClient.invalidateQueries({ queryKey: ['projects'] })
+      toast.success(`Updated status to ${newStatus}`)
+    } catch {
+      toast.error('Failed to update deliverable status')
+    }
+  }
+
+  const handleAddDeliverable = async (payload: {
+    projectId: string
+    deliverable: string
+    dueDate?: string
+    assignee?: string
+    status?: string
+    note?: string
+  }) => {
+    try {
+      await projectDeliverablesApi.create(payload)
+      await queryClient.invalidateQueries({ queryKey: ['project-deliverables'] })
+      await queryClient.invalidateQueries({ queryKey: ['projects'] })
+      toast.success(`Deliverable added!`)
+    } catch {
+      toast.error('Failed to add deliverable')
+    }
+  }
+
+  return (
+    <UserDeliverablesPage
+      projects={projects}
+      deliverables={deliverables}
+      onStatusChange={handleStatusChange as any}
+      onAddDeliverable={handleAddDeliverable}
+      onUpdateProject={onUpdateProject}
+    />
+  )
 }
 
 function AppContent() {

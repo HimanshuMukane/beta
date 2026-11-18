@@ -6,7 +6,16 @@ import {
   IconEdit,
   IconTrash,
   IconEye,
+  IconBrandWhatsapp,
+  IconMail,
 } from "@repo/ui/icons/tabler-icons"
+import {
+  buildWhatsAppUrl,
+  buildMailtoUrl,
+  sanitizePhoneNumber,
+  formatLeadSchedule,
+} from "../lib/communicationUtils"
+import { toast } from "@repo/ui/components/ui/sonner"
 import { Badge } from '@repo/ui/components/ui/badge'
 import { Button } from '@repo/ui/components/ui/button'
 import {
@@ -240,6 +249,34 @@ export function LeadKanbanView({
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation()
+                                var cleanPhone: string = sanitizePhoneNumber(lead.countryCode, lead.mobileNo)
+                                var message: string = formatLeadSchedule(lead)
+                                var url: string = buildWhatsAppUrl(cleanPhone, message)
+                                window.open(url, "_blank", "noopener,noreferrer")
+                                toast.success("Sent WhatsApp Confirmation")
+                              }}
+                            >
+                              <IconBrandWhatsapp className="mr-2 h-3.5 w-3.5 text-emerald-600" /> Send WhatsApp Confirmation
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (!lead.email) {
+                                  toast.error("Email address is missing")
+                                  return
+                                }
+                                var subject: string = "Photoshoot Schedule & Call Times: " + (lead.projectName || lead.name)
+                                var body: string = formatLeadSchedule(lead)
+                                var url: string = buildMailtoUrl(lead.email, subject, body)
+                                window.location.href = url
+                                toast.success("Triggered Email Schedule")
+                              }}
+                            >
+                              <IconMail className="mr-2 h-3.5 w-3.5 text-blue-600" /> Email Schedule
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
                                 onEditLead(lead)
                               }}
                             >
@@ -301,6 +338,51 @@ export function LeadKanbanView({
                         <span className="text-xs font-bold text-foreground tabular-nums">
                           ₹{lead.quoteAmount.toLocaleString('en-IN')}
                         </span>
+                      </div>
+
+                      {/* One-click Action Triggers */}
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            var cleanPhone: string = sanitizePhoneNumber(lead.countryCode, lead.mobileNo)
+                            var message: string = formatLeadSchedule(lead)
+                            var url: string = buildWhatsAppUrl(cleanPhone, message)
+                            window.open(url, "_blank", "noopener,noreferrer")
+                            toast.success("Sent WhatsApp Confirmation to " + lead.name)
+                          }}
+                          className="flex-1 h-7 text-[10px] px-1.5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 gap-1 border-emerald-200 dark:border-emerald-800"
+                          title="One-click Send WhatsApp Confirmation with photoshoot call times & venue"
+                        >
+                          <IconBrandWhatsapp className="h-3 w-3 shrink-0" />
+                          <span className="truncate">WhatsApp Confirm</span>
+                        </Button>
+
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (!lead.email) {
+                              toast.error("Email address is missing")
+                              return
+                            }
+                            var subject: string = "Photoshoot Schedule & Call Times: " + (lead.projectName || lead.name)
+                            var body: string = formatLeadSchedule(lead)
+                            var url: string = buildMailtoUrl(lead.email, subject, body)
+                            window.location.href = url
+                            toast.success("Triggered Email Schedule")
+                          }}
+                          className="flex-1 h-7 text-[10px] px-1.5 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 gap-1 border-blue-200 dark:border-blue-800"
+                          title="One-click Email Schedule with photoshoot call times & venue"
+                        >
+                          <IconMail className="h-3 w-3 shrink-0" />
+                          <span className="truncate">Email Schedule</span>
+                        </Button>
                       </div>
 
                       {/* Footer Row: Followup Pill + Assignee Initials */}
